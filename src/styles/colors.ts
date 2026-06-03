@@ -1,0 +1,15 @@
+export const colors = {
+  background: '#E8F5E2',
+  surface: '#FFFFFF',
+  cycleBar: '#7CC96E',
+  cycleBorder: '#5BAF4E',
+  selectedDay: '#1A1A1A',
+  selectedDayText: '#FFFFFF',
+  dayText: '#1A1A1A',
+  monthText: '#666666',
+  extraPill: '#F7A8C4',
+  extraPillText: '#8B0043',
+  itemCard: '#F2F2F2',
+  detailBackground: '#D4EDCC',
+  kcalText: '#3A3A3A',
+};
