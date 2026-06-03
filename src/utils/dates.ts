@@ -18,7 +18,9 @@ export function formatDay(isoDate: string): { day: string; month: string } {
 }
 
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+    .toISOString().slice(0, 10)
 }
 
 export function dateToIndex(windowStart: string, date: string): number {

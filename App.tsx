@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useMemo } from 'react'
 import {
   View,
   ScrollView,
@@ -29,8 +29,8 @@ function findCycleForDate(date: string): string | null {
 }
 
 export default function App() {
-  const windowStart = getWindowStart()
-  const today = todayISO()
+  const today = useMemo(() => todayISO(), [])
+  const windowStart = useMemo(() => getWindowStart(), [])
 
   const [selectedDate, setSelectedDate] = useState(today)
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
