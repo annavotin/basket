@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
-    color: '#1A1A1A',
+    color: colors.dayText,
   },
   horizontalScroll: {
     flexGrow: 0,
