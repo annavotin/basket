@@ -80,6 +80,10 @@ const nativeModuleMocks = {
   },
   NativeAnimatedModule: {},
   Networking: {},
+  KeyboardObserver: {
+    addListener: () => {},
+    removeListeners: () => {},
+  },
 };
 
 jest.mock(
