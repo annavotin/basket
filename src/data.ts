@@ -1,4 +1,4 @@
-import { MealPrepCycle, ExtraMeal } from './types'
+import { MealPrepCycle, ExtraMeal, FoodItem } from './types'
 
 export const DAILY_KCAL_GOAL = 2000
 
