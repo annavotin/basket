@@ -5,7 +5,6 @@ import {
   Text,
   SafeAreaView,
   StyleSheet,
-  Alert,
 } from 'react-native'
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
@@ -14,13 +13,14 @@ import NewPeriodPanel from './src/components/NewPeriodPanel'
 import BudgetBar from './src/components/BudgetBar'
 import AddFab from './src/components/AddFab'
 import AddItemSheet from './src/components/AddItemSheet'
+import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
 import { cycles as initialCycles, extraMeals, DAILY_KCAL_GOAL } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget } from './src/utils/nutrition'
 import { colors } from './src/styles/colors'
-import { FoodItem } from './src/types'
+import { FoodItem, ReceiptLine } from './src/types'
 import { Product } from './src/mockProducts'
-import { simulateBarcodeScan } from './src/services/scan'
+import { simulateBarcodeScan, simulateReceiptScan } from './src/services/scan'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -41,6 +41,8 @@ export default function App() {
   )
   const [sheetVisible, setSheetVisible] = useState(false)
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null)
+  const [reviewVisible, setReviewVisible] = useState(false)
+  const [reviewLines, setReviewLines] = useState<ReceiptLine[]>([])
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
@@ -83,16 +85,29 @@ export default function App() {
     }
   }
 
-  function handleScanReceipt() {
-    Alert.alert('Coming soon', 'Receipt scanning is Phase 2.')
+  async function handleScanReceipt() {
+    const lines = await simulateReceiptScan()
+    if (lines) {
+      setReviewLines(lines)
+      setReviewVisible(true)
+    }
+  }
+
+  function handleAddItems(items: FoodItem[]) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId ? { ...c, items: [...c.items, ...items] } : c
+      )
+    )
   }
 
   function handleAddItem(item: FoodItem) {
-    setCycles((prev) =>
-      prev.map((c) =>
-        c.id === activeCycleId ? { ...c, items: [...c.items, item] } : c
-      )
-    )
+    handleAddItems([item])
+  }
+
+  function handleConfirmReceipt(items: FoodItem[]) {
+    handleAddItems(items)
+    setReviewVisible(false)
   }
 
   const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
@@ -154,6 +169,12 @@ export default function App() {
           product={sheetProduct}
           onAdd={handleAddItem}
           onClose={() => setSheetVisible(false)}
+        />
+        <ReceiptReviewSheet
+          visible={reviewVisible}
+          lines={reviewLines}
+          onConfirm={handleConfirmReceipt}
+          onClose={() => setReviewVisible(false)}
         />
       </View>
     </SafeAreaView>
