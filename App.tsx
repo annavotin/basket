@@ -11,9 +11,16 @@ import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
 import MealPrepDetail from './src/components/MealPrepDetail'
 import NewPeriodPanel from './src/components/NewPeriodPanel'
-import { cycles as initialCycles, extraMeals } from './src/data'
+import BudgetBar from './src/components/BudgetBar'
+import AddFab from './src/components/AddFab'
+import AddItemSheet from './src/components/AddItemSheet'
+import { cycles as initialCycles, extraMeals, DAILY_KCAL_GOAL } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
+import { totalKcal, cycleBudget } from './src/utils/nutrition'
 import { colors } from './src/styles/colors'
+import { FoodItem } from './src/types'
+import { Product } from './src/mockProducts'
+import { simulateBarcodeScan } from './src/services/scan'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -32,6 +39,8 @@ export default function App() {
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
     () => initialCycles.find((c) => today >= c.startDate && today <= c.endDate)?.id ?? null
   )
+  const [sheetVisible, setSheetVisible] = useState(false)
+  const [sheetProduct, setSheetProduct] = useState<Product | null>(null)
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
@@ -66,8 +75,24 @@ export default function App() {
     )
   }
 
-  function handleScanComingSoon() {
-    Alert.alert('Coming soon', 'Shopping is not implemented yet.')
+  async function handleScanBarcode() {
+    const product = await simulateBarcodeScan()
+    if (product) {
+      setSheetProduct(product)
+      setSheetVisible(true)
+    }
+  }
+
+  function handleScanReceipt() {
+    Alert.alert('Coming soon', 'Receipt scanning is Phase 2.')
+  }
+
+  function handleAddItem(item: FoodItem) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId ? { ...c, items: [...c.items, item] } : c
+      )
+    )
   }
 
   const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
@@ -75,6 +100,9 @@ export default function App() {
   const activeDayCount = activeCycle
     ? daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
     : DEFAULT_DAYS
+
+  const stockedKcal = activeCycle ? totalKcal(activeCycle.items) : 0
+  const budgetKcal = cycleBudget(activeDayCount, DAILY_KCAL_GOAL)
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -106,17 +134,27 @@ export default function App() {
             />
           </View>
         </ScrollView>
-        {activeCycle && activeCycle.items.length > 0 && (
-          <MealPrepDetail activeCycle={activeCycle} />
-        )}
         {activeCycle && activeCycle.items.length === 0 && (
           <NewPeriodPanel
             dayCount={activeDayCount}
             onDaysChange={handleChangeDays}
-            onScanBarcode={handleScanComingSoon}
-            onScanReceipt={handleScanComingSoon}
+            onScanBarcode={handleScanBarcode}
+            onScanReceipt={handleScanReceipt}
           />
         )}
+        {activeCycle && activeCycle.items.length > 0 && (
+          <View style={styles.detailArea}>
+            <BudgetBar stockedKcal={stockedKcal} budgetKcal={budgetKcal} />
+            <MealPrepDetail activeCycle={activeCycle} />
+            <AddFab onScanBarcode={handleScanBarcode} onScanReceipt={handleScanReceipt} />
+          </View>
+        )}
+        <AddItemSheet
+          visible={sheetVisible}
+          product={sheetProduct}
+          onAdd={handleAddItem}
+          onClose={() => setSheetVisible(false)}
+        />
       </View>
     </SafeAreaView>
   )
@@ -140,5 +178,8 @@ const styles = StyleSheet.create({
   },
   horizontalScroll: {
     flexGrow: 0,
+  },
+  detailArea: {
+    flex: 1,
   },
 })
