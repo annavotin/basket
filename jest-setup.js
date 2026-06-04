@@ -1,5 +1,10 @@
 'use strict';
 
+// RN 0.76 / @testing-library/react-native requires window to be defined
+if (typeof global.window === 'undefined') {
+  global.window = global;
+}
+
 global.__DEV__ = true;
 global.IS_REACT_ACT_ENVIRONMENT = true;
 global.IS_REACT_NATIVE_TEST_ENVIRONMENT = true;
@@ -84,6 +89,26 @@ const nativeModuleMocks = {
     addListener: () => {},
     removeListeners: () => {},
   },
+  ImageLoader: {
+    getSize: (_uri, success, _failure) => { success(100, 100); },
+    getSizeWithHeaders: (_uri, _headers, success, _failure) => { success(100, 100); },
+    prefetchImage: (_uri, resolve, _reject) => { resolve(true); },
+    queryCache: (_uris, resolve, _reject) => { resolve({}); },
+    abortRequest: () => {},
+  },
+  DevSettings: {
+    addMenuItem: () => {},
+    reload: () => {},
+    getConstants: () => ({}),
+  },
+  DevMenu: {
+    show: () => {},
+    getConstants: () => ({}),
+  },
+  NativeDevMenu: {
+    show: () => {},
+    getConstants: () => ({}),
+  },
 };
 
 jest.mock(
@@ -93,7 +118,14 @@ jest.mock(
     getEnforcing: (name) => {
       const mod = nativeModuleMocks[name];
       if (!mod) {
-        throw new Error(`TurboModuleRegistry.getEnforcing: '${name}' could not be found.`);
+        // Return a generic stub for any unknown native module so RNTL host
+        // component detection doesn't fail on modules not critical to tests.
+        return new Proxy({}, {
+          get: (_target, prop) => {
+            if (prop === 'getConstants') return () => ({});
+            return () => {};
+          },
+        });
       }
       return mod;
     },

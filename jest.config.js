@@ -1,5 +1,3 @@
-const path = require('path')
-
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/__tests__/**/*.test.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
@@ -8,12 +6,11 @@ module.exports = {
     '^.+\\.jsx?$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@testing-library/react-native)/)',
+    'node_modules/(?!(react-native|@react-native|@testing-library/react-native|expo|expo-status-bar)/)',
   ],
   setupFiles: ['./jest-setup.js'],
   haste: {
     defaultPlatform: 'ios',
     platforms: ['android', 'ios', 'native'],
   },
-  resolver: require.resolve('@react-native/jest-preset/jest/resolver.js'),
 }
