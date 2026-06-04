@@ -64,25 +64,26 @@ export default function App() {
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.horizontalScroll}
-          contentContainerStyle={{ width: TOTAL_DAYS * DAY_WIDTH }}
         >
-          <CalendarStrip
-            windowStart={windowStart}
-            totalDays={TOTAL_DAYS}
-            selectedDate={selectedDate}
-            extraDates={extraDates}
-            onDaySelect={handleDaySelect}
-            dayWidth={DAY_WIDTH}
-          />
-          <TimelineView
-            cycles={cycles}
-            extraMeals={extraMeals}
-            windowStart={windowStart}
-            totalDays={TOTAL_DAYS}
-            activeCycleId={activeCycleId}
-            onCyclePress={handleCyclePress}
-            dayWidth={DAY_WIDTH}
-          />
+          <View style={{ width: TOTAL_DAYS * DAY_WIDTH }}>
+            <CalendarStrip
+              windowStart={windowStart}
+              totalDays={TOTAL_DAYS}
+              selectedDate={selectedDate}
+              extraDates={extraDates}
+              onDaySelect={handleDaySelect}
+              dayWidth={DAY_WIDTH}
+            />
+            <TimelineView
+              cycles={cycles}
+              extraMeals={extraMeals}
+              windowStart={windowStart}
+              totalDays={TOTAL_DAYS}
+              activeCycleId={activeCycleId}
+              onCyclePress={handleCyclePress}
+              dayWidth={DAY_WIDTH}
+            />
+          </View>
         </ScrollView>
         <MealPrepDetail activeCycle={activeCycle} />
       </View>
