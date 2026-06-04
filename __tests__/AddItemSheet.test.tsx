@@ -16,13 +16,18 @@ function baseProps(overrides = {}) {
 }
 
 describe('AddItemSheet (product confirm mode)', () => {
-  it('shows the product name and defaults weight to the package size', () => {
-    const { getByText, getByTestId } = render(<AddItemSheet {...baseProps()} />)
+  it('shows the product name and the package weight read-only (no input)', () => {
+    const { getByText, getByTestId, queryByTestId } = render(<AddItemSheet {...baseProps()} />)
     expect(getByText('Chicken Breast')).toBeTruthy()
-    expect(getByTestId('weight-input').props.value).toBe('800')
+    // Weight comes from the database and is shown read-only — there is no
+    // editable weight field in product mode (so no keyboard is needed).
+    expect(queryByTestId('weight-input')).toBeNull()
+    const summary = getByTestId('product-weight').props.children
+    expect(summary).toContain('800')
+    expect(summary).toContain('880')
   })
 
-  it('adds the item with kcal computed from the default package weight', () => {
+  it('adds the item with kcal computed from the package weight', () => {
     const props = baseProps()
     const { getByTestId } = render(<AddItemSheet {...props} />)
     fireEvent.press(getByTestId('add-item-button'))
@@ -30,16 +35,6 @@ describe('AddItemSheet (product confirm mode)', () => {
       expect.objectContaining({ name: 'Chicken Breast', weightG: 800, kcal: 880, source: 'barcode' })
     )
     expect(props.onClose).toHaveBeenCalled()
-  })
-
-  it('recomputes kcal when the weight is edited', () => {
-    const props = baseProps()
-    const { getByTestId } = render(<AddItemSheet {...props} />)
-    fireEvent.changeText(getByTestId('weight-input'), '200')
-    fireEvent.press(getByTestId('add-item-button'))
-    expect(props.onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ weightG: 200, kcal: 220 })
-    )
   })
 })
 

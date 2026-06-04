@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import {
+  Modal,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
+  StyleSheet,
+} from 'react-native'
 import { Product } from '../mockProducts'
 import { FoodItem } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
@@ -14,26 +25,21 @@ type Props = {
 
 export default function AddItemSheet({ visible, product, onAdd, onClose }: Props) {
   const isManual = product === null
+  // Manual-entry fields only. In product mode the weight comes from the
+  // database (the whole package), so it is shown read-only — no typing needed.
   const [weight, setWeight] = useState('')
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
 
-  // Reset fields whenever the sheet opens or the product changes.
   useEffect(() => {
-    if (product) {
-      setWeight(String(product.packageWeightG))
-      setName(product.name)
-      setKcal('')
-    } else {
-      setWeight('')
-      setName('')
-      setKcal('')
-    }
+    setWeight('')
+    setName('')
+    setKcal('')
   }, [product, visible])
 
   function handleAdd() {
-    const weightG = parseInt(weight, 10) || 0
     if (product) {
+      const weightG = product.packageWeightG
       onAdd({
         name: product.name,
         weightG,
@@ -44,67 +50,89 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
     } else {
       onAdd({
         name: name.trim() || 'Item',
-        weightG,
+        weightG: parseInt(weight, 10) || 0,
         kcal: parseInt(kcal, 10) || 0,
         emoji: '🛒',
         source: 'manual',
       })
     }
+    Keyboard.dismiss()
     onClose()
   }
 
+  const packageKcal = product
+    ? kcalForWeight(product.kcalPer100g, product.packageWeightG)
+    : 0
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet} testID="add-item-sheet">
-          <Text style={styles.title}>{isManual ? 'Add item' : product?.name}</Text>
-          {!isManual && <Text style={styles.emoji}>{product?.emoji}</Text>}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Tap anywhere outside an input to dismiss the keyboard. */}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.backdrop}>
+            <View style={styles.sheet} testID="add-item-sheet">
+              <Text style={styles.title}>{isManual ? 'Add item' : product?.name}</Text>
 
-          {isManual && (
-            <TextInput
-              testID="manual-name-input"
-              style={styles.input}
-              placeholder="Name"
-              value={name}
-              onChangeText={setName}
-            />
-          )}
+              {!isManual && product && (
+                <>
+                  <Text style={styles.emoji}>{product.emoji}</Text>
+                  <Text style={styles.summary} testID="product-weight">
+                    {`${product.packageWeightG} g  ·  ${packageKcal} kcal`}
+                  </Text>
+                </>
+              )}
 
-          <Text style={styles.fieldLabel}>Weight (g)</Text>
-          <TextInput
-            testID="weight-input"
-            style={styles.input}
-            keyboardType="numeric"
-            value={weight}
-            onChangeText={setWeight}
-          />
+              {isManual && (
+                <>
+                  <Text style={styles.fieldLabel}>Name</Text>
+                  <TextInput
+                    testID="manual-name-input"
+                    style={styles.input}
+                    placeholder="Name"
+                    value={name}
+                    onChangeText={setName}
+                    returnKeyType="done"
+                  />
+                  <Text style={styles.fieldLabel}>Weight (g)</Text>
+                  <TextInput
+                    testID="weight-input"
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={weight}
+                    onChangeText={setWeight}
+                    returnKeyType="done"
+                  />
+                  <Text style={styles.fieldLabel}>Calories (kcal)</Text>
+                  <TextInput
+                    testID="manual-kcal-input"
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={kcal}
+                    onChangeText={setKcal}
+                    returnKeyType="done"
+                  />
+                </>
+              )}
 
-          {isManual && (
-            <>
-              <Text style={styles.fieldLabel}>Calories (kcal)</Text>
-              <TextInput
-                testID="manual-kcal-input"
-                style={styles.input}
-                keyboardType="numeric"
-                value={kcal}
-                onChangeText={setKcal}
-              />
-            </>
-          )}
-
-          <TouchableOpacity testID="add-item-button" style={styles.addBtn} onPress={handleAdd}>
-            <Text style={styles.addBtnText}>Add to period</Text>
-          </TouchableOpacity>
-          <TouchableOpacity testID="cancel-button" style={styles.cancelBtn} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+              <TouchableOpacity testID="add-item-button" style={styles.addBtn} onPress={handleAdd}>
+                <Text style={styles.addBtnText}>Add to period</Text>
+              </TouchableOpacity>
+              <TouchableOpacity testID="cancel-button" style={styles.cancelBtn} onPress={onClose}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -120,6 +148,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '700', color: colors.kcalText },
   emoji: { fontSize: 44, marginVertical: 8 },
+  summary: { fontSize: 16, fontWeight: '600', color: colors.kcalText, marginBottom: 4 },
   fieldLabel: {
     alignSelf: 'flex-start',
     fontSize: 13,
