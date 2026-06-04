@@ -14,14 +14,14 @@ import BudgetBar from './src/components/BudgetBar'
 import AddFab from './src/components/AddFab'
 import AddItemSheet from './src/components/AddItemSheet'
 import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
-import BarcodeScannerModal from './src/components/BarcodeScannerModal'
 import { cycles as initialCycles, extraMeals, DAILY_KCAL_GOAL } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget } from './src/utils/nutrition'
 import { colors } from './src/styles/colors'
 import { FoodItem, ReceiptLine } from './src/types'
 import { Product } from './src/mockProducts'
-import { simulateReceiptScan } from './src/services/scan'
+import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
+import { lookupProductByBarcode } from './src/services/foodApi'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -40,7 +40,6 @@ export default function App() {
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
     () => initialCycles.find((c) => today >= c.startDate && today <= c.endDate)?.id ?? null
   )
-  const [scannerVisible, setScannerVisible] = useState(false)
   const [sheetVisible, setSheetVisible] = useState(false)
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null)
   const [reviewVisible, setReviewVisible] = useState(false)
@@ -79,12 +78,10 @@ export default function App() {
     )
   }
 
-  function handleScanBarcode() {
-    setScannerVisible(true)
-  }
-
-  function handleScannerResult(product: Product | null, _barcode: string) {
-    setScannerVisible(false)
+  async function handleScanBarcode() {
+    const barcode = await scanBarcodeWithCamera()
+    if (!barcode) return // cancelled, denied, or scanner unavailable
+    const product = await lookupProductByBarcode(barcode)
     setSheetProduct(product) // null -> AddItemSheet opens in manual mode
     setSheetVisible(true)
   }
@@ -179,11 +176,6 @@ export default function App() {
           lines={reviewLines}
           onConfirm={handleConfirmReceipt}
           onClose={() => setReviewVisible(false)}
-        />
-        <BarcodeScannerModal
-          visible={scannerVisible}
-          onResult={handleScannerResult}
-          onClose={() => setScannerVisible(false)}
         />
       </View>
     </SafeAreaView>
