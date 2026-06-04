@@ -1,23 +1,21 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { addDays, formatDay } from '../utils/dates'
 import { colors } from '../styles/colors'
 
 type Props = {
   windowStart: string
   totalDays: number
-  selectedDate: string
+  today: string
   extraDates: string[]
-  onDaySelect: (date: string) => void
   dayWidth: number
 }
 
 export default function CalendarStrip({
   windowStart,
   totalDays,
-  selectedDate,
+  today,
   extraDates,
-  onDaySelect,
   dayWidth,
 }: Props) {
   const days = Array.from({ length: totalDays }, (_, i) => addDays(windowStart, i))
@@ -27,15 +25,10 @@ export default function CalendarStrip({
     <View style={styles.row}>
       {days.map((date) => {
         const { day, month } = formatDay(date)
-        const isSelected = date === selectedDate
+        const isToday = date === today
         const hasExtra = extraSet.has(date)
         return (
-          <TouchableOpacity
-            key={date}
-            testID="day-cell"
-            onPress={() => onDaySelect(date)}
-            style={[styles.cell, { width: dayWidth }]}
-          >
+          <View key={date} testID="day-cell" style={[styles.cell, { width: dayWidth }]}>
             {hasExtra ? (
               <View style={styles.extraPill}>
                 <Text style={styles.extraText}>Extra</Text>
@@ -43,11 +36,11 @@ export default function CalendarStrip({
             ) : (
               <View style={styles.extraPlaceholder} />
             )}
-            <View style={[styles.dateBox, isSelected && styles.dateBoxSelected]}>
-              <Text style={[styles.dayNum, isSelected && styles.dayNumSelected]}>{day}</Text>
-              <Text style={[styles.monthLabel, isSelected && styles.monthLabelSelected]}>{month}</Text>
+            <View style={[styles.dateBox, isToday && styles.dateBoxToday]}>
+              <Text style={[styles.dayNum, isToday && styles.dayNumToday]}>{day}</Text>
+              <Text style={[styles.monthLabel, isToday && styles.monthLabelToday]}>{month}</Text>
             </View>
-          </TouchableOpacity>
+          </View>
         )
       })}
     </View>
@@ -87,7 +80,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  dateBoxSelected: {
+  dateBoxToday: {
     backgroundColor: colors.selectedDay,
   },
   dayNum: {
@@ -95,14 +88,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.dayText,
   },
-  dayNumSelected: {
+  dayNumToday: {
     color: colors.selectedDayText,
   },
   monthLabel: {
     fontSize: 12,
     color: colors.monthText,
   },
-  monthLabelSelected: {
+  monthLabelToday: {
     color: colors.selectedDayText,
   },
 })

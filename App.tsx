@@ -32,7 +32,6 @@ export default function App() {
   const today = useMemo(() => todayISO(), [])
   const windowStart = useMemo(() => getWindowStart(), [])
 
-  const [selectedDate, setSelectedDate] = useState(today)
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
     () => findCycleForDate(today)
   )
@@ -43,10 +42,6 @@ export default function App() {
     const scrollX = Math.max(0, (todayIndex - 3) * DAY_WIDTH)
     scrollRef.current?.scrollTo({ x: scrollX, animated: false })
   }, [])
-
-  function handleDaySelect(date: string) {
-    setSelectedDate(date)
-  }
 
   function handleCyclePress(id: string) {
     setActiveCycleId((prev) => (prev === id ? null : id))
@@ -69,9 +64,8 @@ export default function App() {
             <CalendarStrip
               windowStart={windowStart}
               totalDays={TOTAL_DAYS}
-              selectedDate={selectedDate}
+              today={today}
               extraDates={extraDates}
-              onDaySelect={handleDaySelect}
               dayWidth={DAY_WIDTH}
             />
             <TimelineView
