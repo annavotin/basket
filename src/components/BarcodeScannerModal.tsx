@@ -33,8 +33,10 @@ export default function BarcodeScannerModal({ visible, onResult, onClose }: Prop
   async function handleScanned(barcode: string) {
     if (handledRef.current) return
     handledRef.current = true
+    console.log('[barcode-scanner] detected:', barcode)
     setLooking(true)
     const product = await lookupProductByBarcode(barcode)
+    console.log('[barcode-scanner] lookup result:', product ? product.name : 'not found')
     onResult(product, barcode)
   }
 
@@ -42,20 +44,24 @@ export default function BarcodeScannerModal({ visible, onResult, onClose }: Prop
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.fill}>
         {permission?.granted ? (
-          <CameraView
-            style={styles.fill}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
-            onBarcodeScanned={({ data }) => handleScanned(data)}
-          >
-            <View style={styles.overlay}>
+          <>
+            {/* CameraView must NOT have children (expo-camera renders the native
+                scanner; nested RN children break barcode detection). The overlay
+                is an absolutely-positioned sibling instead. */}
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
+              onBarcodeScanned={({ data }) => handleScanned(data)}
+            />
+            <View style={styles.overlay} pointerEvents="none">
               <View style={styles.frame} />
               <Text style={styles.hint}>
                 {looking ? 'Looking up…' : 'Point at a barcode'}
               </Text>
               {looking && <ActivityIndicator color="#FFFFFF" style={{ marginTop: 12 }} />}
             </View>
-          </CameraView>
+          </>
         ) : (
           <View style={styles.permission}>
             <Text style={styles.permissionText}>
@@ -77,7 +83,15 @@ export default function BarcodeScannerModal({ visible, onResult, onClose }: Prop
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: '#000000' },
-  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   frame: {
     width: 240,
     height: 160,
