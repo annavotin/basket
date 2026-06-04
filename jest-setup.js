@@ -109,6 +109,25 @@ const nativeModuleMocks = {
     show: () => {},
     getConstants: () => ({}),
   },
+  Linking: {
+    getConstants: () => ({ initialURL: null, supportedExternalProtocols: [] }),
+    getInitialURL: () => Promise.resolve(null),
+    canOpenURL: () => Promise.resolve(false),
+    openURL: () => Promise.resolve(),
+    addEventListener: () => ({ remove: () => {} }),
+    removeEventListener: () => {},
+    sendIntent: () => Promise.resolve(),
+    openSettings: () => Promise.resolve(),
+  },
+  LinkingManager: {
+    getConstants: () => ({ initialURL: null }),
+    getInitialURL: () => Promise.resolve(null),
+    canOpenURL: () => Promise.resolve(false),
+    openURL: () => Promise.resolve(),
+    openSettings: () => Promise.resolve(),
+    addListener: () => {},
+    removeListeners: () => {},
+  },
 };
 
 jest.mock(
