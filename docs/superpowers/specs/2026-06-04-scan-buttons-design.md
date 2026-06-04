@@ -1,7 +1,7 @@
 # Scan Barcode & Scan Receipt — Design Spec (for review)
 
 **Date:** 2026-06-04
-**Status:** Draft for your review — not yet planned/implemented
+**Status:** Decisions resolved (see §8) — v1 = simulated-via-photo-upload, Expo-Go-friendly. Phase 1 plan written.
 **Context:** The "New shop" panel currently has two stub buttons (Scan Barcode, Scan Receipt) that pop a "Coming soon" alert. This spec proposes what they do.
 
 > This is a proposal written while you were away. Recommendations are marked **★ Recommended**. Open choices are collected in **Decisions for your review** at the end. Nothing here is built yet.
@@ -130,15 +130,24 @@ Each phase is its own spec → plan → implementation cycle.
 
 ---
 
-## 8. Decisions for your review
+## 8. Decisions — RESOLVED (2026-06-04)
 
-1. **Quantity input model:** grams (default to package size, editable) vs. servings vs. unit count? — ★ default to package weight in grams, editable; add a "× units" stepper for multipacks.
-2. **Food database:** Open Food Facts only, or OFF + USDA fallback? — ★ start with OFF only.
-3. **Receipt OCR engine:** vision LLM vs. cloud OCR? — ★ vision LLM.
-4. **"Stocked vs. budget" framing:** is showing `added kcal / (2000 × days)` the right mental model, or do you want something else (e.g. per-day stocked, or macro-aware)? — ★ total-stocked vs. total-budget for v1.
-5. **Make scanning always available** (not only on empty cycles), turning `NewPeriodPanel` into the full period-detail view? — ★ yes.
-6. **Privacy:** OK with sending barcode/receipt data to third-party services (OFF / vision LLM)? Flagging because it affects the OCR choice.
-7. **Build workflow:** OK to move to a development build (needed for the camera), stepping beyond Expo Go? — ★ yes, when we start Phase 1.
+1. **Quantity:** default to the **whole package size** — you use up the whole thing for the meal prep session. (Editable, but package size is the default.)
+2. **Food database:** go with whichever is easiest first → **Open Food Facts** (free, no key). Can add another source later.
+3. **Receipt OCR engine:** my call → **vision LLM** (deferred; see decision 7).
+4. **"Stocked vs. budget" framing:** confirmed → `added kcal / (2000 × days)`.
+5. **Scanning always available:** yes. When a cycle is **empty**, show the existing big "New shop" buttons. When it **has items**, show a **floating "+" button in the bottom corner**; tapping it **rotates the "+" into an "×"** and reveals a small panel to choose **Scan Barcode** or **Scan Receipt**; tapping the × (or outside, or an option) closes it.
+6. **Privacy:** OK with third-party services.
+7. **Camera / build workflow:** **Do NOT use the live camera yet** (it would force a dev build). For now, **simulate scanning by having the user upload/pick a photo** (`expo-image-picker`, works in Expo Go and web). After the photo is picked, the result is **simulated** (mock product / mock receipt line items). Wiring the real camera + real barcode decode + real OFF API + real vision-LLM OCR is a **separate later step**.
+
+### Resulting v1 approach (what we build now)
+
+- **Everything stays in Expo Go / web** — no dev build. The only new dependency is `expo-image-picker`.
+- **Scan Barcode (simulated):** tap → pick a photo → app simulates a product lookup (returns a mock product from a small built-in catalog) → confirm screen with quantity defaulted to the product's package size → add `FoodItem` to the active cycle.
+- **Manual entry:** shared fallback form (name, weightG, kcal).
+- **Scan Receipt (simulated):** tap → pick a photo → app simulates extracted line items → review/edit screen → bulk-add. (Built in Phase 2.)
+- **Detail view:** add the **stocked-vs-budget progress bar**, and the **FAB add-menu** for non-empty cycles (per decision 5).
+- Real camera/decode/API/OCR are explicitly deferred and will swap in behind the same UI later.
 
 ---
 
