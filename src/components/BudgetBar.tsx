@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, DimensionValue } from 'react-native'
 import { colors } from '../styles/colors'
 
 type Props = {
@@ -9,7 +9,7 @@ type Props = {
 
 export default function BudgetBar({ stockedKcal, budgetKcal }: Props) {
   const ratio = budgetKcal > 0 ? stockedKcal / budgetKcal : 0
-  const pct = `${Math.min(100, Math.round(ratio * 100))}%`
+  const pct: DimensionValue = `${Math.min(100, Math.round(ratio * 100))}%`
 
   return (
     <View style={styles.container} testID="budget-bar">
