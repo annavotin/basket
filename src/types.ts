@@ -19,3 +19,11 @@ export type ExtraMeal = {
   name: string
   kcal: number
 }
+
+export type ReceiptLine = {
+  id: string
+  name: string
+  weightG: number
+  kcal: number
+  isFood: boolean
+}
