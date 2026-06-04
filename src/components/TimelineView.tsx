@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { MealPrepCycle, ExtraMeal } from '../types'
-import { dateToIndex, daysBetween } from '../utils/dates'
+import { dateToIndex, daysBetween, addDays } from '../utils/dates'
 import { colors } from '../styles/colors'
 
 type Props = {
@@ -11,6 +11,7 @@ type Props = {
   totalDays: number
   activeCycleId: string | null
   onCyclePress: (id: string) => void
+  onCreatePeriod: (startDate: string) => void
   dayWidth: number
 }
 
@@ -25,18 +26,48 @@ export default function TimelineView({
   totalDays,
   activeCycleId,
   onCyclePress,
+  onCreatePeriod,
   dayWidth,
 }: Props) {
   const totalWidth = totalDays * dayWidth
 
+  // Set of ISO dates covered by an existing cycle.
+  const covered = new Set<string>()
+  cycles.forEach((cycle) => {
+    const span = daysBetween(cycle.startDate, cycle.endDate)
+    for (let d = 0; d <= span; d++) {
+      covered.add(addDays(cycle.startDate, d))
+    }
+  })
+
+  const allDays = Array.from({ length: totalDays }, (_, i) => addDays(windowStart, i))
+
   return (
     <View style={[styles.container, { width: totalWidth, height: ROW_HEIGHT }]}>
+      {allDays.map((date, i) => {
+        if (covered.has(date)) return null
+        return (
+          <TouchableOpacity
+            key={`slot-${date}`}
+            testID="empty-slot"
+            onPress={() => onCreatePeriod(date)}
+            style={[
+              styles.emptySlot,
+              { left: i * dayWidth, width: dayWidth, top: EXTRA_HEIGHT + 8 },
+            ]}
+          >
+            <Text style={styles.plus}>+</Text>
+          </TouchableOpacity>
+        )
+      })}
+
       {cycles.map((cycle) => {
         const startIdx = dateToIndex(windowStart, cycle.startDate)
         const spanDays = daysBetween(cycle.startDate, cycle.endDate) + 1
         const left = startIdx * dayWidth
         const width = spanDays * dayWidth - 4
         const isActive = cycle.id === activeCycleId
+        const isEmpty = cycle.items.length === 0
         return (
           <TouchableOpacity
             key={cycle.id}
@@ -45,10 +76,13 @@ export default function TimelineView({
             style={[
               styles.bar,
               { left, width, top: EXTRA_HEIGHT + 8 },
+              isEmpty && styles.barNew,
               isActive && styles.barActive,
             ]}
           >
-            <Text style={styles.barLabel} numberOfLines={1}>Meal Prep</Text>
+            <Text style={[styles.barLabel, isEmpty && styles.barLabelNew]} numberOfLines={1}>
+              {isEmpty ? 'New shop' : 'Meal Prep'}
+            </Text>
           </TouchableOpacity>
         )
       })}
@@ -74,6 +108,18 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
   },
+  emptySlot: {
+    position: 'absolute',
+    height: BAR_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plus: {
+    color: colors.cycleBorder,
+    fontSize: 20,
+    fontWeight: '600',
+    opacity: 0.5,
+  },
   bar: {
     position: 'absolute',
     height: BAR_HEIGHT,
@@ -84,14 +130,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
+  barNew: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.cycleBorder,
+  },
   barActive: {
     borderWidth: 2,
+    borderStyle: 'solid',
     borderColor: colors.selectedDay,
   },
   barLabel: {
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 13,
+  },
+  barLabelNew: {
+    color: colors.cycleBorder,
   },
   extraPill: {
     position: 'absolute',
