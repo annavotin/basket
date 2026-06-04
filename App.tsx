@@ -5,35 +5,32 @@ import {
   Text,
   SafeAreaView,
   StyleSheet,
+  Alert,
 } from 'react-native'
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
 import MealPrepDetail from './src/components/MealPrepDetail'
-import { cycles, extraMeals } from './src/data'
+import NewPeriodPanel from './src/components/NewPeriodPanel'
+import { cycles as initialCycles, extraMeals } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { colors } from './src/styles/colors'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
 const WINDOW_OFFSET = 7  // days before today the window starts
+const DEFAULT_DAYS = 4
 
 function getWindowStart(): string {
   return addDays(todayISO(), -WINDOW_OFFSET)
-}
-
-function findCycleForDate(date: string): string | null {
-  const cycle = cycles.find(
-    (c) => date >= c.startDate && date <= c.endDate
-  )
-  return cycle?.id ?? null
 }
 
 export default function App() {
   const today = useMemo(() => todayISO(), [])
   const windowStart = useMemo(() => getWindowStart(), [])
 
+  const [cycles, setCycles] = useState(initialCycles)
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
-    () => findCycleForDate(today)
+    () => initialCycles.find((c) => today >= c.startDate && today <= c.endDate)?.id ?? null
   )
   const scrollRef = useRef<ScrollView>(null)
 
@@ -47,8 +44,37 @@ export default function App() {
     setActiveCycleId((prev) => (prev === id ? null : id))
   }
 
+  function handleCreatePeriod(startDate: string) {
+    const id = `cycle-${Date.now()}`
+    const newCycle = {
+      id,
+      startDate,
+      endDate: addDays(startDate, DEFAULT_DAYS - 1),
+      items: [],
+    }
+    setCycles((prev) => [...prev, newCycle])
+    setActiveCycleId(id)
+  }
+
+  function handleChangeDays(days: number) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId
+          ? { ...c, endDate: addDays(c.startDate, days - 1) }
+          : c
+      )
+    )
+  }
+
+  function handleScanComingSoon() {
+    Alert.alert('Coming soon', 'Shopping is not implemented yet.')
+  }
+
   const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
   const extraDates = extraMeals.map((e) => e.date)
+  const activeDayCount = activeCycle
+    ? daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
+    : DEFAULT_DAYS
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -75,11 +101,22 @@ export default function App() {
               totalDays={TOTAL_DAYS}
               activeCycleId={activeCycleId}
               onCyclePress={handleCyclePress}
+              onCreatePeriod={handleCreatePeriod}
               dayWidth={DAY_WIDTH}
             />
           </View>
         </ScrollView>
-        <MealPrepDetail activeCycle={activeCycle} />
+        {activeCycle && activeCycle.items.length > 0 && (
+          <MealPrepDetail activeCycle={activeCycle} />
+        )}
+        {activeCycle && activeCycle.items.length === 0 && (
+          <NewPeriodPanel
+            dayCount={activeDayCount}
+            onDaysChange={handleChangeDays}
+            onScanBarcode={handleScanComingSoon}
+            onScanReceipt={handleScanComingSoon}
+          />
+        )}
       </View>
     </SafeAreaView>
   )
