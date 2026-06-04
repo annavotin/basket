@@ -1,7 +1,7 @@
 # Scan Barcode & Scan Receipt — Design Spec (for review)
 
 **Date:** 2026-06-04
-**Status:** Decisions resolved (see §8) — v1 = simulated-via-photo-upload, Expo-Go-friendly. Phase 1 plan written.
+**Status:** Phase 1 (barcode) and Phase 2 (receipt) both implemented — simulated-via-photo-upload, Expo-Go-friendly. Remaining: swap simulations for real camera/decode/Open Food Facts/vision-LLM (later hardware step).
 **Context:** The "New shop" panel currently has two stub buttons (Scan Barcode, Scan Receipt) that pop a "Coming soon" alert. This spec proposes what they do.
 
 > This is a proposal written while you were away. Recommendations are marked **★ Recommended**. Open choices are collected in **Decisions for your review** at the end. Nothing here is built yet.
