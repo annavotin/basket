@@ -3,6 +3,7 @@ export type FoodItem = {
   weightG: number
   kcal: number
   emoji: string
+  source?: 'barcode' | 'receipt' | 'manual'
 }
 
 export type MealPrepCycle = {
