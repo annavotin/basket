@@ -45,4 +45,16 @@ describe('AddFab', () => {
     fireEvent.press(getByTestId('fab-manual'))
     expect(onAddManual).toHaveBeenCalled()
   })
+
+  it('in manualOnly mode, pressing the fab calls onAddManual directly with no menu', () => {
+    const onAddManual = jest.fn()
+    const { getByTestId, queryByTestId } = render(
+      <AddFab manualOnly onAddManual={onAddManual} />
+    )
+    fireEvent.press(getByTestId('add-fab'))
+    expect(onAddManual).toHaveBeenCalled()
+    expect(queryByTestId('fab-barcode')).toBeNull()
+    expect(queryByTestId('fab-receipt')).toBeNull()
+    expect(queryByTestId('fab-manual')).toBeNull()
+  })
 })

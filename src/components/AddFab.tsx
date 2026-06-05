@@ -3,12 +3,13 @@ import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native
 import { colors } from '../styles/colors'
 
 type Props = {
-  onScanBarcode: () => void
-  onScanReceipt: () => void
+  onScanBarcode?: () => void
+  onScanReceipt?: () => void
   onAddManual: () => void
+  manualOnly?: boolean
 }
 
-export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual }: Props) {
+export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manualOnly }: Props) {
   const [open, setOpen] = useState(false)
   const rotate = useRef(new Animated.Value(0)).current
 
@@ -30,20 +31,20 @@ export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual }: Pr
 
   return (
     <View style={styles.wrap} pointerEvents="box-none">
-      {open && (
+      {open && !manualOnly && (
         <View style={styles.menu}>
           <TouchableOpacity testID="fab-manual" style={styles.option} onPress={() => choose(onAddManual)}>
             <Text style={styles.optionText}>Add Manually</Text>
           </TouchableOpacity>
-          <TouchableOpacity testID="fab-barcode" style={styles.option} onPress={() => choose(onScanBarcode)}>
+          <TouchableOpacity testID="fab-barcode" style={styles.option} onPress={() => choose(() => onScanBarcode?.())}>
             <Text style={styles.optionText}>Scan Barcode</Text>
           </TouchableOpacity>
-          <TouchableOpacity testID="fab-receipt" style={styles.option} onPress={() => choose(onScanReceipt)}>
+          <TouchableOpacity testID="fab-receipt" style={styles.option} onPress={() => choose(() => onScanReceipt?.())}>
             <Text style={styles.optionText}>Scan Receipt</Text>
           </TouchableOpacity>
         </View>
       )}
-      <TouchableOpacity testID="add-fab" style={styles.fab} onPress={() => toggle(!open)} activeOpacity={0.85}>
+      <TouchableOpacity testID="add-fab" style={styles.fab} onPress={() => (manualOnly ? onAddManual() : toggle(!open))} activeOpacity={0.85}>
         <Animated.Text style={[styles.plus, { transform: [{ rotate: spin }] }]}>+</Animated.Text>
       </TouchableOpacity>
     </View>
