@@ -55,6 +55,60 @@ describe('lookupProductByBarcode', () => {
     expect(product).toMatchObject({ name: 'Loose', packageWeightG: 100, kcalPer100g: 100 })
   })
 
+  it('parses a "200 g" quantity string when product_quantity is absent', async () => {
+    const fetchMock = fakeFetch({
+      product: { product_name: 'P', quantity: '200 g', nutriments: { 'energy-kcal_100g': 100 } },
+    })
+    const product = await lookupProductByBarcode('1', { fetch: fetchMock })
+    expect(product).toMatchObject({ packageWeightG: 200 })
+  })
+
+  it('parses a "1.5 kg" quantity string to grams', async () => {
+    const fetchMock = fakeFetch({
+      product: { product_name: 'P', quantity: '1.5 kg', nutriments: { 'energy-kcal_100g': 100 } },
+    })
+    const product = await lookupProductByBarcode('1', { fetch: fetchMock })
+    expect(product).toMatchObject({ packageWeightG: 1500 })
+  })
+
+  it('parses a "500ml" quantity string to grams', async () => {
+    const fetchMock = fakeFetch({
+      product: { product_name: 'P', quantity: '500ml', nutriments: { 'energy-kcal_100g': 100 } },
+    })
+    const product = await lookupProductByBarcode('1', { fetch: fetchMock })
+    expect(product).toMatchObject({ packageWeightG: 500 })
+  })
+
+  it('parses a "1 L" quantity string to grams', async () => {
+    const fetchMock = fakeFetch({
+      product: { product_name: 'P', quantity: '1 L', nutriments: { 'energy-kcal_100g': 100 } },
+    })
+    const product = await lookupProductByBarcode('1', { fetch: fetchMock })
+    expect(product).toMatchObject({ packageWeightG: 1000 })
+  })
+
+  it('prefers numeric product_quantity over the quantity string', async () => {
+    const fetchMock = fakeFetch({
+      product: {
+        product_name: 'P',
+        product_quantity: '400',
+        quantity: '200 g',
+        nutriments: { 'energy-kcal_100g': 100 },
+      },
+    })
+    const product = await lookupProductByBarcode('1', { fetch: fetchMock })
+    expect(product).toMatchObject({ packageWeightG: 400 })
+  })
+
+  it('requests the quantity field', async () => {
+    const fetchMock = fakeFetch({
+      product: { product_name: 'X', product_quantity: '100', nutriments: { 'energy-kcal_100g': 50 } },
+    })
+    await lookupProductByBarcode('1', { fetch: fetchMock })
+    const [url] = (fetchMock as jest.Mock).mock.calls[0]
+    expect(url).toContain('quantity')
+  })
+
   it('returns null on a network/parse error', async () => {
     const fetchMock = jest.fn(async () => {
       throw new Error('network down')
