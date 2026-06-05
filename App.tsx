@@ -208,7 +208,7 @@ export default function App() {
         )}
         {activeCycle && activeCycle.items.length > 0 && (
           <View style={styles.detailArea}>
-            <BudgetBar stockedKcal={stockedKcal} budgetKcal={budgetKcal} />
+            <BudgetBar mealPrepKcal={stockedKcal} extraKcal={0} budgetKcal={budgetKcal} />
             <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} />
             <AddFab onScanBarcode={handleScanBarcode} onScanReceipt={handleScanReceipt} onAddManual={handleAddManual} />
           </View>

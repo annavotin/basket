@@ -12,4 +12,6 @@ export const colors = {
   itemCard: '#F2F2F2',
   detailBackground: '#D4EDCC',
   kcalText: '#3A3A3A',
+  extraPillFaint: '#F7D6E2',
+  extraPillFaintText: '#C98AA6',
 };
