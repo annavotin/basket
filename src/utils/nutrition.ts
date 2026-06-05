@@ -5,7 +5,7 @@ export function kcalForWeight(kcalPer100g: number, weightG: number): number {
 }
 
 export function totalKcal(items: FoodItem[]): number {
-  return items.reduce((sum, item) => sum + item.kcal, 0)
+  return items.reduce((sum, item) => sum + item.kcal * (item.quantity ?? 1), 0)
 }
 
 export function cycleBudget(days: number, dailyGoal = 2000): number {

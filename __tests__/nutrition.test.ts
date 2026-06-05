@@ -28,3 +28,16 @@ describe('cycleBudget', () => {
     expect(cycleBudget(3, 1800)).toBe(5400)
   })
 })
+
+const item = (kcal: number, quantity?: number): FoodItem => ({
+  name: 'x', weightG: 100, kcal, emoji: '🛒', quantity,
+})
+
+describe('totalKcal with quantity', () => {
+  it('treats a missing quantity as 1', () => {
+    expect(totalKcal([item(200), item(50)])).toBe(250)
+  })
+  it('multiplies each item kcal by its quantity', () => {
+    expect(totalKcal([item(200, 3), item(50, 2)])).toBe(700)
+  })
+})

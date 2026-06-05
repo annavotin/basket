@@ -3,6 +3,7 @@ export type FoodItem = {
   weightG: number
   kcal: number
   emoji: string
+  quantity?: number
   source?: 'barcode' | 'receipt' | 'manual'
 }
 
