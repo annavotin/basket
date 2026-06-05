@@ -1,4 +1,4 @@
-import { lookupProductByBarcode, OFF_USER_AGENT } from '../src/services/foodApi'
+import { lookupProductByBarcode, OFF_USER_AGENT, searchProductsByName } from '../src/services/foodApi'
 
 function fakeFetch(payload: any, ok = true) {
   return jest.fn(async (_url: string, _opts?: any) => ({
@@ -114,5 +114,33 @@ describe('lookupProductByBarcode', () => {
       throw new Error('network down')
     }) as unknown as typeof fetch
     expect(await lookupProductByBarcode('1', { fetch: fetchMock })).toBeNull()
+  })
+})
+
+describe('searchProductsByName', () => {
+  it('hits the OFF search endpoint with search_terms + User-Agent and maps hits', async () => {
+    const fetchMock = fakeFetch({
+      products: [
+        { product_name: 'Hummus', quantity: '200 g', nutriments: { 'energy-kcal_100g': 166 } },
+        { product_name: 'No Energy', nutriments: {} },
+        { product_name: '', nutriments: { 'energy-kcal_100g': 100 } },
+      ],
+    })
+    const out = await searchProductsByName('hummus', { fetch: fetchMock })
+    const [url, opts] = (fetchMock as jest.Mock).mock.calls[0]
+    expect(url).toContain('search_terms=hummus')
+    expect(opts.headers['User-Agent']).toBe(OFF_USER_AGENT)
+    expect(out).toEqual([
+      { name: 'Hummus', emoji: '🛒', kcalPer100g: 166, packageWeightG: 200, source: 'off' },
+    ])
+  })
+
+  it('returns [] when the response is not ok', async () => {
+    expect(await searchProductsByName('x', { fetch: fakeFetch({}, false) })).toEqual([])
+  })
+
+  it('returns [] on a network/parse error', async () => {
+    const fetchMock = jest.fn(async () => { throw new Error('down') }) as unknown as typeof fetch
+    expect(await searchProductsByName('x', { fetch: fetchMock })).toEqual([])
   })
 })

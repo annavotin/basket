@@ -1,9 +1,12 @@
 import { Product } from '../mockProducts'
+import { FoodSuggestion } from '../foods'
 
 export const OFF_USER_AGENT = 'basket-mealprep/1.0 (contact@example.com)'
 
 const FIELDS = 'product_name,brands,product_quantity,quantity,nutriments'
 const BASE = 'https://world.openfoodfacts.org/api/v2/product'
+const SEARCH_BASE = 'https://world.openfoodfacts.org/cgi/search.pl'
+const SEARCH_FIELDS = 'product_name,product_quantity,quantity,nutriments'
 
 const DEFAULT_PACKAGE_G = 100
 
@@ -20,6 +23,12 @@ export function parseQuantityG(s: unknown): number | null {
 }
 
 type Deps = { fetch: typeof fetch }
+
+function packageWeightFrom(p: any): number | undefined {
+  const numeric = parseFloat(p?.product_quantity)
+  if (Number.isFinite(numeric) && numeric > 0) return Math.round(numeric)
+  return parseQuantityG(p?.quantity) ?? undefined
+}
 
 export async function lookupProductByBarcode(
   barcode: string,
@@ -50,5 +59,30 @@ export async function lookupProductByBarcode(
     return { name, emoji: '🛒', packageWeightG, kcalPer100g }
   } catch {
     return null
+  }
+}
+
+export async function searchProductsByName(
+  query: string,
+  deps: Deps = { fetch: globalThis.fetch }
+): Promise<FoodSuggestion[]> {
+  try {
+    const url =
+      `${SEARCH_BASE}?search_terms=${encodeURIComponent(query)}` +
+      `&json=1&page_size=20&fields=${SEARCH_FIELDS}`
+    const res = await deps.fetch(url, { headers: { 'User-Agent': OFF_USER_AGENT } })
+    if (!res.ok) return []
+    const json: any = await res.json()
+    const products: any[] = Array.isArray(json?.products) ? json.products : []
+    const out: FoodSuggestion[] = []
+    for (const p of products) {
+      const kcalPer100g = p?.nutriments?.['energy-kcal_100g']
+      const name = typeof p?.product_name === 'string' ? p.product_name.trim() : ''
+      if (typeof kcalPer100g !== 'number' || kcalPer100g <= 0 || !name) continue
+      out.push({ name, emoji: '🛒', kcalPer100g, packageWeightG: packageWeightFrom(p), source: 'off' })
+    }
+    return out
+  } catch {
+    return []
   }
 }
