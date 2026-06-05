@@ -40,4 +40,15 @@ describe('MealPrepDetail', () => {
     const { getAllByTestId } = render(<MealPrepDetail activeCycle={cycles[0]} />)
     expect(getAllByTestId('remove-item')).toHaveLength(cycles[0].items.length)
   })
+
+  it('shows a ×N badge and quantity-multiplied calories', () => {
+    const cycle = {
+      id: 'c', startDate: '2026-06-01', endDate: '2026-06-04',
+      items: [{ name: 'Chicken', weightG: 200, kcal: 220, emoji: '🍗', quantity: 3 }],
+    }
+    const { getByText } = render(<MealPrepDetail activeCycle={cycle} />)
+    getByText(/×3/)
+    getByText(/660kcal/)
+    getByText(/200g/)
+  })
 })

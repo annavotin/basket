@@ -18,8 +18,13 @@ export default function MealPrepDetail({ activeCycle, onRemoveItem }: Props) {
           <View key={idx} testID="food-item" style={styles.card}>
             <Text style={styles.emoji}>{item.emoji}</Text>
             <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>{item.weightG}g  {item.kcal}kcal</Text>
+              <Text style={styles.name}>
+                {item.name}
+                {(item.quantity ?? 1) > 1 ? `  ×${item.quantity}` : ''}
+              </Text>
+              <Text style={styles.meta}>
+                {item.weightG}g  {item.kcal * (item.quantity ?? 1)}kcal
+              </Text>
             </View>
             <TouchableOpacity
               testID="remove-item"
