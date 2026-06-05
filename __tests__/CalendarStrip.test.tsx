@@ -1,5 +1,5 @@
 import React from 'react'
-import { render } from '@testing-library/react-native'
+import { render, fireEvent } from '@testing-library/react-native'
 import CalendarStrip from '../src/components/CalendarStrip'
 
 const WINDOW_START = '2026-06-01'
@@ -13,6 +13,7 @@ describe('CalendarStrip', () => {
         totalDays={DAYS}
         today="2026-06-03"
         extraDates={[]}
+        onExtraPress={() => {}}
         dayWidth={64}
       />
     )
@@ -26,6 +27,7 @@ describe('CalendarStrip', () => {
         totalDays={DAYS}
         today="2026-06-03"
         extraDates={[]}
+        onExtraPress={() => {}}
         dayWidth={64}
       />
     )
@@ -41,9 +43,34 @@ describe('CalendarStrip', () => {
         totalDays={DAYS}
         today="2026-06-01"
         extraDates={['2026-06-02']}
+        onExtraPress={() => {}}
         dayWidth={64}
       />
     )
     expect(getByText('Extra')).toBeTruthy()
+  })
+
+  it('renders a faint add-extra pill on a day with no extra and fires onExtraPress', () => {
+    const onExtraPress = jest.fn()
+    const { getAllByTestId } = render(
+      <CalendarStrip windowStart="2026-06-01" totalDays={3} today="2026-06-02"
+        extraDates={['2026-06-02']} onExtraPress={onExtraPress} dayWidth={64} />
+    )
+    const adds = getAllByTestId('add-extra')
+    expect(adds).toHaveLength(2) // 3 days, 1 has an extra
+    fireEvent.press(adds[0])
+    expect(onExtraPress).toHaveBeenCalledWith('2026-06-01')
+  })
+
+  it('renders exactly one solid extra-pill per day even with multiple extras and fires onExtraPress', () => {
+    const onExtraPress = jest.fn()
+    const { getAllByTestId } = render(
+      <CalendarStrip windowStart="2026-06-01" totalDays={3} today="2026-06-02"
+        extraDates={['2026-06-02', '2026-06-02']} onExtraPress={onExtraPress} dayWidth={64} />
+    )
+    const pills = getAllByTestId('extra-pill')
+    expect(pills).toHaveLength(1)
+    fireEvent.press(pills[0])
+    expect(onExtraPress).toHaveBeenCalledWith('2026-06-02')
   })
 })

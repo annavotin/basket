@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { addDays, formatDay } from '../utils/dates'
 import { colors } from '../styles/colors'
 
@@ -9,6 +9,8 @@ type Props = {
   today: string
   extraDates: string[]
   dayWidth: number
+  onExtraPress: (date: string) => void
+  activeExtraDate?: string | null
 }
 
 export default function CalendarStrip({
@@ -17,6 +19,8 @@ export default function CalendarStrip({
   today,
   extraDates,
   dayWidth,
+  onExtraPress,
+  activeExtraDate,
 }: Props) {
   const days = Array.from({ length: totalDays }, (_, i) => addDays(windowStart, i))
   const extraSet = new Set(extraDates)
@@ -30,11 +34,21 @@ export default function CalendarStrip({
         return (
           <View key={date} testID="day-cell" style={[styles.cell, { width: dayWidth }]}>
             {hasExtra ? (
-              <View style={styles.extraPill}>
+              <TouchableOpacity
+                testID="extra-pill"
+                style={[styles.extraPill, date === activeExtraDate && styles.extraPillActive]}
+                onPress={() => onExtraPress(date)}
+              >
                 <Text style={styles.extraText}>Extra</Text>
-              </View>
+              </TouchableOpacity>
             ) : (
-              <View style={styles.extraPlaceholder} />
+              <TouchableOpacity
+                testID="add-extra"
+                style={styles.extraAdd}
+                onPress={() => onExtraPress(date)}
+              >
+                <Text style={styles.extraAddText}>＋</Text>
+              </TouchableOpacity>
             )}
             <View style={[styles.dateBox, isToday && styles.dateBoxToday]}>
               <Text style={[styles.dayNum, isToday && styles.dayNumToday]}>{day}</Text>
@@ -56,9 +70,6 @@ const styles = StyleSheet.create({
   cell: {
     alignItems: 'center',
   },
-  extraPlaceholder: {
-    height: 24,
-  },
   extraPill: {
     backgroundColor: colors.extraPill,
     borderRadius: 12,
@@ -72,6 +83,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+  extraAdd: {
+    backgroundColor: colors.extraPillFaint,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    opacity: 0.6,
+  },
+  extraAddText: { color: colors.extraPillFaintText, fontSize: 13, fontWeight: '600' },
+  extraPillActive: { borderWidth: 2, borderColor: colors.extraPillText },
   dateBox: {
     width: 48,
     height: 60,

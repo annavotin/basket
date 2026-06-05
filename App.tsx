@@ -184,6 +184,7 @@ export default function App() {
               today={today}
               extraDates={extraDates}
               dayWidth={DAY_WIDTH}
+              onExtraPress={() => {}}
             />
             <TimelineView
               cycles={cycles}
