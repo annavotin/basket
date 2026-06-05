@@ -11,6 +11,7 @@ type Props = {
   onDaysChange: (days: number) => void
   onScanBarcode: () => void
   onScanReceipt: () => void
+  onAddManual: () => void
 }
 
 export default function NewPeriodPanel({
@@ -18,6 +19,7 @@ export default function NewPeriodPanel({
   onDaysChange,
   onScanBarcode,
   onScanReceipt,
+  onAddManual,
 }: Props) {
   return (
     <View style={styles.container} testID="new-period-panel">
@@ -50,6 +52,9 @@ export default function NewPeriodPanel({
           <Text style={styles.scanText}>Scan{'\n'}Receipt</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity testID="manual-add" style={styles.manualLink} onPress={onAddManual}>
+        <Text style={styles.manualLinkText}>+ Add manually</Text>
+      </TouchableOpacity>
     </View>
   )
 }
@@ -109,4 +114,6 @@ const styles = StyleSheet.create({
     color: colors.kcalText,
     textAlign: 'center',
   },
+  manualLink: { marginTop: 16, paddingVertical: 8 },
+  manualLinkText: { fontSize: 15, fontWeight: '600', color: colors.selectedDay },
 })

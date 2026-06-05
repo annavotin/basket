@@ -8,6 +8,7 @@ function setup(overrides = {}) {
     onDaysChange: jest.fn(),
     onScanBarcode: jest.fn(),
     onScanReceipt: jest.fn(),
+    onAddManual: jest.fn(),
     ...overrides,
   }
   return { props, ...render(<NewPeriodPanel {...props} />) }
@@ -51,5 +52,15 @@ describe('NewPeriodPanel', () => {
     const { props, getByTestId } = setup()
     fireEvent(getByTestId('day-slider'), 'valueChange', 6)
     expect(props.onDaysChange).toHaveBeenCalledWith(6)
+  })
+
+  it('fires onAddManual when the manual-add control is pressed', () => {
+    const onAddManual = jest.fn()
+    const { getByTestId } = render(
+      <NewPeriodPanel dayCount={4} onDaysChange={() => {}} onScanBarcode={() => {}}
+        onScanReceipt={() => {}} onAddManual={onAddManual} />
+    )
+    fireEvent.press(getByTestId('manual-add'))
+    expect(onAddManual).toHaveBeenCalled()
   })
 })

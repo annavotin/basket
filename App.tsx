@@ -144,6 +144,11 @@ export default function App() {
     setReviewVisible(false)
   }
 
+  function handleAddManual() {
+    setSheetProduct(null)
+    setSheetVisible(true)
+  }
+
   const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
   const extraDates = extraMeals.map((e) => e.date)
   const activeDayCount = activeCycle
@@ -189,13 +194,14 @@ export default function App() {
             onDaysChange={handleChangeDays}
             onScanBarcode={handleScanBarcode}
             onScanReceipt={handleScanReceipt}
+            onAddManual={handleAddManual}
           />
         )}
         {activeCycle && activeCycle.items.length > 0 && (
           <View style={styles.detailArea}>
             <BudgetBar stockedKcal={stockedKcal} budgetKcal={budgetKcal} />
             <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} />
-            <AddFab onScanBarcode={handleScanBarcode} onScanReceipt={handleScanReceipt} />
+            <AddFab onScanBarcode={handleScanBarcode} onScanReceipt={handleScanReceipt} onAddManual={handleAddManual} />
           </View>
         )}
         <AddItemSheet

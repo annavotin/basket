@@ -3,7 +3,7 @@ import { render, fireEvent } from '@testing-library/react-native'
 import AddFab from '../src/components/AddFab'
 
 function setup(overrides = {}) {
-  const props = { onScanBarcode: jest.fn(), onScanReceipt: jest.fn(), ...overrides }
+  const props = { onScanBarcode: jest.fn(), onScanReceipt: jest.fn(), onAddManual: jest.fn(), ...overrides }
   return { props, ...render(<AddFab {...props} />) }
 }
 
@@ -34,5 +34,15 @@ describe('AddFab', () => {
     fireEvent.press(getByTestId('add-fab'))
     fireEvent.press(getByTestId('fab-receipt'))
     expect(props.onScanReceipt).toHaveBeenCalled()
+  })
+
+  it('fires onAddManual from the manual option', () => {
+    const onAddManual = jest.fn()
+    const { getByTestId } = render(
+      <AddFab onScanBarcode={() => {}} onScanReceipt={() => {}} onAddManual={onAddManual} />
+    )
+    fireEvent.press(getByTestId('add-fab'))
+    fireEvent.press(getByTestId('fab-manual'))
+    expect(onAddManual).toHaveBeenCalled()
   })
 })

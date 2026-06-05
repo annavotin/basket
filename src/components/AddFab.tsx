@@ -5,9 +5,10 @@ import { colors } from '../styles/colors'
 type Props = {
   onScanBarcode: () => void
   onScanReceipt: () => void
+  onAddManual: () => void
 }
 
-export default function AddFab({ onScanBarcode, onScanReceipt }: Props) {
+export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual }: Props) {
   const [open, setOpen] = useState(false)
   const rotate = useRef(new Animated.Value(0)).current
 
@@ -31,6 +32,9 @@ export default function AddFab({ onScanBarcode, onScanReceipt }: Props) {
     <View style={styles.wrap} pointerEvents="box-none">
       {open && (
         <View style={styles.menu}>
+          <TouchableOpacity testID="fab-manual" style={styles.option} onPress={() => choose(onAddManual)}>
+            <Text style={styles.optionText}>Add Manually</Text>
+          </TouchableOpacity>
           <TouchableOpacity testID="fab-barcode" style={styles.option} onPress={() => choose(onScanBarcode)}>
             <Text style={styles.optionText}>Scan Barcode</Text>
           </TouchableOpacity>
