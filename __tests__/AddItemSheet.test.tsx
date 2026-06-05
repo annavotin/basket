@@ -1,53 +1,66 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { render, fireEvent, waitFor, within } from '@testing-library/react-native'
+
+jest.mock('../src/services/foodApi', () => ({
+  searchProductsByName: jest.fn().mockResolvedValue([]),
+}))
+
 import AddItemSheet from '../src/components/AddItemSheet'
-import { MOCK_PRODUCTS } from '../src/mockProducts'
+import { Product } from '../src/mockProducts'
 
-const product = MOCK_PRODUCTS[0] // Chicken Breast, 800g, 110 kcal/100g
+const product: Product = { name: 'Nutella', emoji: '🍫', packageWeightG: 400, kcalPer100g: 539 }
 
-function baseProps(overrides = {}) {
-  return {
-    visible: true,
-    product,
-    onAdd: jest.fn(),
-    onClose: jest.fn(),
-    ...overrides,
-  }
-}
-
-describe('AddItemSheet (product confirm mode)', () => {
-  it('shows the product name and the package weight read-only (no input)', () => {
-    const { getByText, getByTestId, queryByTestId } = render(<AddItemSheet {...baseProps()} />)
-    expect(getByText('Chicken Breast')).toBeTruthy()
-    // Weight comes from the database and is shown read-only — there is no
-    // editable weight field in product mode (so no keyboard is needed).
-    expect(queryByTestId('weight-input')).toBeNull()
-    const summary = getByTestId('product-weight').props.children
-    expect(summary).toContain('800')
-    expect(summary).toContain('880')
-  })
-
-  it('adds the item with kcal computed from the package weight', () => {
-    const props = baseProps()
-    const { getByTestId } = render(<AddItemSheet {...props} />)
-    fireEvent.press(getByTestId('add-item-button'))
-    expect(props.onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Chicken Breast', weightG: 800, kcal: 880, source: 'barcode' })
+describe('AddItemSheet — scanned mode', () => {
+  it('prefills the editable weight and emits quantity + per-unit kcal', () => {
+    const onAdd = jest.fn()
+    const { getByTestId } = render(
+      <AddItemSheet visible product={product} onAdd={onAdd} onClose={() => {}} />
     )
-    expect(props.onClose).toHaveBeenCalled()
+    const weight = getByTestId('weight-input')
+    expect(weight.props.value).toBe('400')
+    fireEvent.changeText(weight, '200')
+    fireEvent.press(getByTestId('qty-increment'))
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Nutella', weightG: 200, kcal: 1078, quantity: 2, source: 'barcode',
+      })
+    )
   })
 })
 
-describe('AddItemSheet (manual mode)', () => {
-  it('adds a manual item from the entered fields', () => {
-    const props = baseProps({ product: null })
-    const { getByTestId } = render(<AddItemSheet {...props} />)
-    fireEvent.changeText(getByTestId('manual-name-input'), 'Protein Bar')
-    fireEvent.changeText(getByTestId('weight-input'), '60')
-    fireEvent.changeText(getByTestId('manual-kcal-input'), '220')
-    fireEvent.press(getByTestId('add-item-button'))
-    expect(props.onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Protein Bar', weightG: 60, kcal: 220, source: 'manual' })
+describe('AddItemSheet — manual mode', () => {
+  it('autofills name + kcal from a tapped local suggestion', async () => {
+    const onAdd = jest.fn()
+    const { getByTestId, getByText } = render(
+      <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} />
     )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
+    await waitFor(() => getByText('Banana'))
+    fireEvent.press(getByText('Banana'))
+    fireEvent.changeText(getByTestId('weight-input'), '120')
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Banana', weightG: 120, kcal: 107, quantity: 1, source: 'manual',
+      })
+    )
+  })
+
+  it('shows a calories-per-100g field for a free item with no match and uses it', () => {
+    const onAdd = jest.fn()
+    const { getByTestId, queryByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Grandmas Stew')
+    const per100 = getByTestId('kcal-per-100g-input')
+    expect(per100).toBeTruthy()
+    fireEvent.changeText(per100, '150')
+    fireEvent.changeText(getByTestId('weight-input'), '300')
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Grandmas Stew', weightG: 300, kcal: 450, quantity: 1 })
+    )
+    expect(queryByTestId('manual-kcal-input')).toBeNull()
   })
 })
