@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react'
 import {
+  Alert,
   View,
   ScrollView,
   Text,
@@ -130,13 +131,21 @@ export default function App() {
   }
 
   function handleRemoveItem(index: number) {
-    setCycles((prev) =>
-      prev.map((c) =>
-        c.id === activeCycleId
-          ? { ...c, items: c.items.filter((_, i) => i !== index) }
-          : c
-      )
-    )
+    Alert.alert('Remove item', 'Remove this item from the period?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          setCycles((prev) =>
+            prev.map((c) =>
+              c.id === activeCycleId
+                ? { ...c, items: c.items.filter((_, i) => i !== index) }
+                : c
+            )
+          ),
+      },
+    ])
   }
 
   function handleConfirmReceipt(items: FoodItem[]) {

@@ -1,4 +1,5 @@
 import React from 'react'
+import { Alert } from 'react-native'
 import { render, fireEvent, waitFor, within } from '@testing-library/react-native'
 
 // Keep the real camera (expo-camera) out of the jest module graph: stub the
@@ -91,6 +92,7 @@ describe('App scan -> add to active cycle', () => {
     const countWithNew = screen.getAllByTestId('food-item').length
 
     // Remove the newly added item (it is appended last).
+    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, btns) => btns?.[1]?.onPress?.())
     const removeButtons = screen.getAllByTestId('remove-item')
     fireEvent.press(removeButtons[removeButtons.length - 1])
 
