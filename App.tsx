@@ -15,15 +15,17 @@ import BudgetBar from './src/components/BudgetBar'
 import AddFab from './src/components/AddFab'
 import AddItemSheet from './src/components/AddItemSheet'
 import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
-import { cycles as initialCycles, extraMeals, DAILY_KCAL_GOAL } from './src/data'
+import ExtraMealDetail from './src/components/ExtraMealDetail'
+import ExtraMealSheet from './src/components/ExtraMealSheet'
+import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
-import { totalKcal, cycleBudget } from './src/utils/nutrition'
+import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate } from './src/utils/nutrition'
 import { colors } from './src/styles/colors'
-import { FoodItem, ReceiptLine } from './src/types'
+import { FoodItem, ExtraMeal, ReceiptLine } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
-import { loadCycles, saveCycles } from './src/services/storage'
+import { loadCycles, saveCycles, loadExtras, saveExtras } from './src/services/storage'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -42,6 +44,9 @@ export default function App() {
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
     () => initialCycles.find((c) => today >= c.startDate && today <= c.endDate)?.id ?? null
   )
+  const [extraMeals, setExtraMeals] = useState<ExtraMeal[]>(initialExtraMeals)
+  const [activeExtraDate, setActiveExtraDate] = useState<string | null>(null)
+  const [extraSheetVisible, setExtraSheetVisible] = useState(false)
   const [sheetVisible, setSheetVisible] = useState(false)
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null)
   const [reviewVisible, setReviewVisible] = useState(false)
@@ -67,6 +72,9 @@ export default function App() {
       }
       setHydrated(true)
     })
+    loadExtras().then((stored) => {
+      if (!cancelled && stored) setExtraMeals(stored)
+    })
     return () => {
       cancelled = true
     }
@@ -76,8 +84,38 @@ export default function App() {
     if (hydrated) saveCycles(cycles)
   }, [cycles, hydrated])
 
+  useEffect(() => {
+    if (hydrated) saveExtras(extraMeals)
+  }, [extraMeals, hydrated])
+
   function handleCyclePress(id: string) {
+    setActiveExtraDate(null)
     setActiveCycleId((prev) => (prev === id ? null : id))
+  }
+
+  function handleExtraPress(date: string) {
+    setActiveCycleId(null)
+    setActiveExtraDate((prev) => (prev === date ? null : date))
+  }
+
+  function handleAddExtra() {
+    setExtraSheetVisible(true)
+  }
+
+  function handleSaveExtra(draft: { name: string; kcal: number }) {
+    if (!activeExtraDate) return
+    setExtraMeals((prev) => [
+      ...prev,
+      { id: `extra-${Date.now()}`, date: activeExtraDate, name: draft.name, kcal: draft.kcal },
+    ])
+    setExtraSheetVisible(false)
+  }
+
+  function handleRemoveExtra(id: string) {
+    Alert.alert('Remove extra meal', 'Remove this extra meal?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => setExtraMeals((prev) => prev.filter((e) => e.id !== id)) },
+    ])
   }
 
   function handleCreatePeriod(startDate: string) {
@@ -158,14 +196,37 @@ export default function App() {
     setSheetVisible(true)
   }
 
-  const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
   const extraDates = extraMeals.map((e) => e.date)
+  const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
   const activeDayCount = activeCycle
     ? daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
     : DEFAULT_DAYS
 
-  const stockedKcal = activeCycle ? totalKcal(activeCycle.items) : 0
-  const budgetKcal = cycleBudget(activeDayCount, DAILY_KCAL_GOAL)
+  let barMealPrep = 0
+  let barExtra = 0
+  let barBudget = DAILY_KCAL_GOAL
+  if (activeExtraDate) {
+    const containing = cycles.find(
+      (c) => activeExtraDate >= c.startDate && activeExtraDate <= c.endDate
+    )
+    if (containing) {
+      const days = daysBetween(containing.startDate, containing.endDate) + 1
+      barMealPrep = totalKcal(containing.items)
+      barExtra = extrasKcalInRange(extraMeals, containing.startDate, containing.endDate)
+      barBudget = cycleBudget(days, DAILY_KCAL_GOAL)
+    } else {
+      barExtra = extrasKcalOnDate(extraMeals, activeExtraDate)
+      barBudget = DAILY_KCAL_GOAL
+    }
+  } else if (activeCycle) {
+    const days = daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
+    barMealPrep = totalKcal(activeCycle.items)
+    barExtra = extrasKcalInRange(extraMeals, activeCycle.startDate, activeCycle.endDate)
+    barBudget = cycleBudget(days, DAILY_KCAL_GOAL)
+  }
+  const extrasForActiveDate = activeExtraDate
+    ? extraMeals.filter((e) => e.date === activeExtraDate)
+    : []
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -184,7 +245,8 @@ export default function App() {
               today={today}
               extraDates={extraDates}
               dayWidth={DAY_WIDTH}
-              onExtraPress={() => {}}
+              onExtraPress={handleExtraPress}
+              activeExtraDate={activeExtraDate}
             />
             <TimelineView
               cycles={cycles}
@@ -198,21 +260,39 @@ export default function App() {
             />
           </View>
         </ScrollView>
-        {activeCycle && activeCycle.items.length === 0 && (
-          <NewPeriodPanel
-            dayCount={activeDayCount}
-            onDaysChange={handleChangeDays}
-            onScanBarcode={handleScanBarcode}
-            onScanReceipt={handleScanReceipt}
-            onAddManual={handleAddManual}
-          />
-        )}
-        {activeCycle && activeCycle.items.length > 0 && (
+        {activeExtraDate ? (
           <View style={styles.detailArea}>
-            <BudgetBar mealPrepKcal={stockedKcal} extraKcal={0} budgetKcal={budgetKcal} />
-            <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} />
-            <AddFab onScanBarcode={handleScanBarcode} onScanReceipt={handleScanReceipt} onAddManual={handleAddManual} />
+            <BudgetBar mealPrepKcal={barMealPrep} extraKcal={barExtra} budgetKcal={barBudget} />
+            <ExtraMealDetail
+              date={activeExtraDate}
+              extras={extrasForActiveDate}
+              onRemoveExtra={handleRemoveExtra}
+            />
+            <AddFab manualOnly onAddManual={handleAddExtra} />
           </View>
+        ) : (
+          <>
+            {activeCycle && activeCycle.items.length === 0 && (
+              <NewPeriodPanel
+                dayCount={activeDayCount}
+                onDaysChange={handleChangeDays}
+                onScanBarcode={handleScanBarcode}
+                onScanReceipt={handleScanReceipt}
+                onAddManual={handleAddManual}
+              />
+            )}
+            {activeCycle && activeCycle.items.length > 0 && (
+              <View style={styles.detailArea}>
+                <BudgetBar mealPrepKcal={barMealPrep} extraKcal={barExtra} budgetKcal={barBudget} />
+                <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} />
+                <AddFab
+                  onScanBarcode={handleScanBarcode}
+                  onScanReceipt={handleScanReceipt}
+                  onAddManual={handleAddManual}
+                />
+              </View>
+            )}
+          </>
         )}
         <AddItemSheet
           visible={sheetVisible}
@@ -225,6 +305,11 @@ export default function App() {
           lines={reviewLines}
           onConfirm={handleConfirmReceipt}
           onClose={() => setReviewVisible(false)}
+        />
+        <ExtraMealSheet
+          visible={extraSheetVisible}
+          onSave={handleSaveExtra}
+          onClose={() => setExtraSheetVisible(false)}
         />
       </View>
     </SafeAreaView>
