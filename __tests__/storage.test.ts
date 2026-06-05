@@ -1,5 +1,5 @@
-import { loadCycles, saveCycles, STORAGE_KEY } from '../src/services/storage'
-import { MealPrepCycle } from '../src/types'
+import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS } from '../src/services/storage'
+import { MealPrepCycle, ExtraMeal } from '../src/types'
 
 function fakeStorage(initial: Record<string, string> = {}) {
   const data: Record<string, string> = { ...initial }
@@ -53,5 +53,32 @@ describe('storage', () => {
       }),
     }
     await expect(saveCycles(sampleCycles, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('extras storage', () => {
+  const extras: ExtraMeal[] = [{ id: 'x', date: '2026-06-02', name: 'Bar', kcal: 220 }]
+
+  it('round-trips saved extras', async () => {
+    const storage = fakeStorage()
+    await saveExtras(extras, { storage })
+    expect(await loadExtras({ storage })).toEqual(extras)
+  })
+  it('returns null when nothing is stored', async () => {
+    expect(await loadExtras({ storage: fakeStorage() })).toBeNull()
+  })
+  it('returns null on corrupt JSON', async () => {
+    const storage = fakeStorage()
+    await storage.setItem(STORAGE_KEY_EXTRAS, 'not json')
+    expect(await loadExtras({ storage })).toBeNull()
+  })
+  it('returns null on non-array JSON', async () => {
+    const storage = fakeStorage()
+    await storage.setItem(STORAGE_KEY_EXTRAS, '{}')
+    expect(await loadExtras({ storage })).toBeNull()
+  })
+  it('saveExtras swallows setItem errors', async () => {
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    await expect(saveExtras(extras, { storage })).resolves.toBeUndefined()
   })
 })

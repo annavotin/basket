@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { MealPrepCycle } from '../types'
+import { MealPrepCycle, ExtraMeal } from '../types'
 
 export const STORAGE_KEY = 'basket:cycles:v1'
 
@@ -31,6 +31,32 @@ export async function saveCycles(
 ): Promise<void> {
   try {
     await deps.storage.setItem(STORAGE_KEY, JSON.stringify(cycles))
+  } catch {
+    // Persistence must never crash the app.
+  }
+}
+
+export const STORAGE_KEY_EXTRAS = 'basket:extras:v1'
+
+export async function loadExtras(
+  deps: StorageDeps = defaultDeps
+): Promise<ExtraMeal[] | null> {
+  try {
+    const raw = await deps.storage.getItem(STORAGE_KEY_EXTRAS)
+    if (raw == null) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as ExtraMeal[]) : null
+  } catch {
+    return null
+  }
+}
+
+export async function saveExtras(
+  extras: ExtraMeal[],
+  deps: StorageDeps = defaultDeps
+): Promise<void> {
+  try {
+    await deps.storage.setItem(STORAGE_KEY_EXTRAS, JSON.stringify(extras))
   } catch {
     // Persistence must never crash the app.
   }
