@@ -22,6 +22,7 @@ import { FoodItem, ReceiptLine } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
+import { loadCycles, saveCycles } from './src/services/storage'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -44,6 +45,7 @@ export default function App() {
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null)
   const [reviewVisible, setReviewVisible] = useState(false)
   const [reviewLines, setReviewLines] = useState<ReceiptLine[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
@@ -51,6 +53,27 @@ export default function App() {
     const scrollX = Math.max(0, (todayIndex - 3) * DAY_WIDTH)
     scrollRef.current?.scrollTo({ x: scrollX, animated: false })
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    loadCycles().then((stored) => {
+      if (cancelled) return
+      if (stored) {
+        setCycles(stored)
+        const restoredActive =
+          stored.find((c) => today >= c.startDate && today <= c.endDate)?.id ?? null
+        setActiveCycleId(restoredActive)
+      }
+      setHydrated(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (hydrated) saveCycles(cycles)
+  }, [cycles, hydrated])
 
   function handleCyclePress(id: string) {
     setActiveCycleId((prev) => (prev === id ? null : id))

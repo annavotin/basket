@@ -14,6 +14,9 @@ global.__fbBatchedBridgeConfig = {
   localModulesConfig: [],
 };
 
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+
 global.nativeFabricUIManager = {};
 global.cancelAnimationFrame = (id) => clearTimeout(id);
 global.requestAnimationFrame = (callback) => setTimeout(callback, 0);

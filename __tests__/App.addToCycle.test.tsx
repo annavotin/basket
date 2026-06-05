@@ -21,6 +21,7 @@ jest.mock('../src/services/foodApi', () => ({
   lookupProductByBarcode: jest.fn(async () => LOOKED_UP_PRODUCT),
 }))
 
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import App from '../App'
 
 // Pin the clock so an existing cycle from src/data.ts is active regardless of
@@ -31,6 +32,10 @@ const FIXED_NOW = new Date('2026-06-02T12:00:00Z')
 beforeEach(() => {
   jest.useFakeTimers()
   jest.setSystemTime(FIXED_NOW)
+  // Start each test from the demo seed: the persistence effect from a prior
+  // test would otherwise have written cycles into the in-memory AsyncStorage
+  // mock, which hydration would then restore.
+  AsyncStorage.clear()
 })
 
 afterEach(() => {
@@ -54,6 +59,8 @@ async function scanAndConfirmProduct(screen: ReturnType<typeof render>) {
 describe('App scan -> add to active cycle', () => {
   it('adds the scanned product as a new food-item carrying its package weight/kcal', async () => {
     const screen = render(<App />)
+    // Let the mount-time hydration effect (loadCycles) settle before interacting.
+    await waitFor(() => expect(screen.getAllByTestId('food-item').length).toBeGreaterThan(0))
     const before = screen.getAllByTestId('food-item').length
 
     await scanAndConfirmProduct(screen)
@@ -72,6 +79,8 @@ describe('App scan -> add to active cycle', () => {
 
   it('removes a stocked item when its remove control is tapped', async () => {
     const screen = render(<App />)
+    // Let the mount-time hydration effect (loadCycles) settle before interacting.
+    await waitFor(() => expect(screen.getAllByTestId('food-item').length).toBeGreaterThan(0))
 
     const before = screen.getAllByTestId('food-item').length
     await scanAndConfirmProduct(screen)
