@@ -1,13 +1,14 @@
 import React from 'react'
-import { View, Text, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { MealPrepCycle } from '../types'
 import { colors } from '../styles/colors'
 
 type Props = {
   activeCycle: MealPrepCycle | null
+  onRemoveItem?: (index: number) => void
 }
 
-export default function MealPrepDetail({ activeCycle }: Props) {
+export default function MealPrepDetail({ activeCycle, onRemoveItem }: Props) {
   if (!activeCycle) return null
 
   return (
@@ -20,6 +21,15 @@ export default function MealPrepDetail({ activeCycle }: Props) {
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>{item.weightG}g  {item.kcal}kcal</Text>
             </View>
+            <TouchableOpacity
+              testID="remove-item"
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${item.name}`}
+              style={styles.remove}
+              onPress={() => onRemoveItem?.(idx)}
+            >
+              <Text style={styles.removeText}>✕</Text>
+            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
@@ -60,6 +70,18 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 13,
+    color: colors.monthText,
+  },
+  remove: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  removeText: {
+    fontSize: 16,
     color: colors.monthText,
   },
 })

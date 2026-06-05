@@ -106,6 +106,16 @@ export default function App() {
     handleAddItems([item])
   }
 
+  function handleRemoveItem(index: number) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId
+          ? { ...c, items: c.items.filter((_, i) => i !== index) }
+          : c
+      )
+    )
+  }
+
   function handleConfirmReceipt(items: FoodItem[]) {
     handleAddItems(items)
     setReviewVisible(false)
@@ -161,7 +171,7 @@ export default function App() {
         {activeCycle && activeCycle.items.length > 0 && (
           <View style={styles.detailArea}>
             <BudgetBar stockedKcal={stockedKcal} budgetKcal={budgetKcal} />
-            <MealPrepDetail activeCycle={activeCycle} />
+            <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} />
             <AddFab onScanBarcode={handleScanBarcode} onScanReceipt={handleScanReceipt} />
           </View>
         )}
