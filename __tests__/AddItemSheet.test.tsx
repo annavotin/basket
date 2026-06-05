@@ -64,3 +64,21 @@ describe('AddItemSheet — manual mode', () => {
     expect(queryByTestId('manual-kcal-input')).toBeNull()
   })
 })
+
+describe('AddItemSheet — validation guard', () => {
+  it('does not add when weight is empty, and adds once weight is set', () => {
+    const onAdd = jest.fn()
+    const { getByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Mystery Soup')
+    fireEvent.press(getByTestId('add-item-button')) // weight still empty -> guarded
+    expect(onAdd).not.toHaveBeenCalled()
+    fireEvent.changeText(getByTestId('kcal-per-100g-input'), '80')
+    fireEvent.changeText(getByTestId('weight-input'), '250')
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Mystery Soup', weightG: 250, kcal: 200, quantity: 1 })
+    )
+  })
+})

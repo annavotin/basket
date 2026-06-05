@@ -44,7 +44,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
     setDropdownOpen(false)
   }, [product, visible])
 
-  const { suggestions } = useFoodSearch(isManual && dropdownOpen ? name : '')
+  const { suggestions, loading } = useFoodSearch(isManual && dropdownOpen ? name : '')
 
   function handleNameChange(text: string) {
     setName(text)
@@ -67,8 +67,11 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
   const weightNum = parseInt(weight, 10) || 0
   const perUnitKcal = effectivePer100g != null ? kcalForWeight(effectivePer100g, weightNum) : 0
   const showManualPer100 = isManual && kcalPer100g == null
+  // Guard against silently adding an empty/garbage item.
+  const canAdd = weightNum > 0 && name.trim().length > 0
 
   function handleAdd() {
+    if (!canAdd) return
     onAdd({
       name: name.trim() || 'Item',
       weightG: weightNum,
@@ -104,12 +107,17 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
                     onChangeText={handleNameChange}
                     returnKeyType="done"
                   />
-                  {dropdownOpen && suggestions.length > 0 && (
+                  {dropdownOpen && (suggestions.length > 0 || loading) && (
                     <ScrollView
                       style={styles.dropdown}
                       keyboardShouldPersistTaps="handled"
                       nestedScrollEnabled
                     >
+                      {suggestions.length === 0 && loading && (
+                        <Text style={styles.searching} testID="suggestions-loading">
+                          Searching…
+                        </Text>
+                      )}
                       {suggestions.map((s, i) => (
                         <TouchableOpacity
                           key={`${s.source}-${s.name}-${i}`}
@@ -178,7 +186,12 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
                   : `${perUnitKcal} kcal`}
               </Text>
 
-              <TouchableOpacity testID="add-item-button" style={styles.addBtn} onPress={handleAdd}>
+              <TouchableOpacity
+                testID="add-item-button"
+                style={[styles.addBtn, !canAdd && styles.addBtnDisabled]}
+                onPress={handleAdd}
+                disabled={!canAdd}
+              >
                 <Text style={styles.addBtnText}>Add to period</Text>
               </TouchableOpacity>
               <TouchableOpacity testID="cancel-button" style={styles.cancelBtn} onPress={onClose}>
@@ -234,7 +247,9 @@ const styles = StyleSheet.create({
     width: '100%', backgroundColor: colors.selectedDay, borderRadius: 12,
     paddingVertical: 14, alignItems: 'center', marginTop: 20,
   },
+  addBtnDisabled: { opacity: 0.4 },
   addBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
+  searching: { padding: 12, fontSize: 14, color: colors.monthText },
   cancelBtn: { paddingVertical: 12, marginTop: 4 },
   cancelText: { color: colors.monthText, fontSize: 15 },
 })
