@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Modal, View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
+  Modal, View, Text, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Keyboard, Platform, ScrollView, StyleSheet,
 } from 'react-native'
+import DismissArea from './DismissArea'
 import { Product } from '../mockProducts'
 import { FoodItem } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
@@ -90,7 +91,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <DismissArea>
           <View style={styles.backdrop}>
             <View style={styles.sheet} testID="add-item-sheet">
               <Text style={styles.title}>{isManual ? 'Add item' : name}</Text>
@@ -199,7 +200,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
               </TouchableOpacity>
             </View>
           </View>
-        </TouchableWithoutFeedback>
+        </DismissArea>
       </KeyboardAvoidingView>
     </Modal>
   )
