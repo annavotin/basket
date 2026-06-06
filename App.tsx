@@ -6,6 +6,7 @@ import {
   Text,
   SafeAreaView,
   StyleSheet,
+  Platform,
 } from 'react-native'
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
@@ -17,6 +18,7 @@ import AddItemSheet from './src/components/AddItemSheet'
 import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
 import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
+import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate } from './src/utils/nutrition'
@@ -51,6 +53,7 @@ export default function App() {
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null)
   const [reviewVisible, setReviewVisible] = useState(false)
   const [reviewLines, setReviewLines] = useState<ReceiptLine[]>([])
+  const [webScannerVisible, setWebScannerVisible] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
 
@@ -141,10 +144,21 @@ export default function App() {
   }
 
   async function handleScanBarcode() {
+    if (Platform.OS === 'web') {
+      setWebScannerVisible(true)
+      return
+    }
     const barcode = await scanBarcodeWithCamera()
-    if (!barcode) return // cancelled, denied, or scanner unavailable
+    if (!barcode) return
     const product = await lookupProductByBarcode(barcode)
-    setSheetProduct(product) // null -> AddItemSheet opens in manual mode
+    setSheetProduct(product)
+    setSheetVisible(true)
+  }
+
+  async function handleWebBarcode(barcode: string) {
+    setWebScannerVisible(false)
+    const product = await lookupProductByBarcode(barcode)
+    setSheetProduct(product)
     setSheetVisible(true)
   }
 
@@ -310,6 +324,11 @@ export default function App() {
           visible={extraSheetVisible}
           onSave={handleSaveExtra}
           onClose={() => setExtraSheetVisible(false)}
+        />
+        <WebBarcodeScannerModal
+          visible={webScannerVisible}
+          onScanned={handleWebBarcode}
+          onClose={() => setWebScannerVisible(false)}
         />
       </View>
     </SafeAreaView>
