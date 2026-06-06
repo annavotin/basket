@@ -1,3 +1,4 @@
+import { Platform } from 'react-native'
 import { Product } from '../mockProducts'
 import { FoodSuggestion } from '../foods'
 
@@ -9,6 +10,9 @@ const SEARCH_BASE = 'https://world.openfoodfacts.org/cgi/search.pl'
 const SEARCH_FIELDS = 'product_name,product_quantity,quantity,nutriments'
 
 const DEFAULT_PACKAGE_G = 100
+
+const offHeaders: Record<string, string> =
+  Platform.OS === 'web' ? {} : { 'User-Agent': OFF_USER_AGENT }
 
 export function parseQuantityG(s: unknown): number | null {
   if (typeof s !== 'string') return null
@@ -36,7 +40,7 @@ export async function lookupProductByBarcode(
 ): Promise<Product | null> {
   try {
     const url = `${BASE}/${encodeURIComponent(barcode)}?fields=${FIELDS}`
-    const res = await deps.fetch(url, { headers: { 'User-Agent': OFF_USER_AGENT } })
+    const res = await deps.fetch(url, { headers: offHeaders })
     if (!res.ok) return null
     const json: any = await res.json()
     const p = json?.product
@@ -70,7 +74,7 @@ export async function searchProductsByName(
     const url =
       `${SEARCH_BASE}?search_terms=${encodeURIComponent(query)}` +
       `&json=1&page_size=20&fields=${SEARCH_FIELDS}`
-    const res = await deps.fetch(url, { headers: { 'User-Agent': OFF_USER_AGENT } })
+    const res = await deps.fetch(url, { headers: offHeaders })
     if (!res.ok) return []
     const json: any = await res.json()
     const products: any[] = Array.isArray(json?.products) ? json.products : []
