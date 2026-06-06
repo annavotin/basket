@@ -7,7 +7,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.annavotin.basket"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,6 +22,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-camera",
+        { "cameraPermission": "Allow Basket to use the camera to scan product barcodes." }
+      ],
+      [
+        "expo-image-picker",
+        { "photosPermission": "Allow Basket to access your photos to add a receipt." }
+      ]
+    ],
     "experiments": { "baseUrl": "/basket" }
   }
 }
