@@ -20,17 +20,18 @@ import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
 import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
 import ProfileScreen from './src/components/ProfileScreen'
+import PantryScreen from './src/components/PantryScreen'
 import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import EditItemSheet from './src/components/EditItemSheet'
-import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL } from './src/data'
+import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate } from './src/utils/nutrition'
 import { colors } from './src/styles/colors'
-import { FoodItem, ExtraMeal, ReceiptLine } from './src/types'
+import { FoodItem, ExtraMeal, ReceiptLine, PantryItem } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
-import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal } from './src/services/storage'
+import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry } from './src/services/storage'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -60,6 +61,8 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false)
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
   const [profileVisible, setProfileVisible] = useState(false)
+  const [pantry, setPantry] = useState<PantryItem[]>(initialPantry)
+  const [pantryVisible, setPantryVisible] = useState(false)
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const scrollRef = useRef<ScrollView>(null)
 
@@ -87,6 +90,9 @@ export default function App() {
     loadDailyGoal().then((g) => {
       if (!cancelled && g) setDailyGoal(g)
     })
+    loadPantry().then((p) => {
+      if (!cancelled && p) setPantry(p)
+    })
     return () => {
       cancelled = true
     }
@@ -103,6 +109,10 @@ export default function App() {
   useEffect(() => {
     if (hydrated) saveDailyGoal(dailyGoal)
   }, [dailyGoal, hydrated])
+
+  useEffect(() => {
+    if (hydrated) savePantry(pantry)
+  }, [pantry, hydrated])
 
   function changeSelection(nextCycleId: string | null, nextExtraDate: string | null) {
     setCycles((prev) =>
@@ -233,6 +243,17 @@ export default function App() {
     setEditIndex(null)
   }
 
+  function handleAddPantry(draft: { name: string; kcalPer100g: number; dailyG: number }) {
+    setPantry((prev) => [...prev, { id: `pantry-${Date.now()}`, emoji: '🥫', ...draft }])
+  }
+
+  function handleRemovePantry(id: string) {
+    Alert.alert('Remove staple', 'Remove this pantry staple?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => setPantry((prev) => prev.filter((p) => p.id !== id)) },
+    ])
+  }
+
   function handleConfirmReceipt(items: FoodItem[]) {
     handleAddItems(items)
     setReviewVisible(false)
@@ -280,9 +301,14 @@ export default function App() {
       <View style={styles.container}>
         <View testID="app-header" style={styles.header}>
           <Text style={styles.greeting}>Welcome back!</Text>
-          <TouchableOpacity testID="open-profile" onPress={() => setProfileVisible(true)}>
-            <Text style={styles.headerBtnText}>⚙ Profile</Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={styles.headerBtnSpacer}>
+              <Text style={styles.headerBtnText}>🥫 Pantry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity testID="open-profile" onPress={() => setProfileVisible(true)}>
+              <Text style={styles.headerBtnText}>⚙ Profile</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <ScrollView
           ref={scrollRef}
@@ -379,6 +405,13 @@ export default function App() {
           onSave={(g) => { setDailyGoal(g); setProfileVisible(false) }}
           onClose={() => setProfileVisible(false)}
         />
+        <PantryScreen
+          visible={pantryVisible}
+          pantry={pantry}
+          onAdd={handleAddPantry}
+          onRemove={handleRemovePantry}
+          onClose={() => setPantryVisible(false)}
+        />
       </View>
     </SafeAreaView>
   )
@@ -404,6 +437,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     paddingBottom: 8,
     color: colors.dayText,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerBtnSpacer: {
+    marginRight: 12,
   },
   headerBtnText: {
     fontSize: 15,
