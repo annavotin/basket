@@ -51,4 +51,16 @@ describe('MealPrepDetail', () => {
     getByText(/660kcal/)
     getByText(/200g/)
   })
+
+  it('calls onEditItem with the index of the tapped info area', () => {
+    const onEditItem = jest.fn()
+    const { getAllByTestId } = render(
+      <MealPrepDetail activeCycle={cycles[0]} onEditItem={onEditItem} />
+    )
+    const editButtons = getAllByTestId('edit-item')
+    expect(editButtons).toHaveLength(cycles[0].items.length)
+    // Tap the second card (index 1) and assert the index is forwarded.
+    fireEvent.press(editButtons[1])
+    expect(onEditItem).toHaveBeenCalledWith(1)
+  })
 })

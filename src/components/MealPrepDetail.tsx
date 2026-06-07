@@ -6,9 +6,10 @@ import { colors } from '../styles/colors'
 type Props = {
   activeCycle: MealPrepCycle | null
   onRemoveItem?: (index: number) => void
+  onEditItem?: (index: number) => void
 }
 
-export default function MealPrepDetail({ activeCycle, onRemoveItem }: Props) {
+export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem }: Props) {
   if (!activeCycle) return null
 
   return (
@@ -17,7 +18,11 @@ export default function MealPrepDetail({ activeCycle, onRemoveItem }: Props) {
         {activeCycle.items.map((item, idx) => (
           <View key={idx} testID="food-item" style={styles.card}>
             <Text style={styles.emoji}>{item.emoji}</Text>
-            <View style={styles.info}>
+            <TouchableOpacity
+              testID="edit-item"
+              style={styles.info}
+              onPress={() => onEditItem?.(idx)}
+            >
               <Text style={styles.name}>
                 {item.name}
                 {(item.quantity ?? 1) > 1 ? `  ×${item.quantity}` : ''}
@@ -25,7 +30,7 @@ export default function MealPrepDetail({ activeCycle, onRemoveItem }: Props) {
               <Text style={styles.meta}>
                 {item.weightG}g  {item.kcal * (item.quantity ?? 1)}kcal
               </Text>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity
               testID="remove-item"
               accessibilityRole="button"

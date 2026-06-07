@@ -21,6 +21,7 @@ import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
 import ProfileScreen from './src/components/ProfileScreen'
 import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
+import EditItemSheet from './src/components/EditItemSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate } from './src/utils/nutrition'
@@ -59,6 +60,7 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false)
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
   const [profileVisible, setProfileVisible] = useState(false)
+  const [editIndex, setEditIndex] = useState<number | null>(null)
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
@@ -216,6 +218,21 @@ export default function App() {
     ])
   }
 
+  function handleEditItem(index: number) {
+    setEditIndex(index)
+  }
+
+  function handleSaveEdit(updated: FoodItem) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId
+          ? { ...c, items: c.items.map((it, i) => (i === editIndex ? updated : it)) }
+          : c
+      )
+    )
+    setEditIndex(null)
+  }
+
   function handleConfirmReceipt(items: FoodItem[]) {
     handleAddItems(items)
     setReviewVisible(false)
@@ -318,7 +335,7 @@ export default function App() {
             {activeCycle && activeCycle.items.length > 0 && (
               <View style={styles.detailArea}>
                 <BudgetBar mealPrepKcal={barMealPrep} extraKcal={barExtra} budgetKcal={barBudget} />
-                <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} />
+                <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} onEditItem={handleEditItem} />
                 <AddFab
                   onScanBarcode={handleScanBarcode}
                   onScanReceipt={handleScanReceipt}
@@ -349,6 +366,12 @@ export default function App() {
           visible={webScannerVisible}
           onScanned={handleWebBarcode}
           onClose={() => setWebScannerVisible(false)}
+        />
+        <EditItemSheet
+          visible={editIndex !== null}
+          item={editIndex !== null ? activeCycle?.items[editIndex] ?? null : null}
+          onSave={handleSaveEdit}
+          onClose={() => setEditIndex(null)}
         />
         <ProfileScreen
           visible={profileVisible}
