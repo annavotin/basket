@@ -91,14 +91,20 @@ export default function App() {
     if (hydrated) saveExtras(extraMeals)
   }, [extraMeals, hydrated])
 
+  function changeSelection(nextCycleId: string | null, nextExtraDate: string | null) {
+    setCycles((prev) =>
+      prev.filter((c) => !(c.id === activeCycleId && c.items.length === 0 && c.id !== nextCycleId))
+    )
+    setActiveCycleId(nextCycleId)
+    setActiveExtraDate(nextExtraDate)
+  }
+
   function handleCyclePress(id: string) {
-    setActiveExtraDate(null)
-    setActiveCycleId((prev) => (prev === id ? null : id))
+    changeSelection(activeCycleId === id ? null : id, null)
   }
 
   function handleExtraPress(date: string) {
-    setActiveCycleId(null)
-    setActiveExtraDate((prev) => (prev === date ? null : date))
+    changeSelection(null, activeExtraDate === date ? null : date)
   }
 
   function handleAddExtra() {
@@ -123,13 +129,12 @@ export default function App() {
 
   function handleCreatePeriod(startDate: string) {
     const id = `cycle-${Date.now()}`
-    const newCycle = {
-      id,
-      startDate,
-      endDate: addDays(startDate, DEFAULT_DAYS - 1),
-      items: [],
-    }
-    setCycles((prev) => [...prev, newCycle])
+    const newCycle = { id, startDate, endDate: addDays(startDate, DEFAULT_DAYS - 1), items: [] }
+    setCycles((prev) => [
+      ...prev.filter((c) => !(c.id === activeCycleId && c.items.length === 0)),
+      newCycle,
+    ])
+    setActiveExtraDate(null)
     setActiveCycleId(id)
   }
 
