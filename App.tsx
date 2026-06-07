@@ -443,7 +443,7 @@ export default function App() {
         <ExtraMealSheet
           visible={extraSheetVisible}
           onSave={handleSaveExtra}
-          onClose={() => setExtraSheetVisible(false)}
+          onClose={() => { setExtraSheetVisible(false); setPendingExtraDate(null) }}
         />
         <WebBarcodeScannerModal
           visible={webScannerVisible}
