@@ -14,4 +14,7 @@ export const colors = {
   kcalText: '#3A3A3A',
   extraPillFaint: '#F7D6E2',
   extraPillFaintText: '#C98AA6',
+  pantry: '#E8B04B',
+  navTrack: '#8A8A8A',
+  navSegmentActive: '#3A3A3A',
 };

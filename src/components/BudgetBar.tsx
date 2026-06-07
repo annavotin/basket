@@ -4,29 +4,37 @@ import { colors } from '../styles/colors'
 
 type Props = {
   mealPrepKcal: number
+  pantryKcal: number
   extraKcal: number
   budgetKcal: number
 }
 
-export default function BudgetBar({ mealPrepKcal, extraKcal, budgetKcal }: Props) {
+export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetKcal }: Props) {
   const budget = budgetKcal > 0 ? budgetKcal : 1
   const greenRatio = Math.min(mealPrepKcal, budget) / budget
-  const pinkRatio = Math.min(extraKcal, Math.max(0, budget - mealPrepKcal)) / budget
+  const afterGreen = Math.max(0, budget - mealPrepKcal)
+  const pantryRatio = Math.min(pantryKcal, afterGreen) / budget
+  const afterPantry = Math.max(0, budget - mealPrepKcal - pantryKcal)
+  const pinkRatio = Math.min(extraKcal, afterPantry) / budget
   const greenPct: DimensionValue = `${Math.round(greenRatio * 100)}%`
+  const pantryPct: DimensionValue = `${Math.round(pantryRatio * 100)}%`
   const pinkPct: DimensionValue = `${Math.round(pinkRatio * 100)}%`
 
   return (
     <View style={styles.container} testID="budget-bar">
       <Text style={styles.label}>
-        {mealPrepKcal + extraKcal} / {budgetKcal} kcal
+        {mealPrepKcal + pantryKcal + extraKcal} / {budgetKcal} kcal
       </Text>
       <View style={styles.track}>
         <View style={[styles.fill, styles.green, { width: greenPct }]} testID="budget-bar-fill" />
+        <View style={[styles.fill, styles.amber, { width: pantryPct }]} testID="budget-bar-pantry-fill" />
         <View style={[styles.fill, styles.pink, { width: pinkPct }]} testID="budget-bar-extra-fill" />
       </View>
       <View style={styles.legend}>
         <View style={[styles.dot, styles.green]} />
         <Text style={styles.legendText}>Meal prep</Text>
+        <View style={[styles.dot, styles.amber]} />
+        <Text style={styles.legendText}>Pantry</Text>
         <View style={[styles.dot, styles.pink]} />
         <Text style={styles.legendText}>Extra</Text>
       </View>
@@ -43,6 +51,7 @@ const styles = StyleSheet.create({
   },
   fill: { height: '100%' },
   green: { backgroundColor: colors.cycleBar },
+  amber: { backgroundColor: colors.pantry },
   pink: { backgroundColor: colors.extraPill },
   legend: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 4 },
