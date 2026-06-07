@@ -1,12 +1,11 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { MealPrepCycle, ExtraMeal } from '../types'
+import { MealPrepCycle } from '../types'
 import { dateToIndex, daysBetween, addDays } from '../utils/dates'
 import { colors } from '../styles/colors'
 
 type Props = {
   cycles: MealPrepCycle[]
-  extraMeals: ExtraMeal[]
   windowStart: string
   totalDays: number
   activeCycleId: string | null
@@ -16,12 +15,10 @@ type Props = {
 }
 
 const BAR_HEIGHT = 36
-const EXTRA_HEIGHT = 24
-const ROW_HEIGHT = BAR_HEIGHT + EXTRA_HEIGHT + 16
+const ROW_HEIGHT = BAR_HEIGHT + 16
 
 export default function TimelineView({
   cycles,
-  extraMeals,
   windowStart,
   totalDays,
   activeCycleId,
@@ -53,7 +50,7 @@ export default function TimelineView({
             onPress={() => onCreatePeriod(date)}
             style={[
               styles.emptySlot,
-              { left: i * dayWidth, width: dayWidth, top: EXTRA_HEIGHT + 8 },
+              { left: i * dayWidth, width: dayWidth, top: 8 },
             ]}
           >
             <Text style={styles.plus}>+</Text>
@@ -75,7 +72,7 @@ export default function TimelineView({
             onPress={() => onCyclePress(cycle.id)}
             style={[
               styles.bar,
-              { left, width, top: EXTRA_HEIGHT + 8 },
+              { left, width, top: 8 },
               isEmpty && styles.barNew,
               isActive && styles.barActive,
             ]}
@@ -87,19 +84,6 @@ export default function TimelineView({
         )
       })}
 
-      {extraMeals.map((extra) => {
-        const idx = dateToIndex(windowStart, extra.date)
-        const left = idx * dayWidth + 4
-        return (
-          <View
-            key={extra.id}
-            testID="extra-pill"
-            style={[styles.extraPill, { left, top: 4 }]}
-          >
-            <Text style={styles.extraPillText} numberOfLines={1}>{extra.name}</Text>
-          </View>
-        )
-      })}
     </View>
   )
 }
@@ -148,19 +132,5 @@ const styles = StyleSheet.create({
   },
   barLabelNew: {
     color: colors.cycleBorder,
-  },
-  extraPill: {
-    position: 'absolute',
-    height: EXTRA_HEIGHT,
-    backgroundColor: colors.extraPill,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    justifyContent: 'center',
-    maxWidth: 120,
-  },
-  extraPillText: {
-    color: colors.extraPillText,
-    fontSize: 11,
-    fontWeight: '500',
   },
 })

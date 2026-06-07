@@ -264,7 +264,6 @@ export default function App() {
             />
             <TimelineView
               cycles={cycles}
-              extraMeals={extraMeals}
               windowStart={windowStart}
               totalDays={TOTAL_DAYS}
               activeCycleId={activeCycleId}
