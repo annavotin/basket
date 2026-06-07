@@ -2,6 +2,22 @@ import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import MealPrepDetail from '../src/components/MealPrepDetail'
 import { cycles } from '../src/data'
+import { PantryItem, MealPrepCycle } from '../src/types'
+
+const oats: PantryItem = {
+  id: 'pantry-oats',
+  name: 'Oats',
+  emoji: '🌾',
+  kcalPer100g: 379,
+  dailyG: 40,
+}
+
+const cycleNoPantryOverrides: MealPrepCycle = {
+  id: 'test-cycle',
+  startDate: '2026-06-01',
+  endDate: '2026-06-05',
+  items: [],
+}
 
 describe('MealPrepDetail', () => {
   it('renders nothing when activeCycle is null', () => {
@@ -62,5 +78,65 @@ describe('MealPrepDetail', () => {
     // Tap the second card (index 1) and assert the index is forwarded.
     fireEvent.press(editButtons[1])
     expect(onEditItem).toHaveBeenCalledWith(1)
+  })
+
+  describe('pantry section', () => {
+    it('renders grams and kcal for a pantry item with no override (40×5=200g, 758kcal)', () => {
+      const { getByTestId, getByText, getAllByTestId } = render(
+        <MealPrepDetail
+          activeCycle={cycleNoPantryOverrides}
+          pantry={[oats]}
+          cycleDays={5}
+        />
+      )
+      expect(getByTestId('pantry-section')).toBeTruthy()
+      expect(getAllByTestId('pantry-detail-row')).toHaveLength(1)
+      const input = getByTestId('pantry-grams')
+      expect(input.props.value).toBe('200')
+      expect(getByText('758 kcal')).toBeTruthy()
+    })
+
+    it('fires onSetPantryGrams with item id and parsed number when input changes', () => {
+      const onSetPantryGrams = jest.fn()
+      const { getByTestId } = render(
+        <MealPrepDetail
+          activeCycle={cycleNoPantryOverrides}
+          pantry={[oats]}
+          cycleDays={5}
+          onSetPantryGrams={onSetPantryGrams}
+        />
+      )
+      fireEvent.changeText(getByTestId('pantry-grams'), '150')
+      expect(onSetPantryGrams).toHaveBeenCalledWith('pantry-oats', 150)
+    })
+
+    it('shows overridden grams from pantryOverrides', () => {
+      const cycleWithOverride: MealPrepCycle = {
+        ...cycleNoPantryOverrides,
+        pantryOverrides: { 'pantry-oats': 120 },
+      }
+      const { getByTestId } = render(
+        <MealPrepDetail
+          activeCycle={cycleWithOverride}
+          pantry={[oats]}
+          cycleDays={5}
+        />
+      )
+      expect(getByTestId('pantry-grams').props.value).toBe('120')
+    })
+
+    it('does not render pantry section when pantry is empty', () => {
+      const { queryByTestId } = render(
+        <MealPrepDetail activeCycle={cycleNoPantryOverrides} pantry={[]} cycleDays={5} />
+      )
+      expect(queryByTestId('pantry-section')).toBeNull()
+    })
+
+    it('does not render pantry section when pantry prop is omitted', () => {
+      const { queryByTestId } = render(
+        <MealPrepDetail activeCycle={cycleNoPantryOverrides} cycleDays={5} />
+      )
+      expect(queryByTestId('pantry-section')).toBeNull()
+    })
   })
 })

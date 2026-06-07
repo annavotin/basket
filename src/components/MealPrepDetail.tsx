@@ -1,15 +1,19 @@
 import React from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
-import { MealPrepCycle } from '../types'
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
+import { MealPrepCycle, PantryItem } from '../types'
+import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
 import { colors } from '../styles/colors'
 
 type Props = {
   activeCycle: MealPrepCycle | null
   onRemoveItem?: (index: number) => void
   onEditItem?: (index: number) => void
+  pantry?: PantryItem[]
+  cycleDays?: number
+  onSetPantryGrams?: (id: string, grams: number) => void
 }
 
-export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem }: Props) {
+export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem, pantry, cycleDays, onSetPantryGrams }: Props) {
   if (!activeCycle) return null
 
   return (
@@ -42,12 +46,51 @@ export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem }
             </TouchableOpacity>
           </View>
         ))}
+        {pantry && pantry.length > 0 && (
+          <>
+            <Text testID="pantry-section" style={styles.sectionHeading}>Pantry</Text>
+            {pantry.map((item) => {
+              const grams = pantryGramsForCycle(item, activeCycle, cycleDays ?? 1)
+              const kcal = kcalForWeight(item.kcalPer100g, grams)
+              return (
+                <View key={item.id} testID="pantry-detail-row" style={styles.card}>
+                  <Text style={styles.emoji}>{item.emoji}</Text>
+                  <Text style={[styles.name, styles.info]}>{item.name}</Text>
+                  <TextInput
+                    testID="pantry-grams"
+                    style={styles.gramsInput}
+                    value={String(grams)}
+                    keyboardType="numeric"
+                    onChangeText={(t) => onSetPantryGrams?.(item.id, parseInt(t, 10) || 0)}
+                  />
+                  <Text style={styles.meta}>{kcal} kcal</Text>
+                </View>
+              )
+            })}
+          </>
+        )}
       </ScrollView>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  sectionHeading: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.monthText,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  gramsInput: {
+    width: 56,
+    fontSize: 13,
+    color: colors.kcalText,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.monthText,
+    marginRight: 6,
+    textAlign: 'center',
+  },
   container: {
     backgroundColor: colors.detailBackground,
     borderTopLeftRadius: 20,

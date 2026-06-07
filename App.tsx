@@ -25,7 +25,7 @@ import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import EditItemSheet from './src/components/EditItemSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
-import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate } from './src/utils/nutrition'
+import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
 import { colors } from './src/styles/colors'
 import { FoodItem, ExtraMeal, ReceiptLine, PantryItem } from './src/types'
 import { Product } from './src/mockProducts'
@@ -247,6 +247,16 @@ export default function App() {
     setPantry((prev) => [...prev, { id: `pantry-${Date.now()}`, emoji: '🥫', ...draft }])
   }
 
+  function handleSetPantryGrams(id: string, grams: number) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId
+          ? { ...c, pantryOverrides: { ...(c.pantryOverrides ?? {}), [id]: grams } }
+          : c
+      )
+    )
+  }
+
   function handleRemovePantry(id: string) {
     Alert.alert('Remove staple', 'Remove this pantry staple?', [
       { text: 'Cancel', style: 'cancel' },
@@ -279,7 +289,7 @@ export default function App() {
     )
     if (containing) {
       const days = daysBetween(containing.startDate, containing.endDate) + 1
-      barMealPrep = totalKcal(containing.items)
+      barMealPrep = totalKcal(containing.items) + pantryKcalForCycle(pantry, containing, days)
       barExtra = extrasKcalInRange(extraMeals, containing.startDate, containing.endDate)
       barBudget = cycleBudget(days, dailyGoal)
     } else {
@@ -288,7 +298,7 @@ export default function App() {
     }
   } else if (activeCycle) {
     const days = daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
-    barMealPrep = totalKcal(activeCycle.items)
+    barMealPrep = totalKcal(activeCycle.items) + pantryKcalForCycle(pantry, activeCycle, days)
     barExtra = extrasKcalInRange(extraMeals, activeCycle.startDate, activeCycle.endDate)
     barBudget = cycleBudget(days, dailyGoal)
   }
@@ -361,7 +371,7 @@ export default function App() {
             {activeCycle && activeCycle.items.length > 0 && (
               <View style={styles.detailArea}>
                 <BudgetBar mealPrepKcal={barMealPrep} extraKcal={barExtra} budgetKcal={barBudget} />
-                <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} onEditItem={handleEditItem} />
+                <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} onEditItem={handleEditItem} pantry={pantry} cycleDays={activeDayCount} onSetPantryGrams={handleSetPantryGrams} />
                 <AddFab
                   onScanBarcode={handleScanBarcode}
                   onScanReceipt={handleScanReceipt}
