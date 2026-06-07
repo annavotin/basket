@@ -4,6 +4,7 @@ import {
   View,
   ScrollView,
   Text,
+  TouchableOpacity,
   SafeAreaView,
   StyleSheet,
   Platform,
@@ -18,6 +19,7 @@ import AddItemSheet from './src/components/AddItemSheet'
 import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
 import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
+import ProfileScreen from './src/components/ProfileScreen'
 import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
@@ -27,7 +29,7 @@ import { FoodItem, ExtraMeal, ReceiptLine } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
-import { loadCycles, saveCycles, loadExtras, saveExtras } from './src/services/storage'
+import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal } from './src/services/storage'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -55,6 +57,8 @@ export default function App() {
   const [reviewLines, setReviewLines] = useState<ReceiptLine[]>([])
   const [webScannerVisible, setWebScannerVisible] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
+  const [profileVisible, setProfileVisible] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
@@ -78,6 +82,9 @@ export default function App() {
     loadExtras().then((stored) => {
       if (!cancelled && stored) setExtraMeals(stored)
     })
+    loadDailyGoal().then((g) => {
+      if (!cancelled && g) setDailyGoal(g)
+    })
     return () => {
       cancelled = true
     }
@@ -90,6 +97,10 @@ export default function App() {
   useEffect(() => {
     if (hydrated) saveExtras(extraMeals)
   }, [extraMeals, hydrated])
+
+  useEffect(() => {
+    if (hydrated) saveDailyGoal(dailyGoal)
+  }, [dailyGoal, hydrated])
 
   function changeSelection(nextCycleId: string | null, nextExtraDate: string | null) {
     setCycles((prev) =>
@@ -223,7 +234,7 @@ export default function App() {
 
   let barMealPrep = 0
   let barExtra = 0
-  let barBudget = DAILY_KCAL_GOAL
+  let barBudget = dailyGoal
   if (activeExtraDate) {
     const containing = cycles.find(
       (c) => activeExtraDate >= c.startDate && activeExtraDate <= c.endDate
@@ -232,16 +243,16 @@ export default function App() {
       const days = daysBetween(containing.startDate, containing.endDate) + 1
       barMealPrep = totalKcal(containing.items)
       barExtra = extrasKcalInRange(extraMeals, containing.startDate, containing.endDate)
-      barBudget = cycleBudget(days, DAILY_KCAL_GOAL)
+      barBudget = cycleBudget(days, dailyGoal)
     } else {
       barExtra = extrasKcalOnDate(extraMeals, activeExtraDate)
-      barBudget = DAILY_KCAL_GOAL
+      barBudget = dailyGoal
     }
   } else if (activeCycle) {
     const days = daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
     barMealPrep = totalKcal(activeCycle.items)
     barExtra = extrasKcalInRange(extraMeals, activeCycle.startDate, activeCycle.endDate)
-    barBudget = cycleBudget(days, DAILY_KCAL_GOAL)
+    barBudget = cycleBudget(days, dailyGoal)
   }
   const extrasForActiveDate = activeExtraDate
     ? extraMeals.filter((e) => e.date === activeExtraDate)
@@ -250,7 +261,12 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.greeting}>Welcome back!</Text>
+        <View testID="app-header" style={styles.header}>
+          <Text style={styles.greeting}>Welcome back!</Text>
+          <TouchableOpacity testID="open-profile" onPress={() => setProfileVisible(true)}>
+            <Text style={styles.headerBtnText}>⚙ Profile</Text>
+          </TouchableOpacity>
+        </View>
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -334,6 +350,12 @@ export default function App() {
           onScanned={handleWebBarcode}
           onClose={() => setWebScannerVisible(false)}
         />
+        <ProfileScreen
+          visible={profileVisible}
+          dailyGoal={dailyGoal}
+          onSave={(g) => { setDailyGoal(g); setProfileVisible(false) }}
+          onClose={() => setProfileVisible(false)}
+        />
       </View>
     </SafeAreaView>
   )
@@ -347,13 +369,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
   greeting: {
     fontSize: 26,
     fontWeight: '700',
-    paddingHorizontal: 20,
-    paddingTop: 16,
     paddingBottom: 8,
     color: colors.dayText,
+  },
+  headerBtnText: {
+    fontSize: 15,
+    color: colors.monthText,
   },
   horizontalScroll: {
     flexGrow: 0,

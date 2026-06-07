@@ -61,3 +61,18 @@ export async function saveExtras(
     // Persistence must never crash the app.
   }
 }
+
+export const STORAGE_KEY_DAILY_GOAL = 'basket:dailyGoal:v1'
+
+export async function loadDailyGoal(deps: StorageDeps = defaultDeps): Promise<number | null> {
+  try {
+    const raw = await deps.storage.getItem(STORAGE_KEY_DAILY_GOAL)
+    if (raw == null) return null
+    const n = JSON.parse(raw)
+    return typeof n === 'number' && n > 0 ? n : null
+  } catch { return null }
+}
+
+export async function saveDailyGoal(goal: number, deps: StorageDeps = defaultDeps): Promise<void> {
+  try { await deps.storage.setItem(STORAGE_KEY_DAILY_GOAL, JSON.stringify(goal)) } catch {}
+}

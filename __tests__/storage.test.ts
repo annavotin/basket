@@ -1,4 +1,4 @@
-import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS } from '../src/services/storage'
+import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL } from '../src/services/storage'
 import { MealPrepCycle, ExtraMeal } from '../src/types'
 
 function fakeStorage(initial: Record<string, string> = {}) {
@@ -80,5 +80,38 @@ describe('extras storage', () => {
   it('saveExtras swallows setItem errors', async () => {
     const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
     await expect(saveExtras(extras, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('daily goal storage', () => {
+  it('round-trips a number through saveDailyGoal then loadDailyGoal', async () => {
+    const storage = fakeStorage()
+    await saveDailyGoal(1800, { storage })
+    expect(storage.setItem).toHaveBeenCalledWith(STORAGE_KEY_DAILY_GOAL, expect.any(String))
+    expect(await loadDailyGoal({ storage })).toBe(1800)
+  })
+
+  it('returns null when nothing is stored', async () => {
+    expect(await loadDailyGoal({ storage: fakeStorage() })).toBeNull()
+  })
+
+  it('returns null on corrupt JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_DAILY_GOAL]: '{not json' })
+    expect(await loadDailyGoal({ storage })).toBeNull()
+  })
+
+  it('returns null when stored value is a non-number string', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_DAILY_GOAL]: '"x"' })
+    expect(await loadDailyGoal({ storage })).toBeNull()
+  })
+
+  it('returns null when stored number is 0 (not > 0)', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_DAILY_GOAL]: '0' })
+    expect(await loadDailyGoal({ storage })).toBeNull()
+  })
+
+  it('saveDailyGoal swallows setItem errors', async () => {
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    await expect(saveDailyGoal(2000, { storage })).resolves.toBeUndefined()
   })
 })
