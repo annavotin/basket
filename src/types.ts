@@ -12,6 +12,15 @@ export type MealPrepCycle = {
   startDate: string  // ISO "YYYY-MM-DD"
   endDate: string
   items: FoodItem[]
+  pantryOverrides?: Record<string, number>
+}
+
+export type PantryItem = {
+  id: string
+  name: string
+  emoji: string
+  kcalPer100g: number
+  dailyG: number
 }
 
 export type ExtraMeal = {

@@ -1,4 +1,4 @@
-import { MealPrepCycle, ExtraMeal, FoodItem } from './types'
+import { MealPrepCycle, ExtraMeal, FoodItem, PantryItem } from './types'
 
 export const DAILY_KCAL_GOAL = 2000
 
@@ -29,4 +29,8 @@ export const cycles: MealPrepCycle[] = [
 export const extraMeals: ExtraMeal[] = [
   { id: 'extra-1', date: '2026-06-02', name: 'Protein Bar', kcal: 220 },
   { id: 'extra-2', date: '2026-06-03', name: 'Coffee + Oat Milk', kcal: 90 },
+]
+
+export const pantry: PantryItem[] = [
+  { id: 'pantry-oats', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 },
 ]

@@ -1,4 +1,4 @@
-import { FoodItem, ExtraMeal } from '../types'
+import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../types'
 
 export function kcalForWeight(kcalPer100g: number, weightG: number): number {
   return Math.round((kcalPer100g * weightG) / 100)
@@ -21,4 +21,16 @@ export function extrasKcalInRange(extras: ExtraMeal[], start: string, end: strin
 
 export function extrasKcalOnDate(extras: ExtraMeal[], date: string): number {
   return extras.reduce((sum, e) => (e.date === date ? sum + e.kcal : sum), 0)
+}
+
+export function pantryGramsForCycle(item: PantryItem, cycle: MealPrepCycle, days: number): number {
+  const o = cycle.pantryOverrides?.[item.id]
+  return typeof o === 'number' ? o : item.dailyG * days
+}
+
+export function pantryKcalForCycle(items: PantryItem[], cycle: MealPrepCycle, days: number): number {
+  return items.reduce(
+    (sum, it) => sum + kcalForWeight(it.kcalPer100g, pantryGramsForCycle(it, cycle, days)),
+    0
+  )
 }

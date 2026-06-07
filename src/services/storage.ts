@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { MealPrepCycle, ExtraMeal } from '../types'
+import { MealPrepCycle, ExtraMeal, PantryItem } from '../types'
 
 export const STORAGE_KEY = 'basket:cycles:v1'
 
@@ -75,4 +75,30 @@ export async function loadDailyGoal(deps: StorageDeps = defaultDeps): Promise<nu
 
 export async function saveDailyGoal(goal: number, deps: StorageDeps = defaultDeps): Promise<void> {
   try { await deps.storage.setItem(STORAGE_KEY_DAILY_GOAL, JSON.stringify(goal)) } catch {}
+}
+
+export const STORAGE_KEY_PANTRY = 'basket:pantry:v1'
+
+export async function loadPantry(
+  deps: StorageDeps = defaultDeps
+): Promise<PantryItem[] | null> {
+  try {
+    const raw = await deps.storage.getItem(STORAGE_KEY_PANTRY)
+    if (raw == null) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as PantryItem[]) : null
+  } catch {
+    return null
+  }
+}
+
+export async function savePantry(
+  items: PantryItem[],
+  deps: StorageDeps = defaultDeps
+): Promise<void> {
+  try {
+    await deps.storage.setItem(STORAGE_KEY_PANTRY, JSON.stringify(items))
+  } catch {
+    // Persistence must never crash the app.
+  }
 }

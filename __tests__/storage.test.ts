@@ -1,5 +1,5 @@
-import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL } from '../src/services/storage'
-import { MealPrepCycle, ExtraMeal } from '../src/types'
+import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY } from '../src/services/storage'
+import { MealPrepCycle, ExtraMeal, PantryItem } from '../src/types'
 
 function fakeStorage(initial: Record<string, string> = {}) {
   const data: Record<string, string> = { ...initial }
@@ -80,6 +80,38 @@ describe('extras storage', () => {
   it('saveExtras swallows setItem errors', async () => {
     const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
     await expect(saveExtras(extras, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('pantry storage', () => {
+  const pantryItems: PantryItem[] = [
+    { id: 'pantry-oats', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 },
+  ]
+
+  it('round-trips saved pantry items', async () => {
+    const storage = fakeStorage()
+    await savePantry(pantryItems, { storage })
+    expect(storage.setItem).toHaveBeenCalledWith(STORAGE_KEY_PANTRY, expect.any(String))
+    expect(await loadPantry({ storage })).toEqual(pantryItems)
+  })
+
+  it('returns null when nothing is stored', async () => {
+    expect(await loadPantry({ storage: fakeStorage() })).toBeNull()
+  })
+
+  it('returns null on corrupt JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_PANTRY]: '{not valid json' })
+    expect(await loadPantry({ storage })).toBeNull()
+  })
+
+  it('returns null on non-array JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_PANTRY]: '{}' })
+    expect(await loadPantry({ storage })).toBeNull()
+  })
+
+  it('savePantry swallows setItem errors', async () => {
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    await expect(savePantry(pantryItems, { storage })).resolves.toBeUndefined()
   })
 })
 

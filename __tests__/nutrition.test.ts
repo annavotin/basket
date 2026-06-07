@@ -1,5 +1,5 @@
-import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate } from '../src/utils/nutrition'
-import { FoodItem, ExtraMeal } from '../src/types'
+import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle } from '../src/utils/nutrition'
+import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../src/types'
 
 describe('kcalForWeight', () => {
   it('computes kcal from kcal/100g and grams, rounded', () => {
@@ -64,5 +64,55 @@ describe('extrasKcalOnDate', () => {
   })
   it('returns 0 for a date with no extras', () => {
     expect(extrasKcalOnDate(extras, '2026-06-09')).toBe(0)
+  })
+})
+
+const oats: PantryItem = { id: 'pantry-oats', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 }
+const nuts: PantryItem = { id: 'pantry-nuts', name: 'Nuts', emoji: '🥜', kcalPer100g: 600, dailyG: 20 }
+
+const baseCycle: MealPrepCycle = {
+  id: 'cycle-test',
+  startDate: '2026-06-01',
+  endDate: '2026-06-05',
+  items: [],
+}
+
+describe('pantryGramsForCycle', () => {
+  it('returns dailyG * days when no override is present', () => {
+    // 40 g/day * 5 days = 200
+    expect(pantryGramsForCycle(oats, baseCycle, 5)).toBe(200)
+  })
+
+  it('returns the override value when present', () => {
+    const cycle: MealPrepCycle = { ...baseCycle, pantryOverrides: { 'pantry-oats': 150 } }
+    expect(pantryGramsForCycle(oats, cycle, 5)).toBe(150)
+  })
+
+  it('returns the override value of 0 when explicitly overridden to 0', () => {
+    const cycle: MealPrepCycle = { ...baseCycle, pantryOverrides: { 'pantry-oats': 0 } }
+    expect(pantryGramsForCycle(oats, cycle, 5)).toBe(0)
+  })
+})
+
+describe('pantryKcalForCycle', () => {
+  it('sums kcalForWeight across all pantry items using default dailyG', () => {
+    // Oats: kcalForWeight(379, 200) = round(379*200/100) = round(758) = 758
+    // Nuts: kcalForWeight(600, 100) = round(600*100/100) = 600
+    // Total: 758 + 600 = 1358
+    expect(pantryKcalForCycle([oats, nuts], baseCycle, 5)).toBe(1358)
+  })
+
+  it('uses override grams when pantryOverrides are set', () => {
+    const cycle: MealPrepCycle = {
+      ...baseCycle,
+      pantryOverrides: { 'pantry-oats': 100 }, // override oats to 100g
+    }
+    // Oats: kcalForWeight(379, 100) = 379
+    // Nuts: kcalForWeight(600, 100) = 600 (5 days * 20 g/day = 100)
+    expect(pantryKcalForCycle([oats, nuts], cycle, 5)).toBe(979)
+  })
+
+  it('returns 0 for an empty pantry items array', () => {
+    expect(pantryKcalForCycle([], baseCycle, 5)).toBe(0)
   })
 })
