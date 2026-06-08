@@ -48,4 +48,12 @@ describe('ProfileScreen', () => {
     fireEvent.press(getByTestId('profile-close'))
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('renders a full-screen container (not a bottom-sheet backdrop)', () => {
+    const { getByTestId } = render(
+      <ProfileScreen visible={true} dailyGoal={2000} onSave={() => {}} onClose={() => {}} />
+    )
+    expect(getByTestId('profile-screen')).toBeTruthy()
+    expect(getByTestId('daily-goal-input')).toBeTruthy()
+  })
 })

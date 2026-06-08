@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, StyleSheet,
+  Modal, View, Text, TextInput, TouchableOpacity, ScrollView,
+  SafeAreaView, KeyboardAvoidingView, Platform, StyleSheet,
 } from 'react-native'
-import DismissArea from './DismissArea'
 import { colors } from '../styles/colors'
 
 type Props = {
@@ -29,54 +28,57 @@ export default function ProfileScreen({ visible, dailyGoal, onSave, onClose }: P
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <DismissArea>
-          <View style={styles.backdrop}>
-            <View style={styles.sheet}>
-              <Text style={styles.title}>Profile</Text>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <SafeAreaView style={styles.screen} testID="profile-screen">
+        <View style={styles.topBar}>
+          <TouchableOpacity testID="profile-close" onPress={onClose} style={styles.backBtn}>
+            <Text style={styles.backText}>‹ Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Profile</Text>
+          <View style={styles.backBtn} />
+        </View>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <Text style={styles.fieldLabel}>Daily calorie goal (kcal)</Text>
+            <TextInput
+              testID="daily-goal-input"
+              style={styles.input}
+              keyboardType="numeric"
+              value={value}
+              onChangeText={setValue}
+              returnKeyType="done"
+            />
 
-              <Text style={styles.fieldLabel}>Daily calorie goal (kcal)</Text>
-              <TextInput
-                testID="daily-goal-input"
-                style={styles.input}
-                keyboardType="numeric"
-                value={value}
-                onChangeText={setValue}
-                returnKeyType="done"
-              />
-
-              <TouchableOpacity
-                testID="save-profile"
-                style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
-                onPress={handleSave}
-                disabled={!canSave}
-              >
-                <Text style={styles.saveBtnText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity testID="profile-close" style={styles.cancelBtn} onPress={onClose}>
-                <Text style={styles.cancelText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </DismissArea>
-      </KeyboardAvoidingView>
+            <TouchableOpacity
+              testID="save-profile"
+              style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={!canSave}
+            >
+              <Text style={styles.saveBtnText}>Save</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 36,
+  screen: { flex: 1, backgroundColor: colors.surface },
+  topBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
   },
-  title: { fontSize: 20, fontWeight: '700', color: colors.kcalText, alignSelf: 'center' },
+  backBtn: { minWidth: 60 },
+  backText: { fontSize: 16, color: colors.monthText },
+  title: { fontSize: 18, fontWeight: '700', color: colors.kcalText },
+  body: { padding: 24 },
   fieldLabel: { fontSize: 13, color: colors.monthText, marginTop: 14, marginBottom: 4 },
   input: {
     width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
@@ -88,6 +90,4 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.4 },
   saveBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
-  cancelBtn: { paddingVertical: 12, marginTop: 4, alignItems: 'center' },
-  cancelText: { color: colors.monthText, fontSize: 15 },
 })

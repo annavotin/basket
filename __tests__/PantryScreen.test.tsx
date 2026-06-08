@@ -90,4 +90,11 @@ describe('PantryScreen', () => {
     const { queryAllByTestId } = renderScreen({ pantry: [] })
     expect(queryAllByTestId('pantry-row')).toHaveLength(0)
   })
+
+  it('renders a full-screen container', () => {
+    const { getByTestId } = render(
+      <PantryScreen visible pantry={[]} onAdd={() => {}} onRemove={() => {}} onClose={() => {}} />
+    )
+    expect(getByTestId('pantry-screen')).toBeTruthy()
+  })
 })

@@ -12,6 +12,9 @@ import {
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
 import MealPrepDetail from './src/components/MealPrepDetail'
+import SegmentedNav from './src/components/SegmentedNav'
+import ExtrasPeriodList from './src/components/ExtrasPeriodList'
+import PantryPeriodView from './src/components/PantryPeriodView'
 import NewPeriodPanel from './src/components/NewPeriodPanel'
 import BudgetBar from './src/components/BudgetBar'
 import AddFab from './src/components/AddFab'
@@ -27,7 +30,7 @@ import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GO
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
 import { colors } from './src/styles/colors'
-import { FoodItem, ExtraMeal, ReceiptLine, PantryItem } from './src/types'
+import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
@@ -63,6 +66,8 @@ export default function App() {
   const [profileVisible, setProfileVisible] = useState(false)
   const [pantry, setPantry] = useState<PantryItem[]>(initialPantry)
   const [pantryVisible, setPantryVisible] = useState(false)
+  const [weeklyTab, setWeeklyTab] = useState<WeeklyTab>('basket')
+  const [pendingExtraDate, setPendingExtraDate] = useState<string | null>(null)
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const scrollRef = useRef<ScrollView>(null)
 
@@ -120,6 +125,7 @@ export default function App() {
     )
     setActiveCycleId(nextCycleId)
     setActiveExtraDate(nextExtraDate)
+    setWeeklyTab('basket')
   }
 
   function handleCyclePress(id: string) {
@@ -130,17 +136,29 @@ export default function App() {
     changeSelection(null, activeExtraDate === date ? null : date)
   }
 
-  function handleAddExtra() {
+  function openExtraSheet(date: string) {
+    setPendingExtraDate(date)
     setExtraSheetVisible(true)
   }
 
+  function handleAddExtra() {
+    if (activeExtraDate) openExtraSheet(activeExtraDate)
+  }
+
+  function handleAddExtraForPeriod() {
+    if (!activeCycle) return
+    const inRange = today >= activeCycle.startDate && today <= activeCycle.endDate
+    openExtraSheet(inRange ? today : activeCycle.startDate)
+  }
+
   function handleSaveExtra(draft: { name: string; kcal: number }) {
-    if (!activeExtraDate) return
+    if (!pendingExtraDate) return
     setExtraMeals((prev) => [
       ...prev,
-      { id: `extra-${Date.now()}`, date: activeExtraDate, name: draft.name, kcal: draft.kcal },
+      { id: `extra-${Date.now()}`, date: pendingExtraDate, name: draft.name, kcal: draft.kcal },
     ])
     setExtraSheetVisible(false)
+    setPendingExtraDate(null)
   }
 
   function handleRemoveExtra(id: string) {
@@ -281,6 +299,7 @@ export default function App() {
     : DEFAULT_DAYS
 
   let barMealPrep = 0
+  let barPantry = 0
   let barExtra = 0
   let barBudget = dailyGoal
   if (activeExtraDate) {
@@ -289,7 +308,8 @@ export default function App() {
     )
     if (containing) {
       const days = daysBetween(containing.startDate, containing.endDate) + 1
-      barMealPrep = totalKcal(containing.items) + pantryKcalForCycle(pantry, containing, days)
+      barMealPrep = totalKcal(containing.items)
+      barPantry = pantryKcalForCycle(pantry, containing, days)
       barExtra = extrasKcalInRange(extraMeals, containing.startDate, containing.endDate)
       barBudget = cycleBudget(days, dailyGoal)
     } else {
@@ -298,12 +318,16 @@ export default function App() {
     }
   } else if (activeCycle) {
     const days = daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
-    barMealPrep = totalKcal(activeCycle.items) + pantryKcalForCycle(pantry, activeCycle, days)
+    barMealPrep = totalKcal(activeCycle.items)
+    barPantry = pantryKcalForCycle(pantry, activeCycle, days)
     barExtra = extrasKcalInRange(extraMeals, activeCycle.startDate, activeCycle.endDate)
     barBudget = cycleBudget(days, dailyGoal)
   }
   const extrasForActiveDate = activeExtraDate
     ? extraMeals.filter((e) => e.date === activeExtraDate)
+    : []
+  const extrasForPeriod = activeCycle
+    ? extraMeals.filter((e) => e.date >= activeCycle.startDate && e.date <= activeCycle.endDate)
     : []
 
   return (
@@ -349,7 +373,7 @@ export default function App() {
         </ScrollView>
         {activeExtraDate ? (
           <View style={styles.detailArea}>
-            <BudgetBar mealPrepKcal={barMealPrep} extraKcal={barExtra} budgetKcal={barBudget} />
+            <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} />
             <ExtraMealDetail
               date={activeExtraDate}
               extras={extrasForActiveDate}
@@ -370,13 +394,36 @@ export default function App() {
             )}
             {activeCycle && activeCycle.items.length > 0 && (
               <View style={styles.detailArea}>
-                <BudgetBar mealPrepKcal={barMealPrep} extraKcal={barExtra} budgetKcal={barBudget} />
-                <MealPrepDetail activeCycle={activeCycle} onRemoveItem={handleRemoveItem} onEditItem={handleEditItem} pantry={pantry} cycleDays={activeDayCount} onSetPantryGrams={handleSetPantryGrams} />
-                <AddFab
-                  onScanBarcode={handleScanBarcode}
-                  onScanReceipt={handleScanReceipt}
-                  onAddManual={handleAddManual}
-                />
+                <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} />
+                {weeklyTab === 'basket' && (
+                  <MealPrepDetail
+                    activeCycle={activeCycle}
+                    onRemoveItem={handleRemoveItem}
+                    onEditItem={handleEditItem}
+                  />
+                )}
+                {weeklyTab === 'extras' && (
+                  <ExtrasPeriodList extras={extrasForPeriod} onRemoveExtra={handleRemoveExtra} />
+                )}
+                {weeklyTab === 'pantry' && (
+                  <PantryPeriodView
+                    cycle={activeCycle}
+                    pantry={pantry}
+                    cycleDays={activeDayCount}
+                    onSetPantryGrams={handleSetPantryGrams}
+                  />
+                )}
+                <View style={[styles.navWrap, weeklyTab === 'pantry' && styles.navWrapFull]}>
+                  <SegmentedNav active={weeklyTab} onChange={setWeeklyTab} />
+                </View>
+                {weeklyTab !== 'pantry' && (
+                  <AddFab
+                    manualOnly={weeklyTab === 'extras'}
+                    onScanBarcode={handleScanBarcode}
+                    onScanReceipt={handleScanReceipt}
+                    onAddManual={weeklyTab === 'extras' ? handleAddExtraForPeriod : handleAddManual}
+                  />
+                )}
               </View>
             )}
           </>
@@ -396,7 +443,7 @@ export default function App() {
         <ExtraMealSheet
           visible={extraSheetVisible}
           onSave={handleSaveExtra}
-          onClose={() => setExtraSheetVisible(false)}
+          onClose={() => { setExtraSheetVisible(false); setPendingExtraDate(null) }}
         />
         <WebBarcodeScannerModal
           visible={webScannerVisible}
@@ -464,5 +511,14 @@ const styles = StyleSheet.create({
   },
   detailArea: {
     flex: 1,
+  },
+  navWrap: {
+    position: 'absolute',
+    left: 20,
+    right: 88,
+    bottom: 34,
+  },
+  navWrapFull: {
+    right: 20,
   },
 })

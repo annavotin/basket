@@ -37,3 +37,5 @@ export type ReceiptLine = {
   kcal: number
   isFood: boolean
 }
+
+export type WeeklyTab = 'basket' | 'extras' | 'pantry'
