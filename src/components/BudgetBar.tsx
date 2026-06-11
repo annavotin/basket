@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, DimensionValue } from 'react-native'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   mealPrepKcal: number
@@ -10,6 +10,24 @@ type Props = {
 }
 
 export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetKcal }: Props) {
+  const colors = useColors()
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
+    label: { fontSize: 13, fontWeight: '600', color: colors.kcalText, marginBottom: 6 },
+    track: {
+      height: 10, borderRadius: 5, backgroundColor: '#FFFFFF',
+      overflow: 'hidden', flexDirection: 'row',
+    },
+    fill: { height: '100%' },
+    green: { backgroundColor: colors.cycleBar },
+    amber: { backgroundColor: colors.pantry },
+    pink: { backgroundColor: colors.extraPill },
+    legend: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+    dot: { width: 8, height: 8, borderRadius: 4, marginRight: 4 },
+    legendText: { fontSize: 11, color: colors.monthText, marginRight: 12 },
+  }), [colors])
+
   const budget = budgetKcal > 0 ? budgetKcal : 1
   const greenRatio = Math.min(mealPrepKcal, budget) / budget
   const afterGreen = Math.max(0, budget - mealPrepKcal)
@@ -41,19 +59,3 @@ export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetK
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.kcalText, marginBottom: 6 },
-  track: {
-    height: 10, borderRadius: 5, backgroundColor: '#FFFFFF',
-    overflow: 'hidden', flexDirection: 'row',
-  },
-  fill: { height: '100%' },
-  green: { backgroundColor: colors.cycleBar },
-  amber: { backgroundColor: colors.pantry },
-  pink: { backgroundColor: colors.extraPill },
-  legend: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 4 },
-  legendText: { fontSize: 11, color: colors.monthText, marginRight: 12 },
-})

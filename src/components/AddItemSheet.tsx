@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Keyboard, Platform, ScrollView, StyleSheet,
@@ -9,7 +9,7 @@ import { FoodItem } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
 import { useFoodSearch } from '../hooks/useFoodSearch'
 import { FoodSuggestion } from '../foods'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   visible: boolean
@@ -19,6 +19,7 @@ type Props = {
 }
 
 export default function AddItemSheet({ visible, product, onAdd, onClose }: Props) {
+  const colors = useColors()
   const isManual = product === null
   const [name, setName] = useState('')
   const [weight, setWeight] = useState('')
@@ -27,6 +28,55 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
   const [manualKcal100, setManualKcal100] = useState('')
   const [emoji, setEmoji] = useState('🛒')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  const styles = useMemo(() => StyleSheet.create({
+    flex: { flex: 1 },
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      padding: 24, paddingBottom: 36, alignItems: 'center',
+    },
+    title: { fontSize: 20, fontWeight: '700', color: colors.kcalText },
+    emoji: { fontSize: 44, marginVertical: 8 },
+    summary: { fontSize: 16, fontWeight: '600', color: colors.kcalText, marginTop: 12 },
+    fieldBlock: { width: '100%' },
+    fieldLabel: {
+      alignSelf: 'flex-start', fontSize: 13, color: colors.monthText, marginTop: 12, marginBottom: 4,
+    },
+    input: {
+      width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
+      paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
+    },
+    dropdown: {
+      width: '100%', maxHeight: 180, borderWidth: 1, borderColor: '#EEEEEE',
+      borderRadius: 10, marginTop: 4,
+    },
+    suggestion: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingVertical: 10, paddingHorizontal: 12,
+      borderBottomWidth: 1, borderBottomColor: '#F2F2F2',
+    },
+    suggestionEmoji: { fontSize: 20, marginRight: 10 },
+    suggestionName: { flex: 1, fontSize: 15, color: colors.kcalText },
+    suggestionKcal: { fontSize: 12, color: colors.monthText },
+    qtyRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+    qtyBtn: {
+      width: 44, height: 44, borderRadius: 22, backgroundColor: colors.itemCard,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    qtyBtnText: { fontSize: 24, fontWeight: '600', color: colors.kcalText },
+    qtyValue: { fontSize: 18, fontWeight: '700', color: colors.kcalText, marginHorizontal: 20, minWidth: 24, textAlign: 'center' },
+    addBtn: {
+      width: '100%', backgroundColor: colors.selectedDay, borderRadius: 12,
+      paddingVertical: 14, alignItems: 'center', marginTop: 20,
+    },
+    addBtnDisabled: { opacity: 0.4 },
+    addBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
+    searching: { padding: 12, fontSize: 14, color: colors.monthText },
+    cancelBtn: { paddingVertical: 12, marginTop: 4 },
+    cancelText: { color: colors.monthText, fontSize: 15 },
+  }), [colors])
 
   useEffect(() => {
     if (product) {
@@ -205,52 +255,3 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 36, alignItems: 'center',
-  },
-  title: { fontSize: 20, fontWeight: '700', color: colors.kcalText },
-  emoji: { fontSize: 44, marginVertical: 8 },
-  summary: { fontSize: 16, fontWeight: '600', color: colors.kcalText, marginTop: 12 },
-  fieldBlock: { width: '100%' },
-  fieldLabel: {
-    alignSelf: 'flex-start', fontSize: 13, color: colors.monthText, marginTop: 12, marginBottom: 4,
-  },
-  input: {
-    width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
-  },
-  dropdown: {
-    width: '100%', maxHeight: 180, borderWidth: 1, borderColor: '#EEEEEE',
-    borderRadius: 10, marginTop: 4,
-  },
-  suggestion: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 10, paddingHorizontal: 12,
-    borderBottomWidth: 1, borderBottomColor: '#F2F2F2',
-  },
-  suggestionEmoji: { fontSize: 20, marginRight: 10 },
-  suggestionName: { flex: 1, fontSize: 15, color: colors.kcalText },
-  suggestionKcal: { fontSize: 12, color: colors.monthText },
-  qtyRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  qtyBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.itemCard,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  qtyBtnText: { fontSize: 24, fontWeight: '600', color: colors.kcalText },
-  qtyValue: { fontSize: 18, fontWeight: '700', color: colors.kcalText, marginHorizontal: 20, minWidth: 24, textAlign: 'center' },
-  addBtn: {
-    width: '100%', backgroundColor: colors.selectedDay, borderRadius: 12,
-    paddingVertical: 14, alignItems: 'center', marginTop: 20,
-  },
-  addBtnDisabled: { opacity: 0.4 },
-  addBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
-  searching: { padding: 12, fontSize: 14, color: colors.monthText },
-  cancelBtn: { paddingVertical: 12, marginTop: 4 },
-  cancelText: { color: colors.monthText, fontSize: 15 },
-})

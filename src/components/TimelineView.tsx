@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { MealPrepCycle } from '../types'
 import { dateToIndex, daysBetween, addDays } from '../utils/dates'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   cycles: MealPrepCycle[]
@@ -26,6 +26,55 @@ export default function TimelineView({
   onCreatePeriod,
   dayWidth,
 }: Props) {
+  const colors = useColors()
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      position: 'relative',
+    },
+    emptySlot: {
+      position: 'absolute',
+      height: BAR_HEIGHT,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    plus: {
+      color: colors.cycleBorder,
+      fontSize: 20,
+      fontWeight: '600',
+      opacity: 0.5,
+    },
+    bar: {
+      position: 'absolute',
+      height: BAR_HEIGHT,
+      backgroundColor: colors.cycleBar,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.cycleBorder,
+      justifyContent: 'center',
+      paddingHorizontal: 12,
+    },
+    barNew: {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: colors.cycleBorder,
+    },
+    barActive: {
+      borderWidth: 2,
+      borderStyle: 'solid',
+      borderColor: colors.selectedDay,
+    },
+    barLabel: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 13,
+    },
+    barLabelNew: {
+      color: colors.cycleBorder,
+    },
+  }), [colors])
+
   const totalWidth = totalDays * dayWidth
 
   // Set of ISO dates covered by an existing cycle.
@@ -87,50 +136,3 @@ export default function TimelineView({
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-  },
-  emptySlot: {
-    position: 'absolute',
-    height: BAR_HEIGHT,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  plus: {
-    color: colors.cycleBorder,
-    fontSize: 20,
-    fontWeight: '600',
-    opacity: 0.5,
-  },
-  bar: {
-    position: 'absolute',
-    height: BAR_HEIGHT,
-    backgroundColor: colors.cycleBar,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.cycleBorder,
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  barNew: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.cycleBorder,
-  },
-  barActive: {
-    borderWidth: 2,
-    borderStyle: 'solid',
-    borderColor: colors.selectedDay,
-  },
-  barLabel: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  barLabelNew: {
-    color: colors.cycleBorder,
-  },
-})

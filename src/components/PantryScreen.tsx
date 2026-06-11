@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
   ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, StyleSheet,
 } from 'react-native'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 import { PantryItem } from '../types'
 
 type Props = {
@@ -15,9 +15,45 @@ type Props = {
 }
 
 export default function PantryScreen({ visible, pantry, onAdd, onRemove, onClose }: Props) {
+  const colors = useColors()
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
   const [grams, setGrams] = useState('')
+
+  const styles = useMemo(() => StyleSheet.create({
+    flex: { flex: 1 },
+    screen: { flex: 1, backgroundColor: colors.surface },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 16, paddingVertical: 12,
+      borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
+    },
+    backBtn: { minWidth: 60 },
+    backText: { fontSize: 16, color: colors.monthText },
+    title: { fontSize: 18, fontWeight: '700', color: colors.kcalText },
+    body: { padding: 24 },
+    subtitle: { fontSize: 13, color: colors.monthText, marginBottom: 8 },
+    row: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
+    },
+    rowInfo: { flex: 1 },
+    rowName: { fontSize: 15, fontWeight: '600', color: colors.kcalText },
+    rowMeta: { fontSize: 12, color: colors.monthText, marginTop: 2 },
+    removeBtn: { paddingHorizontal: 12, paddingVertical: 6 },
+    removeBtnText: { fontSize: 16, color: colors.monthText },
+    fieldLabel: { fontSize: 13, color: colors.monthText, marginTop: 14, marginBottom: 4 },
+    input: {
+      width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
+      paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
+    },
+    addBtn: {
+      backgroundColor: colors.selectedDay, borderRadius: 12,
+      paddingVertical: 14, alignItems: 'center', marginTop: 24,
+    },
+    addBtnDisabled: { opacity: 0.4 },
+    addBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
+  }), [colors])
 
   const kcalNum = parseFloat(kcal) || 0
   const gramsNum = parseFloat(grams) || 0
@@ -110,38 +146,3 @@ export default function PantryScreen({ visible, pantry, onAdd, onRemove, onClose
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  screen: { flex: 1, backgroundColor: colors.surface },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
-  },
-  backBtn: { minWidth: 60 },
-  backText: { fontSize: 16, color: colors.monthText },
-  title: { fontSize: 18, fontWeight: '700', color: colors.kcalText },
-  body: { padding: 24 },
-  subtitle: { fontSize: 13, color: colors.monthText, marginBottom: 8 },
-  row: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
-  },
-  rowInfo: { flex: 1 },
-  rowName: { fontSize: 15, fontWeight: '600', color: colors.kcalText },
-  rowMeta: { fontSize: 12, color: colors.monthText, marginTop: 2 },
-  removeBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  removeBtnText: { fontSize: 16, color: colors.monthText },
-  fieldLabel: { fontSize: 13, color: colors.monthText, marginTop: 14, marginBottom: 4 },
-  input: {
-    width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
-  },
-  addBtn: {
-    backgroundColor: colors.selectedDay, borderRadius: 12,
-    paddingVertical: 14, alignItems: 'center', marginTop: 24,
-  },
-  addBtnDisabled: { opacity: 0.4 },
-  addBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
-})

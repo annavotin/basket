@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native'
 import { MealPrepCycle, PantryItem } from '../types'
 import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   cycle: MealPrepCycle
@@ -12,6 +12,31 @@ type Props = {
 }
 
 export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantryGrams }: Props) {
+  const colors = useColors()
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: colors.detailBackground,
+      borderTopLeftRadius: 20, borderTopRightRadius: 20,
+      paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, flex: 1,
+    },
+    header: { fontSize: 15, fontWeight: '700', color: colors.kcalText, marginBottom: 12 },
+    empty: { fontSize: 14, color: colors.monthText, marginTop: 8 },
+    card: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: colors.itemCard, borderRadius: 14, padding: 14, marginBottom: 10,
+    },
+    emoji: { fontSize: 32, marginRight: 14 },
+    info: { flex: 1 },
+    name: { fontSize: 16, fontWeight: '600', color: colors.kcalText, marginBottom: 2 },
+    meta: { fontSize: 13, color: colors.monthText },
+    gramsInput: {
+      width: 56, fontSize: 13, color: colors.kcalText,
+      borderBottomWidth: 1, borderBottomColor: colors.monthText,
+      marginRight: 6, textAlign: 'center',
+    },
+  }), [colors])
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Pantry · {cycleDays} days</Text>
@@ -42,26 +67,3 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantry
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.detailBackground,
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, flex: 1,
-  },
-  header: { fontSize: 15, fontWeight: '700', color: colors.kcalText, marginBottom: 12 },
-  empty: { fontSize: 14, color: colors.monthText, marginTop: 8 },
-  card: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.itemCard, borderRadius: 14, padding: 14, marginBottom: 10,
-  },
-  emoji: { fontSize: 32, marginRight: 14 },
-  info: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '600', color: colors.kcalText, marginBottom: 2 },
-  meta: { fontSize: 13, color: colors.monthText },
-  gramsInput: {
-    width: 56, fontSize: 13, color: colors.kcalText,
-    borderBottomWidth: 1, borderBottomColor: colors.monthText,
-    marginRight: 6, textAlign: 'center',
-  },
-})

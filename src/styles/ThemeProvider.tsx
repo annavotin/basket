@@ -10,9 +10,17 @@ interface ThemeContextValue {
   colors: Palette
 }
 
-const ThemeContext = createContext<ThemeContextValue | null>(null)
+const DEFAULT_ACCENT_VALUE: [string, string, string] = ['#7CC96E', '#5FB152', '#3E8F38']
 
-const DEFAULT_ACCENT: [string, string, string] = ['#7CC96E', '#5FB152', '#3E8F38']
+const defaultContextValue: ThemeContextValue = {
+  theme: 'system',
+  accent: DEFAULT_ACCENT_VALUE,
+  colors: withAccent(lightPalette, DEFAULT_ACCENT_VALUE),
+}
+
+const ThemeContext = createContext<ThemeContextValue>(defaultContextValue)
+
+const DEFAULT_ACCENT: [string, string, string] = DEFAULT_ACCENT_VALUE
 
 interface ThemeProviderProps {
   theme?: Theme
@@ -46,17 +54,9 @@ export function ThemeProvider({
 }
 
 export function useThemeCtx(): ThemeContextValue {
-  const ctx = useContext(ThemeContext)
-  if (ctx === null) {
-    throw new Error('useThemeCtx must be used within a ThemeProvider')
-  }
-  return ctx
+  return useContext(ThemeContext)
 }
 
 export function useColors(): Palette {
-  const ctx = useContext(ThemeContext)
-  if (ctx === null) {
-    throw new Error('useColors must be used within a ThemeProvider')
-  }
-  return ctx.colors
+  return useContext(ThemeContext).colors
 }

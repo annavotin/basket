@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity, ScrollView,
   SafeAreaView, KeyboardAvoidingView, Platform, StyleSheet,
 } from 'react-native'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   visible: boolean
@@ -13,7 +13,33 @@ type Props = {
 }
 
 export default function ProfileScreen({ visible, dailyGoal, onSave, onClose }: Props) {
+  const colors = useColors()
   const [value, setValue] = useState(String(dailyGoal))
+
+  const styles = useMemo(() => StyleSheet.create({
+    flex: { flex: 1 },
+    screen: { flex: 1, backgroundColor: colors.surface },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 16, paddingVertical: 12,
+      borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
+    },
+    backBtn: { minWidth: 60 },
+    backText: { fontSize: 16, color: colors.monthText },
+    title: { fontSize: 18, fontWeight: '700', color: colors.kcalText },
+    body: { padding: 24 },
+    fieldLabel: { fontSize: 13, color: colors.monthText, marginTop: 14, marginBottom: 4 },
+    input: {
+      width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
+      paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
+    },
+    saveBtn: {
+      backgroundColor: colors.selectedDay, borderRadius: 12,
+      paddingVertical: 14, alignItems: 'center', marginTop: 24,
+    },
+    saveBtnDisabled: { opacity: 0.4 },
+    saveBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
+  }), [colors])
 
   useEffect(() => {
     setValue(String(dailyGoal))
@@ -66,28 +92,3 @@ export default function ProfileScreen({ visible, dailyGoal, onSave, onClose }: P
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  screen: { flex: 1, backgroundColor: colors.surface },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
-  },
-  backBtn: { minWidth: 60 },
-  backText: { fontSize: 16, color: colors.monthText },
-  title: { fontSize: 18, fontWeight: '700', color: colors.kcalText },
-  body: { padding: 24 },
-  fieldLabel: { fontSize: 13, color: colors.monthText, marginTop: 14, marginBottom: 4 },
-  input: {
-    width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
-  },
-  saveBtn: {
-    backgroundColor: colors.selectedDay, borderRadius: 12,
-    paddingVertical: 14, alignItems: 'center', marginTop: 24,
-  },
-  saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
-})

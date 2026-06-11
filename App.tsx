@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native'
+import { useFonts } from 'expo-font'
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
 import MealPrepDetail from './src/components/MealPrepDetail'
@@ -29,7 +30,9 @@ import EditItemSheet from './src/components/EditItemSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
-import { colors } from './src/styles/colors'
+import { useColors } from './src/styles/ThemeProvider'
+import { ThemeProvider } from './src/styles/ThemeProvider'
+import { fontMap } from './src/styles/fonts'
 import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
@@ -45,9 +48,59 @@ function getWindowStart(): string {
   return addDays(todayISO(), -WINDOW_OFFSET)
 }
 
-export default function App() {
+function AppInner() {
+  const colors = useColors()
   const today = useMemo(() => todayISO(), [])
   const windowStart = useMemo(() => getWindowStart(), [])
+
+  const styles = useMemo(() => StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    container: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 16,
+    },
+    greeting: {
+      fontSize: 26,
+      fontWeight: '700',
+      paddingBottom: 8,
+      color: colors.dayText,
+    },
+    headerButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    headerBtnSpacer: {
+      marginRight: 12,
+    },
+    headerBtnText: {
+      fontSize: 15,
+      color: colors.monthText,
+    },
+    horizontalScroll: {
+      flexGrow: 0,
+    },
+    detailArea: {
+      flex: 1,
+    },
+    navWrap: {
+      position: 'absolute',
+      left: 20,
+      right: 88,
+      bottom: 34,
+    },
+    navWrapFull: {
+      right: 20,
+    },
+  }), [colors])
 
   const [cycles, setCycles] = useState(initialCycles)
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
@@ -474,51 +527,12 @@ export default function App() {
   )
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  greeting: {
-    fontSize: 26,
-    fontWeight: '700',
-    paddingBottom: 8,
-    color: colors.dayText,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerBtnSpacer: {
-    marginRight: 12,
-  },
-  headerBtnText: {
-    fontSize: 15,
-    color: colors.monthText,
-  },
-  horizontalScroll: {
-    flexGrow: 0,
-  },
-  detailArea: {
-    flex: 1,
-  },
-  navWrap: {
-    position: 'absolute',
-    left: 20,
-    right: 88,
-    bottom: 34,
-  },
-  navWrapFull: {
-    right: 20,
-  },
-})
+export default function App() {
+  const [fontsLoaded] = useFonts(fontMap)
+  if (!fontsLoaded) return null
+  return (
+    <ThemeProvider theme="system" accent={['#7CC96E', '#5FB152', '#3E8F38']}>
+      <AppInner />
+    </ThemeProvider>
+  )
+}
