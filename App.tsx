@@ -30,8 +30,7 @@ import EditItemSheet from './src/components/EditItemSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
-import { useColors } from './src/styles/ThemeProvider'
-import { ThemeProvider } from './src/styles/ThemeProvider'
+import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
 import { fontMap } from './src/styles/fonts'
 import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab } from './src/types'
 import { Product } from './src/mockProducts'
@@ -531,7 +530,7 @@ export default function App() {
   const [fontsLoaded] = useFonts(fontMap)
   if (!fontsLoaded) return null
   return (
-    <ThemeProvider theme="system" accent={['#7CC96E', '#5FB152', '#3E8F38']}>
+    <ThemeProvider>
       <AppInner />
     </ThemeProvider>
   )

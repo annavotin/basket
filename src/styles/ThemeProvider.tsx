@@ -10,7 +10,7 @@ interface ThemeContextValue {
   colors: Palette
 }
 
-const DEFAULT_ACCENT_VALUE: [string, string, string] = ['#7CC96E', '#5FB152', '#3E8F38']
+export const DEFAULT_ACCENT_VALUE: [string, string, string] = ['#7CC96E', '#5FB152', '#3E8F38']
 
 const defaultContextValue: ThemeContextValue = {
   theme: 'system',
@@ -19,8 +19,6 @@ const defaultContextValue: ThemeContextValue = {
 }
 
 const ThemeContext = createContext<ThemeContextValue>(defaultContextValue)
-
-const DEFAULT_ACCENT: [string, string, string] = DEFAULT_ACCENT_VALUE
 
 interface ThemeProviderProps {
   theme?: Theme
@@ -32,7 +30,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
   theme = 'system',
-  accent = DEFAULT_ACCENT,
+  accent = DEFAULT_ACCENT_VALUE,
   initialTheme,
   children,
 }: ThemeProviderProps) {
