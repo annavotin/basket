@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { MealPrepCycle, ExtraMeal, PantryItem } from '../types'
+import { MealPrepCycle, ExtraMeal, PantryItem, Preferences } from '../types'
+import { DEFAULT_PREFERENCES } from '../data'
 
 export const STORAGE_KEY = 'basket:cycles:v1'
 
@@ -101,4 +102,26 @@ export async function savePantry(
   } catch {
     // Persistence must never crash the app.
   }
+}
+
+export const STORAGE_KEY_PREFS = 'basket:prefs:v1'
+
+export async function loadPrefs(deps: StorageDeps = defaultDeps): Promise<Preferences> {
+  try {
+    const raw = await deps.storage.getItem(STORAGE_KEY_PREFS)
+    if (raw == null) return DEFAULT_PREFERENCES
+    const p = JSON.parse(raw)
+    if (typeof p !== 'object' || p == null) return DEFAULT_PREFERENCES
+    return {
+      ...DEFAULT_PREFERENCES,
+      ...p,
+      units: { ...DEFAULT_PREFERENCES.units, ...(p.units ?? {}) },
+      macroTargets: { ...DEFAULT_PREFERENCES.macroTargets, ...(p.macroTargets ?? {}) },
+      accent: Array.isArray(p.accent) && p.accent.length === 3 ? p.accent : DEFAULT_PREFERENCES.accent,
+    }
+  } catch { return DEFAULT_PREFERENCES }
+}
+
+export async function savePrefs(prefs: Preferences, deps: StorageDeps = defaultDeps): Promise<void> {
+  try { await deps.storage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs)) } catch {}
 }

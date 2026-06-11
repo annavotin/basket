@@ -1,6 +1,15 @@
-import { MealPrepCycle, ExtraMeal, FoodItem, PantryItem } from './types'
+import { MealPrepCycle, ExtraMeal, FoodItem, PantryItem, Preferences } from './types'
 
 export const DAILY_KCAL_GOAL = 2000
+
+export const DEFAULT_PREFERENCES: Preferences = {
+  name: '',
+  defaultDays: 4,
+  units: { weight: 'g', energy: 'kcal' },
+  theme: 'system',
+  accent: ['#7CC96E', '#5FB152', '#3E8F38'],
+  macroTargets: { protein: 0, carbs: 0, fat: 0 },
+}
 
 export const cycles: MealPrepCycle[] = [
   {

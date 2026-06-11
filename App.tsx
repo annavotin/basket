@@ -27,27 +27,26 @@ import ProfileScreen from './src/components/ProfileScreen'
 import PantryScreen from './src/components/PantryScreen'
 import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import EditItemSheet from './src/components/EditItemSheet'
-import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry } from './src/data'
+import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
 import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
 import { fontMap } from './src/styles/fonts'
-import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab } from './src/types'
+import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
-import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry } from './src/services/storage'
+import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs } from './src/services/storage'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
 const WINDOW_OFFSET = 7  // days before today the window starts
-const DEFAULT_DAYS = 4
 
 function getWindowStart(): string {
   return addDays(todayISO(), -WINDOW_OFFSET)
 }
 
-function AppInner() {
+function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dispatch<React.SetStateAction<Preferences>> }) {
   const colors = useColors()
   const today = useMemo(() => todayISO(), [])
   const windowStart = useMemo(() => getWindowStart(), [])
@@ -222,7 +221,7 @@ function AppInner() {
 
   function handleCreatePeriod(startDate: string) {
     const id = `cycle-${Date.now()}`
-    const newCycle = { id, startDate, endDate: addDays(startDate, DEFAULT_DAYS - 1), items: [] }
+    const newCycle = { id, startDate, endDate: addDays(startDate, prefs.defaultDays - 1), items: [] }
     setCycles((prev) => [
       ...prev.filter((c) => !(c.id === activeCycleId && c.items.length === 0)),
       newCycle,
@@ -348,7 +347,7 @@ function AppInner() {
   const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
   const activeDayCount = activeCycle
     ? daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
-    : DEFAULT_DAYS
+    : prefs.defaultDays
 
   let barMealPrep = 0
   let barPantry = 0
@@ -386,7 +385,7 @@ function AppInner() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <View testID="app-header" style={styles.header}>
-          <Text style={styles.greeting}>Welcome back!</Text>
+          <Text style={styles.greeting}>{prefs.name ? `Welcome back, ${prefs.name}!` : 'Welcome back!'}</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={styles.headerBtnSpacer}>
               <Text style={styles.headerBtnText}>🥫 Pantry</Text>
@@ -528,10 +527,14 @@ function AppInner() {
 
 export default function App() {
   const [fontsLoaded] = useFonts(fontMap)
+  const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES)
+  const [prefsHydrated, setPrefsHydrated] = useState(false)
+  useEffect(() => { loadPrefs().then((p) => { setPrefs(p); setPrefsHydrated(true) }) }, [])
+  useEffect(() => { if (prefsHydrated) savePrefs(prefs) }, [prefs, prefsHydrated])
   if (!fontsLoaded) return null
   return (
-    <ThemeProvider>
-      <AppInner />
+    <ThemeProvider theme={prefs.theme} accent={prefs.accent}>
+      <AppInner prefs={prefs} setPrefs={setPrefs} />
     </ThemeProvider>
   )
 }

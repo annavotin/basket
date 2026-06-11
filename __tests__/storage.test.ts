@@ -1,5 +1,6 @@
-import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY } from '../src/services/storage'
-import { MealPrepCycle, ExtraMeal, PantryItem } from '../src/types'
+import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY, loadPrefs, savePrefs, STORAGE_KEY_PREFS } from '../src/services/storage'
+import { MealPrepCycle, ExtraMeal, PantryItem, Preferences } from '../src/types'
+import { DEFAULT_PREFERENCES } from '../src/data'
 
 function fakeStorage(initial: Record<string, string> = {}) {
   const data: Record<string, string> = { ...initial }
@@ -112,6 +113,50 @@ describe('pantry storage', () => {
   it('savePantry swallows setItem errors', async () => {
     const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
     await expect(savePantry(pantryItems, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('preferences storage', () => {
+  const fullPrefs: Preferences = {
+    name: 'Anna',
+    defaultDays: 7,
+    units: { weight: 'oz', energy: 'kJ' },
+    theme: 'dark',
+    accent: ['#111111', '#222222', '#333333'],
+    macroTargets: { protein: 150, carbs: 200, fat: 60 },
+  }
+
+  it('round-trips a full Preferences object through save→load', async () => {
+    const storage = fakeStorage()
+    await savePrefs(fullPrefs, { storage })
+    expect(storage.setItem).toHaveBeenCalledWith(STORAGE_KEY_PREFS, expect.any(String))
+    const loaded = await loadPrefs({ storage })
+    expect(loaded).toEqual(fullPrefs)
+  })
+
+  it('returns DEFAULT_PREFERENCES when nothing stored', async () => {
+    const storage = fakeStorage()
+    expect(await loadPrefs({ storage })).toEqual(DEFAULT_PREFERENCES)
+  })
+
+  it('deep-merges partial stored prefs over defaults', async () => {
+    const storage = fakeStorage()
+    await storage.setItem(STORAGE_KEY_PREFS, JSON.stringify({ name: 'Anna' }))
+    const loaded = await loadPrefs({ storage })
+    expect(loaded.name).toBe('Anna')
+    expect(loaded.defaultDays).toBe(DEFAULT_PREFERENCES.defaultDays)
+    expect(loaded.units.energy).toBe(DEFAULT_PREFERENCES.units.energy)
+    expect(loaded.macroTargets.protein).toBe(DEFAULT_PREFERENCES.macroTargets.protein)
+  })
+
+  it('returns DEFAULT_PREFERENCES on corrupt JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_PREFS]: '{not valid json' })
+    expect(await loadPrefs({ storage })).toEqual(DEFAULT_PREFERENCES)
+  })
+
+  it('savePrefs swallows setItem errors', async () => {
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    await expect(savePrefs(fullPrefs, { storage })).resolves.toBeUndefined()
   })
 })
 
