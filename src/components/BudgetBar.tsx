@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, DimensionValue } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
+import { useUnits } from '../styles/UnitsProvider'
+import { formatEnergy } from '../utils/units'
 
 type Props = {
   mealPrepKcal: number
@@ -11,6 +13,7 @@ type Props = {
 
 export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetKcal }: Props) {
   const colors = useColors()
+  const units = useUnits()
 
   const styles = useMemo(() => StyleSheet.create({
     container: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
@@ -41,7 +44,7 @@ export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetK
   return (
     <View style={styles.container} testID="budget-bar">
       <Text style={styles.label}>
-        {mealPrepKcal + pantryKcal + extraKcal} / {budgetKcal} kcal
+        {formatEnergy(mealPrepKcal + pantryKcal + extraKcal, units)} / {formatEnergy(budgetKcal, units)}
       </Text>
       <View style={styles.track}>
         <View style={[styles.fill, styles.green, { width: greenPct }]} testID="budget-bar-fill" />

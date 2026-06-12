@@ -10,6 +10,8 @@ import { kcalForWeight } from '../utils/nutrition'
 import { useFoodSearch } from '../hooks/useFoodSearch'
 import { FoodSuggestion } from '../foods'
 import { useColors } from '../styles/ThemeProvider'
+import { useUnits } from '../styles/UnitsProvider'
+import { formatEnergy } from '../utils/units'
 
 type Props = {
   visible: boolean
@@ -20,6 +22,7 @@ type Props = {
 
 export default function AddItemSheet({ visible, product, onAdd, onClose }: Props) {
   const colors = useColors()
+  const units = useUnits()
   const isManual = product === null
   const [name, setName] = useState('')
   const [weight, setWeight] = useState('')
@@ -233,8 +236,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
 
               <Text style={styles.summary} testID="kcal-preview">
                 {qty > 1
-                  ? `${perUnitKcal} kcal × ${qty} = ${perUnitKcal * qty} kcal`
-                  : `${perUnitKcal} kcal`}
+                  ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
+                  : formatEnergy(perUnitKcal, units)}
               </Text>
 
               <TouchableOpacity

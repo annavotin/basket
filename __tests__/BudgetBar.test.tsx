@@ -14,7 +14,7 @@ describe('BudgetBar', () => {
     const { getByText } = render(
       <BudgetBar mealPrepKcal={1000} pantryKcal={500} extraKcal={500} budgetKcal={8000} />
     )
-    expect(getByText('2000 / 8000 kcal')).toBeTruthy()
+    expect(getByText('2000 kcal / 8000 kcal')).toBeTruthy()
   })
 
   it('renders green meal-prep, pantry, and pink extra segments at the right widths', () => {

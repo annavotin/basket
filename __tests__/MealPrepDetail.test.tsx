@@ -21,7 +21,7 @@ describe('MealPrepDetail', () => {
 
   it('displays weight and kcal', () => {
     const { getByText } = render(<MealPrepDetail activeCycle={cycles[0]} />)
-    expect(getByText('600g  204kcal')).toBeTruthy()
+    expect(getByText('600 g  204 kcal')).toBeTruthy()
   })
 
   it('calls onRemoveItem with the index of the tapped card', () => {
@@ -48,8 +48,8 @@ describe('MealPrepDetail', () => {
     }
     const { getByText } = render(<MealPrepDetail activeCycle={cycle} />)
     getByText(/×3/)
-    getByText(/660kcal/)
-    getByText(/200g/)
+    getByText(/660 kcal/)
+    getByText(/200 g/)
   })
 
   it('calls onEditItem with the index of the tapped info area', () => {

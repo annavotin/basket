@@ -31,6 +31,7 @@ import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GO
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
 import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
+import { UnitsProvider } from './src/styles/UnitsProvider'
 import { fontMap } from './src/styles/fonts'
 import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences } from './src/types'
 import { Product } from './src/mockProducts'
@@ -536,7 +537,9 @@ export default function App() {
   if (!fontsLoaded) return null
   return (
     <ThemeProvider theme={prefs.theme} accent={prefs.accent}>
-      <AppInner prefs={prefs} setPrefs={setPrefs} />
+      <UnitsProvider units={prefs.units}>
+        <AppInner prefs={prefs} setPrefs={setPrefs} />
+      </UnitsProvider>
     </ThemeProvider>
   )
 }

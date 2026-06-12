@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { ExtraMeal } from '../types'
 import { formatDay } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
+import { useUnits } from '../styles/UnitsProvider'
+import { formatEnergy } from '../utils/units'
 
 type Props = {
   extras: ExtraMeal[]
@@ -11,6 +13,7 @@ type Props = {
 
 export default function ExtrasPeriodList({ extras, onRemoveExtra }: Props) {
   const colors = useColors()
+  const units = useUnits()
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -44,7 +47,7 @@ export default function ExtrasPeriodList({ extras, onRemoveExtra }: Props) {
               <View key={e.id} testID="extra-item" style={styles.card}>
                 <View style={styles.info}>
                   <Text style={styles.name}>{e.name}</Text>
-                  <Text style={styles.meta}>{day} {month} · {e.kcal} kcal</Text>
+                  <Text style={styles.meta}>{day} {month} · {formatEnergy(e.kcal, units)}</Text>
                 </View>
                 <TouchableOpacity
                   testID="remove-extra"

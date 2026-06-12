@@ -3,6 +3,8 @@ import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native'
 import { MealPrepCycle, PantryItem } from '../types'
 import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
 import { useColors } from '../styles/ThemeProvider'
+import { useUnits } from '../styles/UnitsProvider'
+import { formatEnergy } from '../utils/units'
 
 type Props = {
   cycle: MealPrepCycle
@@ -13,6 +15,7 @@ type Props = {
 
 export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantryGrams }: Props) {
   const colors = useColors()
+  const units = useUnits()
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -58,7 +61,7 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantry
                   keyboardType="numeric"
                   onChangeText={(t) => onSetPantryGrams?.(item.id, parseInt(t, 10) || 0)}
                 />
-                <Text style={styles.meta}>{kcal} kcal</Text>
+                <Text style={styles.meta}>{formatEnergy(kcal, units)}</Text>
               </View>
             )
           })}

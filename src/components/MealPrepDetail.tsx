@@ -2,6 +2,8 @@ import React, { useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { MealPrepCycle } from '../types'
 import { useColors } from '../styles/ThemeProvider'
+import { useUnits } from '../styles/UnitsProvider'
+import { formatWeight, formatEnergy } from '../utils/units'
 
 type Props = {
   activeCycle: MealPrepCycle | null
@@ -11,6 +13,7 @@ type Props = {
 
 export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem }: Props) {
   const colors = useColors()
+  const units = useUnits()
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -59,7 +62,7 @@ export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem }
                 {(item.quantity ?? 1) > 1 ? `  ×${item.quantity}` : ''}
               </Text>
               <Text style={styles.meta}>
-                {item.weightG}g  {item.kcal * (item.quantity ?? 1)}kcal
+                {formatWeight(item.weightG, units)}  {formatEnergy(item.kcal * (item.quantity ?? 1), units)}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
