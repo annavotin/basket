@@ -15,6 +15,9 @@ import { daysBetween, formatDay } from '../utils/dates'
 const SRC_LABEL: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual' }
 const R = 60
 const CIRC = 2 * Math.PI * R
+const MAX_PREP_DAYS = 14
+// Translucent macro-bar track tints (rose / amber / matcha), straight from the design CSS.
+const MACRO_TRACK = { protein: 'rgba(180,92,124,.18)', carbs: 'rgba(230,162,60,.20)', fat: 'rgba(124,201,110,.22)' }
 
 type Props = {
   visible: boolean
@@ -54,9 +57,9 @@ export default function BasketPage({
   const pct = (v: number) => (budget > 0 ? Math.max(0, Math.min(100, (v / budget) * 100)) : 0)
   const macro = kcalDerivedMacros(consumed)
   const macroDefs = [
-    { label: 'Protein', got: macro.protein, target: macroTargets.protein * days, color: colors.roseDeep, track: 'rgba(180,92,124,.18)' },
-    { label: 'Carbs', got: macro.carbs, target: macroTargets.carbs * days, color: colors.pantry, track: 'rgba(230,162,60,.20)' },
-    { label: 'Fat', got: macro.fat, target: macroTargets.fat * days, color: colors.matchaDeep, track: 'rgba(124,201,110,.22)' },
+    { label: 'Protein', got: macro.protein, target: macroTargets.protein * days, color: colors.roseDeep, track: MACRO_TRACK.protein },
+    { label: 'Carbs', got: macro.carbs, target: macroTargets.carbs * days, color: colors.pantry, track: MACRO_TRACK.carbs },
+    { label: 'Fat', got: macro.fat, target: macroTargets.fat * days, color: colors.matchaDeep, track: MACRO_TRACK.fat },
   ]
 
   const styles = useMemo(() => StyleSheet.create({
@@ -220,20 +223,29 @@ export default function BasketPage({
               </View>
 
               <View style={styles.items}>
-                {cycle.items.map((it, idx) => (
-                  <TouchableOpacity style={styles.item} key={idx} onPress={() => onItemPress(idx)} activeOpacity={0.7}>
+                {/* FoodItem has no stable id yet; index keys are fine here because the
+                    list isn't reordered and onItemPress feeds the index straight to the
+                    edit-by-index handler. Revisit if items gain ids / reordering. */}
+                {cycle.items.map((it, idx) => {
+                  // Quantity multiplies calories only — match the ring's totalKcal so the
+                  // card's kcal, /day, and share bar stay consistent with the hero total.
+                  const itemKcal = it.kcal * (it.quantity ?? 1)
+                  return (
+                  <TouchableOpacity style={styles.item} key={idx} onPress={() => onItemPress(idx)} activeOpacity={0.7}
+                    accessibilityRole="button" accessibilityLabel={`${it.name}, ${itemKcal} kcal, edit`}>
                     <View style={styles.av}><Text style={styles.avTxt}>{it.emoji}</Text></View>
                     <View style={styles.itMid}>
                       <Text style={styles.itNm} numberOfLines={1}>{it.name}</Text>
                       <View style={styles.itMeta}>
                         <Text style={styles.tag}>{SRC_LABEL[it.source || 'manual']}</Text>
-                        <Text style={styles.metaTxt}>{it.weightG} g · {days ? Math.round(it.kcal / days) : it.kcal}/day</Text>
+                        <Text style={styles.metaTxt}>{it.weightG} g · {days ? Math.round(itemKcal / days) : itemKcal}/day</Text>
                       </View>
-                      <View style={styles.itBar}><View style={[styles.itBarFill, { width: `${itemSharePct(it.kcal, mealPrep)}%` }]} /></View>
+                      <View style={styles.itBar}><View style={[styles.itBarFill, { width: `${itemSharePct(itemKcal, mealPrep)}%` }]} /></View>
                     </View>
-                    <View style={styles.itKc}><Text style={styles.itKcV}>{it.kcal.toLocaleString()}</Text><Text style={styles.itKcL}>KCAL</Text></View>
+                    <View style={styles.itKc}><Text style={styles.itKcV}>{itemKcal.toLocaleString()}</Text><Text style={styles.itKcL}>KCAL</Text></View>
                   </TouchableOpacity>
-                ))}
+                  )
+                })}
               </View>
             </>
           ) : (
@@ -257,6 +269,9 @@ export default function BasketPage({
           </TouchableOpacity>
         </View>
 
+        {/* Nested Modal for the ⋮ sheet. onRequestClose keeps Android's hardware-back
+            in sync with `menu` state. If nested-Modal quirks surface on Android, switch
+            this to an absolutely-positioned overlay in the same tree. */}
         <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
           <TouchableOpacity style={styles.scrim} activeOpacity={1} onPress={() => setMenu(false)}>
             <TouchableOpacity activeOpacity={1} style={styles.sheet} onPress={() => {}}>
@@ -269,7 +284,7 @@ export default function BasketPage({
               </View>
               <View style={styles.lenRow}>
                 <TouchableOpacity style={styles.lenStep} onPress={() => onSetDays(Math.max(1, days - 1))}><Text style={styles.lenStepTxt}>−</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.lenStep} onPress={() => onSetDays(Math.min(14, days + 1))}><Text style={styles.lenStepTxt}>＋</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.lenStep} onPress={() => onSetDays(Math.min(MAX_PREP_DAYS, days + 1))}><Text style={styles.lenStepTxt}>＋</Text></TouchableOpacity>
               </View>
               <Text style={styles.lenFoot}>{a.day} {a.month} → {b.day} {b.month} · {(days * dailyGoal).toLocaleString()} kcal budget</Text>
               <TouchableOpacity style={styles.del} onPress={() => { setMenu(false); onDeleteCycle() }}>
