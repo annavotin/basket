@@ -8,7 +8,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   units: { weight: 'g', energy: 'kcal' },
   theme: 'system',
   accent: ['#7CC96E', '#5FB152', '#3E8F38'],
-  macroTargets: { protein: 0, carbs: 0, fat: 0 },
+  macroTargets: { protein: 140, carbs: 220, fat: 70 },
 }
 
 export const cycles: MealPrepCycle[] = [
