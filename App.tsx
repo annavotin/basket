@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StyleSheet,
   Platform,
+  Share,
 } from 'react-native'
 import { useFonts } from 'expo-font'
 import CalendarStrip from './src/components/CalendarStrip'
@@ -37,7 +38,7 @@ import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences } 
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
-import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs } from './src/services/storage'
+import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll } from './src/services/storage'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -344,6 +345,24 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     setSheetVisible(true)
   }
 
+  async function handleExport() {
+    const json = await exportAll()
+    try {
+      await Share.share({ message: json })
+    } catch {}
+  }
+
+  function handleClearAll() {
+    setCycles([])
+    setActiveCycleId(null)
+    setExtraMeals([])
+    setPantry([])
+    setDailyGoal(DAILY_KCAL_GOAL)
+    setPrefs(DEFAULT_PREFERENCES)
+    clearAll()
+    setSettingsVisible(false)
+  }
+
   const extraDates = extraMeals.map((e) => e.date)
   const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
   const activeDayCount = activeCycle
@@ -515,6 +534,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           setPrefs={setPrefs}
           dailyGoal={dailyGoal}
           onDailyGoal={setDailyGoal}
+          onExport={handleExport}
+          onClearAll={handleClearAll}
         />
         <PantryScreen
           visible={pantryVisible}

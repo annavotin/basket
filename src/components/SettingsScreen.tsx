@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity, ScrollView,
   SafeAreaView, StyleSheet,
@@ -11,6 +11,7 @@ import SettingsRow from './settings/SettingsRow'
 import Stepper from './settings/Stepper'
 import Segmented from './settings/Segmented'
 import SwatchPicker from './settings/SwatchPicker'
+import ConfirmDialog from './settings/ConfirmDialog'
 
 const ACCENTS: [string, string, string][] = [
   ['#7CC96E', '#5FB152', '#3E8F38'],
@@ -28,10 +29,13 @@ type Props = {
   setPrefs: React.Dispatch<React.SetStateAction<Preferences>>
   dailyGoal: number
   onDailyGoal: (n: number) => void
+  onExport: () => void
+  onClearAll: () => void
 }
 
-export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dailyGoal, onDailyGoal }: Props) {
+export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dailyGoal, onDailyGoal, onExport, onClearAll }: Props) {
   const colors = useColors()
+  const [confirmClear, setConfirmClear] = useState(false)
 
   const styles = useMemo(() => StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.surface },
@@ -249,8 +253,39 @@ export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dail
               }
             />
           </SettingsSection>
+
+          {/* Data */}
+          <SettingsSection label="Data">
+            <SettingsRow
+              icon="📤"
+              label="Export data"
+              sub="Share a JSON backup"
+              chevron
+              onPress={onExport}
+              testID="export-data"
+            />
+            <SettingsRow
+              icon="🧨"
+              label="Clear all data"
+              danger
+              onPress={() => setConfirmClear(true)}
+              testID="clear-data"
+            />
+          </SettingsSection>
         </ScrollView>
       </SafeAreaView>
+      <ConfirmDialog
+        visible={confirmClear}
+        title="Clear all data?"
+        body="This permanently removes every basket, extra and pantry staple on this device. This can't be undone."
+        confirmLabel="Clear everything"
+        danger
+        onConfirm={() => {
+          onClearAll()
+          setConfirmClear(false)
+        }}
+        onClose={() => setConfirmClear(false)}
+      />
     </Modal>
   )
 }

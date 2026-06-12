@@ -8,6 +8,7 @@ type StorageDeps = {
   storage: {
     getItem(k: string): Promise<string | null>
     setItem(k: string, v: string): Promise<void>
+    removeItem(k: string): Promise<void>
   }
 }
 
@@ -124,4 +125,32 @@ export async function loadPrefs(deps: StorageDeps = defaultDeps): Promise<Prefer
 
 export async function savePrefs(prefs: Preferences, deps: StorageDeps = defaultDeps): Promise<void> {
   try { await deps.storage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs)) } catch {}
+}
+
+const ALL_KEYS = [STORAGE_KEY, STORAGE_KEY_EXTRAS, STORAGE_KEY_DAILY_GOAL, STORAGE_KEY_PANTRY, STORAGE_KEY_PREFS]
+
+export async function exportAll(deps: StorageDeps = defaultDeps): Promise<string> {
+  const out: Record<string, unknown> = { exportedAt: new Date().toISOString() }
+  const map: Record<string, string> = {
+    [STORAGE_KEY]: 'cycles',
+    [STORAGE_KEY_EXTRAS]: 'extras',
+    [STORAGE_KEY_DAILY_GOAL]: 'dailyGoal',
+    [STORAGE_KEY_PANTRY]: 'pantry',
+    [STORAGE_KEY_PREFS]: 'preferences',
+  }
+  for (const k of ALL_KEYS) {
+    try {
+      const raw = await deps.storage.getItem(k)
+      out[map[k]] = raw == null ? null : JSON.parse(raw)
+    } catch {
+      out[map[k]] = null
+    }
+  }
+  return JSON.stringify(out, null, 2)
+}
+
+export async function clearAll(deps: StorageDeps = defaultDeps): Promise<void> {
+  for (const k of ALL_KEYS) {
+    try { await deps.storage.removeItem(k) } catch {}
+  }
 }

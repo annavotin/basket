@@ -20,6 +20,8 @@ function renderSettings(overrides?: Partial<Parameters<typeof SettingsScreen>[0]
     setPrefs: jest.fn(),
     dailyGoal: 2000,
     onDailyGoal: jest.fn(),
+    onExport: jest.fn(),
+    onClearAll: jest.fn(),
     ...overrides,
   }
   return render(<SettingsScreen {...props} />)
@@ -165,5 +167,31 @@ describe('SettingsScreen', () => {
     const updater = setPrefs.mock.calls[0][0]
     const result = updater(DEFAULT_PREFS)
     expect(result.units.weight).toBe('oz')
+  })
+
+  it('shows Data section label', () => {
+    const { getByText } = renderSettings()
+    expect(getByText('Data')).toBeTruthy()
+  })
+
+  it('pressing export-data calls onExport', () => {
+    const onExport = jest.fn()
+    const { getByTestId } = renderSettings({ onExport })
+    fireEvent.press(getByTestId('export-data'))
+    expect(onExport).toHaveBeenCalledTimes(1)
+  })
+
+  it('pressing clear-data shows the confirm dialog', () => {
+    const { getByTestId, getByText } = renderSettings()
+    fireEvent.press(getByTestId('clear-data'))
+    expect(getByText('Clear all data?')).toBeTruthy()
+  })
+
+  it('confirming clear-all calls onClearAll', () => {
+    const onClearAll = jest.fn()
+    const { getByTestId } = renderSettings({ onClearAll })
+    fireEvent.press(getByTestId('clear-data'))
+    fireEvent.press(getByTestId('confirm-go'))
+    expect(onClearAll).toHaveBeenCalledTimes(1)
   })
 })
