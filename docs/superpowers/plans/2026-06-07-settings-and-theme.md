@@ -98,6 +98,13 @@ Dark palette: from `.se-dark` in `basket-settings.css` (`sageBg #1C2417`, `sageB
 - **Full per-food macro tracking** (Goals only sets targets).
 - **Full "Fresh Matcha" relayout** of home/pantry/sheets (this plan recolors + adds Settings; it does not restructure existing screen layouts).
 
+### Agreed next effort — "Fresh Matcha" redesign (separate plan, after this one)
+Prioritised from the Claude Design prototype (`design/claude-design/`), to be planned and built as its own phased effort once Settings + theme lands:
+1. **Full-screen Basket page** — progress ring, source breakdown + legend, stats (items / weight / kcal-per-day), item list with source tags + per-item share bars, scan-receipt CTA, kebab menu (prep-length slider + delete). Ref: `basket-page.jsx`.
+2. **Pantry Defaults / "This prep"** — full-screen PantryPage with per-day defaults vs per-prep customisation + reset. Ref: `basket-pantry.jsx`.
+3. **Search-based add sheet** — redesigned FAB flow with a searchable food catalog + quick-add + custom entry (food / extra / pantry modes). Ref: `AddSheet` in `basket-app.jsx`.
+4. **Macro bars + home restyle** — macro mini-bars under the budget bar (NOTE: "consumed" is a kcal-derived 25/45/30 estimate, not real per-food macros) + the timeline/header visual restyle. Ref: `MacroBars` in `basket-page.jsx`.
+
 ## Verification
 - **Tests:** `npm test` green after every phase. New suites: ThemeProvider, settings atoms, SettingsScreen, units, storage (prefs/clear/export), auth.
 - **Manual (`npx expo start`):** open Settings from the header; change name → greeting updates; step daily goal/macros/default length → persist across relaunch; toggle Units → numbers reformat app-wide; switch Theme Light/Dark/Auto and Accent → palette changes everywhere live; Export shares JSON; Clear all → resets to seed; Auth sheet sign-in (stub) flips to signed-in state with sync chip. Compare against `design/claude-design/screenshots/`.
