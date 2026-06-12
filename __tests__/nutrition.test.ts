@@ -1,4 +1,4 @@
-import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct } from '../src/utils/nutrition'
+import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct, itemMacros } from '../src/utils/nutrition'
 import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../src/types'
 
 describe('kcalForWeight', () => {
@@ -145,5 +145,20 @@ describe('itemSharePct', () => {
   })
   it('is 0 when the total is 0', () => {
     expect(itemSharePct(250, 0)).toBe(0)
+  })
+})
+
+describe('itemMacros', () => {
+  it('uses the per-100g profile scaled by weight and quantity', () => {
+    const item = { name: 'Salmon', weightG: 600, kcal: 1254, emoji: '🐟', macrosPer100g: { protein: 20, carbs: 0, fat: 13 } }
+    expect(itemMacros(item)).toEqual({ protein: 120, carbs: 0, fat: 78 })
+  })
+  it('multiplies by quantity', () => {
+    const item = { name: 'Bar', weightG: 100, kcal: 200, emoji: '🍫', quantity: 2, macrosPer100g: { protein: 10, carbs: 20, fat: 5 } }
+    expect(itemMacros(item)).toEqual({ protein: 20, carbs: 40, fat: 10 })
+  })
+  it('falls back to the kcal estimate (times quantity) when no profile', () => {
+    const item = { name: 'Mystery', weightG: 100, kcal: 1000, emoji: '❓', quantity: 2 }
+    expect(itemMacros(item)).toEqual({ protein: 125, carbs: 225, fat: 67 }) // kcalDerivedMacros(2000)
   })
 })

@@ -5,6 +5,7 @@ export type FoodItem = {
   emoji: string
   quantity?: number
   source?: 'barcode' | 'receipt' | 'manual'
+  macrosPer100g?: Macros
 }
 
 export type MealPrepCycle = {
@@ -43,6 +44,8 @@ export type WeeklyTab = 'basket' | 'extras' | 'pantry'
 export type WeightUnit = 'g' | 'oz'
 export type EnergyUnit = 'kcal' | 'kJ'
 export type ThemePref = 'light' | 'dark' | 'system'
+
+export type Macros = { protein: number; carbs: number; fat: number }
 
 export type MacroTargets = { protein: number; carbs: number; fat: number }
 

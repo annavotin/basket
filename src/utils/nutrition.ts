@@ -1,4 +1,4 @@
-import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../types'
+import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle, Macros } from '../types'
 
 export function kcalForWeight(kcalPer100g: number, weightG: number): number {
   return Math.round((kcalPer100g * weightG) / 100)
@@ -60,4 +60,19 @@ export function ringArcs(values: number[], budget: number): { fraction: number; 
 /** An item's kcal as a percentage of the basket total. */
 export function itemSharePct(itemKcal: number, totalKcal: number): number {
   return totalKcal > 0 ? (itemKcal / totalKcal) * 100 : 0
+}
+
+/** Total macro grams for an item (includes quantity), mirroring totalKcal.
+ *  Uses the per-100g profile when present, else the kcal-derived estimate. */
+export function itemMacros(item: FoodItem): Macros {
+  const qty = item.quantity ?? 1
+  if (item.macrosPer100g) {
+    const f = (item.weightG / 100) * qty
+    return {
+      protein: item.macrosPer100g.protein * f,
+      carbs: item.macrosPer100g.carbs * f,
+      fat: item.macrosPer100g.fat * f,
+    }
+  }
+  return kcalDerivedMacros(item.kcal * qty)
 }
