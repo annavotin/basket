@@ -34,3 +34,30 @@ export function pantryKcalForCycle(items: PantryItem[], cycle: MealPrepCycle, da
     0
   )
 }
+
+/** Estimate consumed macros from total kcal: 25% protein, 45% carbs, 30% fat
+ *  (protein/carbs 4 kcal/g, fat 9 kcal/g). Same estimate the design prototype ships. */
+export function kcalDerivedMacros(consumedKcal: number): { protein: number; carbs: number; fat: number } {
+  return {
+    protein: Math.round((consumedKcal * 0.25) / 4),
+    carbs: Math.round((consumedKcal * 0.45) / 4),
+    fat: Math.round((consumedKcal * 0.30) / 9),
+  }
+}
+
+/** For a segmented progress ring: each value's fraction of the budget plus the
+ *  cumulative offset (also as a fraction of budget) of all preceding values. */
+export function ringArcs(values: number[], budget: number): { fraction: number; offset: number }[] {
+  let acc = 0
+  return values.map((v) => {
+    const fraction = budget > 0 ? Math.max(0, Math.min(1, v / budget)) : 0
+    const offset = budget > 0 ? acc / budget : 0
+    acc += v
+    return { fraction, offset }
+  })
+}
+
+/** An item's kcal as a percentage of the basket total. */
+export function itemSharePct(itemKcal: number, totalKcal: number): number {
+  return totalKcal > 0 ? (itemKcal / totalKcal) * 100 : 0
+}

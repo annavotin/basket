@@ -1,4 +1,4 @@
-import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle } from '../src/utils/nutrition'
+import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct } from '../src/utils/nutrition'
 import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../src/types'
 
 describe('kcalForWeight', () => {
@@ -114,5 +114,36 @@ describe('pantryKcalForCycle', () => {
 
   it('returns 0 for an empty pantry items array', () => {
     expect(pantryKcalForCycle([], baseCycle, 5)).toBe(0)
+  })
+})
+
+describe('kcalDerivedMacros', () => {
+  it('splits kcal into P/C/F grams (25/45/30, 4/4/9 kcal-per-g)', () => {
+    expect(kcalDerivedMacros(2000)).toEqual({ protein: 125, carbs: 225, fat: 67 })
+  })
+  it('is zero at zero kcal', () => {
+    expect(kcalDerivedMacros(0)).toEqual({ protein: 0, carbs: 0, fat: 0 })
+  })
+})
+
+describe('ringArcs', () => {
+  it('returns fraction-of-budget and cumulative offset per value', () => {
+    const arcs = ringArcs([2500, 2500, 0], 10000)
+    expect(arcs[0]).toEqual({ fraction: 0.25, offset: 0 })
+    expect(arcs[1]).toEqual({ fraction: 0.25, offset: 0.25 })
+    expect(arcs[2]).toEqual({ fraction: 0, offset: 0.5 })
+  })
+  it('clamps a single value to the full ring and handles zero budget', () => {
+    expect(ringArcs([99999], 1000)[0].fraction).toBe(1)
+    expect(ringArcs([100], 0)[0]).toEqual({ fraction: 0, offset: 0 })
+  })
+})
+
+describe('itemSharePct', () => {
+  it('is the item kcal as a percent of the total', () => {
+    expect(itemSharePct(250, 1000)).toBe(25)
+  })
+  it('is 0 when the total is 0', () => {
+    expect(itemSharePct(250, 0)).toBe(0)
   })
 })
