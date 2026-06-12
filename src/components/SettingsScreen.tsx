@@ -6,12 +6,14 @@ import {
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { Preferences } from '../types'
+import { Account } from '../services/auth'
 import SettingsSection from './settings/SettingsSection'
 import SettingsRow from './settings/SettingsRow'
 import Stepper from './settings/Stepper'
 import Segmented from './settings/Segmented'
 import SwatchPicker from './settings/SwatchPicker'
 import ConfirmDialog from './settings/ConfirmDialog'
+import AuthSheet from './settings/AuthSheet'
 
 const ACCENTS: [string, string, string][] = [
   ['#7CC96E', '#5FB152', '#3E8F38'],
@@ -22,6 +24,8 @@ const ACCENTS: [string, string, string][] = [
   ['#E1809B', '#C8607E', '#A8475F'],
 ]
 
+type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error'
+
 type Props = {
   visible: boolean
   onClose: () => void
@@ -31,11 +35,38 @@ type Props = {
   onDailyGoal: (n: number) => void
   onExport: () => void
   onClearAll: () => void
+  // Account/auth props
+  account?: Account | null
+  onAuthed?: (a: Account) => void
+  onSignOut?: () => void
+  onDeleteAccount?: () => void
+  sync?: SyncStatus
+  version?: string
 }
 
-export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dailyGoal, onDailyGoal, onExport, onClearAll }: Props) {
+function syncLabel(sync: SyncStatus): string {
+  switch (sync) {
+    case 'synced': return 'Synced just now'
+    case 'syncing': return 'Syncing…'
+    case 'offline': return 'Offline — will sync later'
+    case 'error': return 'Sync error — tap to retry'
+  }
+}
+
+export default function SettingsScreen({
+  visible, onClose, prefs, setPrefs, dailyGoal, onDailyGoal, onExport, onClearAll,
+  account = null,
+  onAuthed = () => {},
+  onSignOut = () => {},
+  onDeleteAccount = () => {},
+  sync = 'offline',
+  version = '1.0.0',
+}: Props) {
   const colors = useColors()
   const [confirmClear, setConfirmClear] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [authVisible, setAuthVisible] = useState(false)
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
 
   const styles = useMemo(() => StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.surface },
@@ -56,6 +87,147 @@ export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dail
       minWidth: 120,
       maxWidth: 180,
     },
+    // Account section — signed out
+    signInCard: {
+      backgroundColor: colors.white,
+      borderRadius: 20,
+      padding: 18,
+      marginBottom: 4,
+      shadowColor: '#2C3A1E',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 9,
+      elevation: 2,
+    },
+    signInText: {
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    signInTitle: {
+      fontFamily: fonts.display,
+      fontWeight: '600',
+      fontSize: 16,
+      color: colors.forest,
+      marginBottom: 4,
+      textAlign: 'center',
+    },
+    signInSub: {
+      fontFamily: fonts.bodySemi,
+      fontSize: 13,
+      color: colors.mossFaint,
+      textAlign: 'center',
+    },
+    signInBtns: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    btnPrimary: {
+      flex: 1,
+      backgroundColor: colors.matcha,
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    btnPrimaryText: {
+      fontFamily: fonts.display,
+      fontWeight: '600',
+      fontSize: 14,
+      color: '#FFFFFF',
+    },
+    btnGhost: {
+      flex: 1,
+      borderWidth: 1.5,
+      borderColor: colors.matcha,
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    btnGhostText: {
+      fontFamily: fonts.display,
+      fontWeight: '600',
+      fontSize: 14,
+      color: colors.matcha600,
+    },
+    // Account section — signed in
+    acctCard: {
+      backgroundColor: colors.white,
+      borderRadius: 20,
+      padding: 16,
+      marginBottom: 4,
+      shadowColor: '#2C3A1E',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 9,
+      elevation: 2,
+    },
+    acctTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 12,
+    },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.matcha,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      fontFamily: fonts.display,
+      fontWeight: '600',
+      fontSize: 20,
+      color: '#FFFFFF',
+    },
+    acctId: {
+      flex: 1,
+    },
+    acctName: {
+      fontFamily: fonts.display,
+      fontWeight: '600',
+      fontSize: 16,
+      color: colors.forest,
+    },
+    acctEmail: {
+      fontFamily: fonts.bodySemi,
+      fontSize: 12,
+      color: colors.mossFaint,
+      marginTop: 2,
+    },
+    syncChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      backgroundColor: colors.sageBg2,
+      alignSelf: 'flex-start',
+      marginBottom: 12,
+    },
+    syncDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: colors.matcha,
+    },
+    syncText: {
+      fontFamily: fonts.bodySemi,
+      fontSize: 12,
+      color: colors.moss,
+    },
+    sectionLabel: {
+      fontFamily: fonts.display,
+      fontWeight: '600',
+      fontSize: 13,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      color: colors.mossFaint,
+      paddingHorizontal: 6,
+      paddingBottom: 9,
+      marginTop: 22,
+    },
   }), [colors])
 
   const units = prefs.units
@@ -72,6 +244,16 @@ export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dail
 
   const defaultDaysSuffix = prefs.defaultDays === 1 ? ' day' : ' days'
 
+  function openSignIn() {
+    setAuthMode('signin')
+    setAuthVisible(true)
+  }
+
+  function openSignUp() {
+    setAuthMode('signup')
+    setAuthVisible(true)
+  }
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <SafeAreaView style={styles.screen} testID="settings-screen">
@@ -83,6 +265,66 @@ export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dail
           <View style={styles.backBtn} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+
+          {/* Account */}
+          <Text style={styles.sectionLabel}>Account</Text>
+          {account ? (
+            <View style={styles.acctCard}>
+              <View style={styles.acctTop}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{(account.name[0] ?? '?').toUpperCase()}</Text>
+                </View>
+                <View style={styles.acctId}>
+                  <Text style={styles.acctName}>{account.name}</Text>
+                  <Text style={styles.acctEmail}>{account.email}</Text>
+                </View>
+              </View>
+              <View style={styles.syncChip}>
+                <View style={styles.syncDot} />
+                <Text testID="sync-status" style={styles.syncText}>{syncLabel(sync)}</Text>
+              </View>
+              <View>
+                <SettingsRow icon="🪪" label="Manage account" chevron onPress={() => {}} />
+                <SettingsRow
+                  testID="account-signout"
+                  icon="🚪"
+                  label="Sign out"
+                  onPress={onSignOut}
+                />
+                <SettingsRow
+                  testID="account-delete"
+                  icon="🗑️"
+                  label="Delete account"
+                  danger
+                  onPress={() => setConfirmDelete(true)}
+                />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.signInCard}>
+              <View style={styles.signInText}>
+                <Text style={styles.signInTitle}>Sign in to Basket</Text>
+                <Text style={styles.signInSub}>Sync your data across devices.</Text>
+              </View>
+              <View style={styles.signInBtns}>
+                <TouchableOpacity
+                  testID="account-signin"
+                  style={styles.btnPrimary}
+                  onPress={openSignIn}
+                >
+                  <Text style={styles.btnPrimaryText}>Sign in</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID="account-signup"
+                  style={styles.btnGhost}
+                  onPress={openSignUp}
+                >
+                  <Text style={styles.btnGhostText}>Create account</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           {/* Profile */}
           <SettingsSection label="Profile">
             <SettingsRow
@@ -272,8 +514,26 @@ export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dail
               testID="clear-data"
             />
           </SettingsSection>
+
+          {/* About */}
+          <SettingsSection label="About">
+            <SettingsRow icon="📦" label="Version" value={version} />
+            <SettingsRow icon="💬" label="Send feedback" chevron onPress={() => {}} />
+            <SettingsRow icon="⭐" label="Rate the app" chevron onPress={() => {}} />
+            <SettingsRow icon="⚖️" label="Open-source licenses" chevron onPress={() => {}} />
+            <SettingsRow icon="🔒" label="Privacy Policy" chevron onPress={() => {}} />
+            <SettingsRow icon="📄" label="Terms of Service" chevron onPress={() => {}} />
+            <SettingsRow
+              label="Realtime sync"
+              badge="Soon"
+              disabled
+              value="Coming soon"
+            />
+          </SettingsSection>
+
         </ScrollView>
       </SafeAreaView>
+
       <ConfirmDialog
         visible={confirmClear}
         title="Clear all data?"
@@ -285,6 +545,29 @@ export default function SettingsScreen({ visible, onClose, prefs, setPrefs, dail
           setConfirmClear(false)
         }}
         onClose={() => setConfirmClear(false)}
+      />
+
+      <ConfirmDialog
+        visible={confirmDelete}
+        title="Delete account?"
+        body="Your account and all synced data will be permanently deleted. This can't be undone."
+        confirmLabel="Delete account"
+        danger
+        onConfirm={() => {
+          onDeleteAccount()
+          setConfirmDelete(false)
+        }}
+        onClose={() => setConfirmDelete(false)}
+      />
+
+      <AuthSheet
+        visible={authVisible}
+        onClose={() => setAuthVisible(false)}
+        onAuthed={(a) => {
+          setAuthVisible(false)
+          onAuthed(a)
+        }}
+        initialMode={authMode}
       />
     </Modal>
   )

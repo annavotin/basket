@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import SettingsScreen from '../src/components/SettingsScreen'
 import { Preferences } from '../src/types'
+import { Account } from '../src/services/auth'
 
 const DEFAULT_PREFS: Preferences = {
   name: 'Anna',
@@ -193,5 +194,99 @@ describe('SettingsScreen', () => {
     fireEvent.press(getByTestId('clear-data'))
     fireEvent.press(getByTestId('confirm-go'))
     expect(onClearAll).toHaveBeenCalledTimes(1)
+  })
+
+  // — Account section (signed-out) —
+  describe('Account section (signed-out)', () => {
+    it('renders account-signin button when account is null', () => {
+      const { getByTestId } = renderSettings({ account: null })
+      expect(getByTestId('account-signin')).toBeTruthy()
+    })
+
+    it('renders account-signup button when account is null', () => {
+      const { getByTestId } = renderSettings({ account: null })
+      expect(getByTestId('account-signup')).toBeTruthy()
+    })
+
+    it('does not render account-signout when signed out', () => {
+      const { queryByTestId } = renderSettings({ account: null })
+      expect(queryByTestId('account-signout')).toBeNull()
+    })
+  })
+
+  // — Account section (signed-in) —
+  describe('Account section (signed-in)', () => {
+    const account: Account = { name: 'Anna', email: 'anna@example.com' }
+
+    it('renders account name and email when signed in', () => {
+      const { getByText } = renderSettings({ account })
+      expect(getByText('Anna')).toBeTruthy()
+      expect(getByText('anna@example.com')).toBeTruthy()
+    })
+
+    it('renders account-signout button when signed in', () => {
+      const { getByTestId } = renderSettings({ account })
+      expect(getByTestId('account-signout')).toBeTruthy()
+    })
+
+    it('pressing account-signout calls onSignOut', () => {
+      const onSignOut = jest.fn()
+      const { getByTestId } = renderSettings({ account, onSignOut })
+      fireEvent.press(getByTestId('account-signout'))
+      expect(onSignOut).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders sync chip text for synced status', () => {
+      const { getByTestId } = renderSettings({ account, sync: 'synced' })
+      expect(getByTestId('sync-status').props.children).toBe('Synced just now')
+    })
+
+    it('renders sync chip text for syncing status', () => {
+      const { getByTestId } = renderSettings({ account, sync: 'syncing' })
+      expect(getByTestId('sync-status').props.children).toBe('Syncing…')
+    })
+
+    it('renders sync chip text for offline status', () => {
+      const { getByTestId } = renderSettings({ account, sync: 'offline' })
+      expect(getByTestId('sync-status').props.children).toBe('Offline — will sync later')
+    })
+
+    it('renders sync chip text for error status', () => {
+      const { getByTestId } = renderSettings({ account, sync: 'error' })
+      expect(getByTestId('sync-status').props.children).toBe('Sync error — tap to retry')
+    })
+
+    it('tapping account-delete then confirm-go calls onDeleteAccount', () => {
+      const onDeleteAccount = jest.fn()
+      const { getByTestId } = renderSettings({ account, onDeleteAccount })
+      fireEvent.press(getByTestId('account-delete'))
+      fireEvent.press(getByTestId('confirm-go'))
+      expect(onDeleteAccount).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  // — About section —
+  describe('About section', () => {
+    it('renders the About section label', () => {
+      const { getByText } = renderSettings()
+      expect(getByText('About')).toBeTruthy()
+    })
+
+    it('renders the version value', () => {
+      const { getByText } = renderSettings({ version: '2.5.0' })
+      expect(getByText('2.5.0')).toBeTruthy()
+    })
+
+    it('renders the "Soon" badge on Realtime sync row', () => {
+      const { getByText } = renderSettings()
+      expect(getByText('Soon')).toBeTruthy()
+    })
+
+    it('renders static rows: Send feedback, Rate the app, Privacy Policy', () => {
+      const { getByText } = renderSettings()
+      expect(getByText('Send feedback')).toBeTruthy()
+      expect(getByText('Rate the app')).toBeTruthy()
+      expect(getByText('Privacy Policy')).toBeTruthy()
+    })
   })
 })
