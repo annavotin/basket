@@ -183,7 +183,7 @@ export default function BasketPage({
                 {[['Meal prep', colors.matcha, mealPrep], ['Pantry', colors.pantry, pan], ['Extras', colors.rose, ext]].map(([label, c, v]) => (
                   <View style={styles.legItem} key={label as string}>
                     <View style={[styles.legDot, { backgroundColor: c as string }]} />
-                    <Text style={styles.legTxt}>{`${label} ${(v as number).toLocaleString()}`}</Text>
+                    <Text style={styles.legTxt}>{label} <Text style={styles.legVal}>{(v as number).toLocaleString()}</Text></Text>
                   </View>
                 ))}
               </View>
@@ -273,7 +273,7 @@ export default function BasketPage({
               </View>
               <Text style={styles.lenFoot}>{a.day} {a.month} → {b.day} {b.month} · {(days * dailyGoal).toLocaleString()} kcal budget</Text>
               <TouchableOpacity style={styles.del} onPress={() => { setMenu(false); onDeleteCycle() }}>
-                <Text style={styles.delTxt}>Delete this basket</Text>
+                <Text style={styles.delTxt}>🗑️  Delete this basket</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           </TouchableOpacity>

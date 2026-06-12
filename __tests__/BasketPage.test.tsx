@@ -19,7 +19,7 @@ const cycle: MealPrepCycle = {
   ],
 }
 const pantry: PantryItem[] = []
-const extras: ExtraMeal[] = []
+const extras: ExtraMeal[] = [{ id: 'e1', date: '2026-06-04', name: 'Snack', kcal: 310 }]
 const macros: MacroTargets = { protein: 140, carbs: 220, fat: 70 }
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof BasketPage>> = {}) {
@@ -40,7 +40,7 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof BasketPage>> 
 describe('BasketPage', () => {
   it('shows consumed kcal and the budget', () => {
     const { getByText } = renderPage()
-    expect(getByText('1,000')).toBeTruthy()
+    expect(getByText('1,310')).toBeTruthy()  // 600 + 400 meal-prep + 310 extra
     expect(getByText('of 10,000 kcal')).toBeTruthy()
   })
 
@@ -71,7 +71,7 @@ describe('BasketPage', () => {
   it('opens the menu and deletes', () => {
     const { getByLabelText, getByText, props } = renderPage()
     fireEvent.press(getByLabelText('More'))
-    fireEvent.press(getByText('Delete this basket'))
+    fireEvent.press(getByText(/Delete this basket/))
     expect(props.onDeleteCycle).toHaveBeenCalled()
   })
 })
