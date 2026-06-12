@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   onScanBarcode?: () => void
@@ -10,8 +10,41 @@ type Props = {
 }
 
 export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manualOnly }: Props) {
+  const colors = useColors()
   const [open, setOpen] = useState(false)
   const rotate = useRef(new Animated.Value(0)).current
+
+  const styles = useMemo(() => StyleSheet.create({
+    wrap: { position: 'absolute', right: 20, bottom: 28, alignItems: 'flex-end' },
+    fab: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.selectedDay,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 5,
+    },
+    plus: { color: colors.selectedDayText, fontSize: 34, lineHeight: 38, fontWeight: '300' },
+    menu: { marginBottom: 12, alignItems: 'flex-end' },
+    option: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+      marginBottom: 10,
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+    },
+    optionText: { fontSize: 15, fontWeight: '600', color: colors.kcalText },
+  }), [colors])
 
   function toggle(next: boolean) {
     setOpen(next)
@@ -50,35 +83,3 @@ export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manu
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  wrap: { position: 'absolute', right: 20, bottom: 28, alignItems: 'flex-end' },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.selectedDay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
-  },
-  plus: { color: colors.selectedDayText, fontSize: 34, lineHeight: 38, fontWeight: '300' },
-  menu: { marginBottom: 12, alignItems: 'flex-end' },
-  option: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  optionText: { fontSize: 15, fontWeight: '600', color: colors.kcalText },
-})

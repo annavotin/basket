@@ -1,4 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const appJson = require('./app.json')
+const APP_VERSION: string = (appJson as { expo?: { version?: string } }).expo?.version ?? '1.0.0'
 import {
   Alert,
   View,
@@ -8,7 +11,9 @@ import {
   SafeAreaView,
   StyleSheet,
   Platform,
+  Share,
 } from 'react-native'
+import { useFonts } from 'expo-font'
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
 import MealPrepDetail from './src/components/MealPrepDetail'
@@ -22,32 +27,84 @@ import AddItemSheet from './src/components/AddItemSheet'
 import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
 import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
-import ProfileScreen from './src/components/ProfileScreen'
+import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import EditItemSheet from './src/components/EditItemSheet'
-import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry } from './src/data'
+import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
-import { colors } from './src/styles/colors'
-import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab } from './src/types'
+import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
+import { UnitsProvider } from './src/styles/UnitsProvider'
+import { fontMap } from './src/styles/fonts'
+import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
-import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry } from './src/services/storage'
+import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll } from './src/services/storage'
+import { stubAuth, Account } from './src/services/auth'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
 const WINDOW_OFFSET = 7  // days before today the window starts
-const DEFAULT_DAYS = 4
 
 function getWindowStart(): string {
   return addDays(todayISO(), -WINDOW_OFFSET)
 }
 
-export default function App() {
+function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dispatch<React.SetStateAction<Preferences>> }) {
+  const colors = useColors()
   const today = useMemo(() => todayISO(), [])
   const windowStart = useMemo(() => getWindowStart(), [])
+
+  const styles = useMemo(() => StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    container: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 16,
+    },
+    greeting: {
+      fontSize: 26,
+      fontWeight: '700',
+      paddingBottom: 8,
+      color: colors.dayText,
+    },
+    headerButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    headerBtnSpacer: {
+      marginRight: 12,
+    },
+    headerBtnText: {
+      fontSize: 15,
+      color: colors.monthText,
+    },
+    horizontalScroll: {
+      flexGrow: 0,
+    },
+    detailArea: {
+      flex: 1,
+    },
+    navWrap: {
+      position: 'absolute',
+      left: 20,
+      right: 88,
+      bottom: 34,
+    },
+    navWrapFull: {
+      right: 20,
+    },
+  }), [colors])
 
   const [cycles, setCycles] = useState(initialCycles)
   const [activeCycleId, setActiveCycleId] = useState<string | null>(
@@ -63,7 +120,8 @@ export default function App() {
   const [webScannerVisible, setWebScannerVisible] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
-  const [profileVisible, setProfileVisible] = useState(false)
+  const [settingsVisible, setSettingsVisible] = useState(false)
+  const [account, setAccount] = useState<Account | null>(null)
   const [pantry, setPantry] = useState<PantryItem[]>(initialPantry)
   const [pantryVisible, setPantryVisible] = useState(false)
   const [weeklyTab, setWeeklyTab] = useState<WeeklyTab>('basket')
@@ -170,7 +228,7 @@ export default function App() {
 
   function handleCreatePeriod(startDate: string) {
     const id = `cycle-${Date.now()}`
-    const newCycle = { id, startDate, endDate: addDays(startDate, DEFAULT_DAYS - 1), items: [] }
+    const newCycle = { id, startDate, endDate: addDays(startDate, prefs.defaultDays - 1), items: [] }
     setCycles((prev) => [
       ...prev.filter((c) => !(c.id === activeCycleId && c.items.length === 0)),
       newCycle,
@@ -292,11 +350,29 @@ export default function App() {
     setSheetVisible(true)
   }
 
+  async function handleExport() {
+    const json = await exportAll()
+    try {
+      await Share.share({ message: json })
+    } catch {}
+  }
+
+  function handleClearAll() {
+    setCycles([])
+    setActiveCycleId(null)
+    setExtraMeals([])
+    setPantry([])
+    setDailyGoal(DAILY_KCAL_GOAL)
+    setPrefs(DEFAULT_PREFERENCES)
+    clearAll()
+    setSettingsVisible(false)
+  }
+
   const extraDates = extraMeals.map((e) => e.date)
   const activeCycle = cycles.find((c) => c.id === activeCycleId) ?? null
   const activeDayCount = activeCycle
     ? daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
-    : DEFAULT_DAYS
+    : prefs.defaultDays
 
   let barMealPrep = 0
   let barPantry = 0
@@ -334,13 +410,13 @@ export default function App() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <View testID="app-header" style={styles.header}>
-          <Text style={styles.greeting}>Welcome back!</Text>
+          <Text style={styles.greeting}>{prefs.name ? `Welcome back, ${prefs.name}!` : 'Welcome back!'}</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={styles.headerBtnSpacer}>
               <Text style={styles.headerBtnText}>🥫 Pantry</Text>
             </TouchableOpacity>
-            <TouchableOpacity testID="open-profile" onPress={() => setProfileVisible(true)}>
-              <Text style={styles.headerBtnText}>⚙ Profile</Text>
+            <TouchableOpacity testID="open-settings" onPress={() => setSettingsVisible(true)}>
+              <Text style={styles.headerBtnText}>⚙ Settings</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -456,11 +532,21 @@ export default function App() {
           onSave={handleSaveEdit}
           onClose={() => setEditIndex(null)}
         />
-        <ProfileScreen
-          visible={profileVisible}
+        <SettingsScreen
+          visible={settingsVisible}
+          onClose={() => setSettingsVisible(false)}
+          prefs={prefs}
+          setPrefs={setPrefs}
           dailyGoal={dailyGoal}
-          onSave={(g) => { setDailyGoal(g); setProfileVisible(false) }}
-          onClose={() => setProfileVisible(false)}
+          onDailyGoal={setDailyGoal}
+          onExport={handleExport}
+          onClearAll={handleClearAll}
+          account={account}
+          onAuthed={(a) => setAccount(a)}
+          onSignOut={() => { stubAuth.signOut(); setAccount(null) }}
+          onDeleteAccount={() => { stubAuth.deleteAccount(); setAccount(null); setSettingsVisible(false) }}
+          sync={account ? 'synced' : 'offline'}
+          version={APP_VERSION}
         />
         <PantryScreen
           visible={pantryVisible}
@@ -474,51 +560,18 @@ export default function App() {
   )
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  greeting: {
-    fontSize: 26,
-    fontWeight: '700',
-    paddingBottom: 8,
-    color: colors.dayText,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerBtnSpacer: {
-    marginRight: 12,
-  },
-  headerBtnText: {
-    fontSize: 15,
-    color: colors.monthText,
-  },
-  horizontalScroll: {
-    flexGrow: 0,
-  },
-  detailArea: {
-    flex: 1,
-  },
-  navWrap: {
-    position: 'absolute',
-    left: 20,
-    right: 88,
-    bottom: 34,
-  },
-  navWrapFull: {
-    right: 20,
-  },
-})
+export default function App() {
+  const [fontsLoaded] = useFonts(fontMap)
+  const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES)
+  const [prefsHydrated, setPrefsHydrated] = useState(false)
+  useEffect(() => { loadPrefs().then((p) => { setPrefs(p); setPrefsHydrated(true) }) }, [])
+  useEffect(() => { if (prefsHydrated) savePrefs(prefs) }, [prefs, prefsHydrated])
+  if (!fontsLoaded) return null
+  return (
+    <ThemeProvider theme={prefs.theme} accent={prefs.accent}>
+      <UnitsProvider units={prefs.units}>
+        <AppInner prefs={prefs} setPrefs={setPrefs} />
+      </UnitsProvider>
+    </ThemeProvider>
+  )
+}

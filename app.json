@@ -25,13 +25,20 @@
     "plugins": [
       [
         "expo-camera",
-        { "cameraPermission": "Allow Basket to use the camera to scan product barcodes." }
+        {
+          "cameraPermission": "Allow Basket to use the camera to scan product barcodes."
+        }
       ],
       [
         "expo-image-picker",
-        { "photosPermission": "Allow Basket to access your photos to add a receipt." }
-      ]
+        {
+          "photosPermission": "Allow Basket to access your photos to add a receipt."
+        }
+      ],
+      "expo-font"
     ],
-    "experiments": { "baseUrl": "/basket" }
+    "experiments": {
+      "baseUrl": "/basket"
+    }
   }
 }

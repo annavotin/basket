@@ -75,7 +75,7 @@ describe('App scan -> add to active cycle', () => {
     const rows = screen.getAllByTestId('food-item')
     const newRow = within(rows[rows.length - 1])
     expect(newRow.getByText('Greek Yogurt')).toBeTruthy()
-    expect(newRow.getByText('500g  295kcal')).toBeTruthy()
+    expect(newRow.getByText('500 g  295 kcal')).toBeTruthy()
   })
 
   it('removes a stocked item when its remove control is tapped', async () => {
@@ -102,7 +102,7 @@ describe('App scan -> add to active cycle', () => {
     // No remaining food-item row carries the removed product's metrics.
     const remaining = screen.getAllByTestId('food-item')
     remaining.forEach((row) => {
-      expect(within(row).queryByText('500g  295kcal')).toBeNull()
+      expect(within(row).queryByText('500 g  295 kcal')).toBeNull()
     })
   })
 })

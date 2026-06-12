@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Keyboard, Platform, StyleSheet,
 } from 'react-native'
 import DismissArea from './DismissArea'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   visible: boolean
@@ -13,8 +13,33 @@ type Props = {
 }
 
 export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
+  const colors = useColors()
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
+
+  const styles = useMemo(() => StyleSheet.create({
+    flex: { flex: 1 },
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+    sheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      padding: 24, paddingBottom: 36,
+    },
+    title: { fontSize: 20, fontWeight: '700', color: colors.kcalText, alignSelf: 'center' },
+    fieldLabel: { fontSize: 13, color: colors.monthText, marginTop: 14, marginBottom: 4 },
+    input: {
+      width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
+      paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
+    },
+    saveBtn: {
+      backgroundColor: colors.selectedDay, borderRadius: 12,
+      paddingVertical: 14, alignItems: 'center', marginTop: 24,
+    },
+    saveBtnDisabled: { opacity: 0.4 },
+    saveBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
+    cancelBtn: { paddingVertical: 12, marginTop: 4, alignItems: 'center' },
+    cancelText: { color: colors.monthText, fontSize: 15 },
+  }), [colors])
 
   useEffect(() => {
     setName('')
@@ -80,27 +105,3 @@ export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 36,
-  },
-  title: { fontSize: 20, fontWeight: '700', color: colors.kcalText, alignSelf: 'center' },
-  fieldLabel: { fontSize: 13, color: colors.monthText, marginTop: 14, marginBottom: 4 },
-  input: {
-    width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
-  },
-  saveBtn: {
-    backgroundColor: colors.selectedDay, borderRadius: 12,
-    paddingVertical: 14, alignItems: 'center', marginTop: 24,
-  },
-  saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
-  cancelBtn: { paddingVertical: 12, marginTop: 4, alignItems: 'center' },
-  cancelText: { color: colors.monthText, fontSize: 15 },
-})

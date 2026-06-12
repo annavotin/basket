@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import Slider from '@react-native-community/slider'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 export const MIN_DAYS = 1
 export const MAX_DAYS = 7
@@ -21,6 +21,67 @@ export default function NewPeriodPanel({
   onScanReceipt,
   onAddManual,
 }: Props) {
+  const colors = useColors()
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: colors.detailBackground,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingHorizontal: 16,
+      paddingTop: 20,
+      paddingBottom: 32,
+      flex: 1,
+      alignItems: 'center',
+    },
+    header: {
+      alignItems: 'center',
+      marginTop: 12,
+      marginBottom: 16,
+    },
+    bag: {
+      fontSize: 44,
+      marginBottom: 6,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.kcalText,
+    },
+    daysLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.kcalText,
+      marginBottom: 4,
+    },
+    slider: {
+      width: '85%',
+      height: 40,
+      marginBottom: 20,
+    },
+    scanRow: {
+      flexDirection: 'row',
+      width: '100%',
+      gap: 12,
+    },
+    scanCard: {
+      flex: 1,
+      backgroundColor: colors.itemCard,
+      borderRadius: 16,
+      paddingVertical: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scanText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.kcalText,
+      textAlign: 'center',
+    },
+    manualLink: { marginTop: 16, paddingVertical: 8 },
+    manualLinkText: { fontSize: 15, fontWeight: '600', color: colors.selectedDay },
+  }), [colors])
+
   return (
     <View style={styles.container} testID="new-period-panel">
       <View style={styles.header}>
@@ -58,62 +119,3 @@ export default function NewPeriodPanel({
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.detailBackground,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 32,
-    flex: 1,
-    alignItems: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  bag: {
-    fontSize: 44,
-    marginBottom: 6,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.kcalText,
-  },
-  daysLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.kcalText,
-    marginBottom: 4,
-  },
-  slider: {
-    width: '85%',
-    height: 40,
-    marginBottom: 20,
-  },
-  scanRow: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: 12,
-  },
-  scanCard: {
-    flex: 1,
-    backgroundColor: colors.itemCard,
-    borderRadius: 16,
-    paddingVertical: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scanText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.kcalText,
-    textAlign: 'center',
-  },
-  manualLink: { marginTop: 16, paddingVertical: 8 },
-  manualLinkText: { fontSize: 15, fontWeight: '600', color: colors.selectedDay },
-})

@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { addDays, formatDay } from '../utils/dates'
-import { colors } from '../styles/colors'
+import { useColors } from '../styles/ThemeProvider'
 
 type Props = {
   windowStart: string
@@ -22,6 +22,69 @@ export default function CalendarStrip({
   onExtraPress,
   activeExtraDate,
 }: Props) {
+  const colors = useColors()
+
+  const styles = useMemo(() => StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingVertical: 8,
+    },
+    cell: {
+      alignItems: 'center',
+    },
+    extraPill: {
+      backgroundColor: colors.extraPill,
+      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      height: 24,
+      justifyContent: 'center',
+    },
+    extraText: {
+      color: colors.extraPillText,
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    extraAdd: {
+      backgroundColor: colors.extraPillFaint,
+      borderRadius: 12,
+      paddingHorizontal: 8,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      opacity: 0.6,
+    },
+    extraAddText: { color: colors.extraPillFaintText, fontSize: 13, fontWeight: '600' },
+    extraPillActive: { borderWidth: 2, borderColor: colors.extraPillText },
+    dateBox: {
+      width: 48,
+      height: 60,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    dateBoxToday: {
+      backgroundColor: colors.selectedDay,
+    },
+    dayNum: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.dayText,
+    },
+    dayNumToday: {
+      color: colors.selectedDayText,
+    },
+    monthLabel: {
+      fontSize: 12,
+      color: colors.monthText,
+    },
+    monthLabelToday: {
+      color: colors.selectedDayText,
+    },
+  }), [colors])
+
   const days = Array.from({ length: totalDays }, (_, i) => addDays(windowStart, i))
   const extraSet = new Set(extraDates)
 
@@ -60,64 +123,3 @@ export default function CalendarStrip({
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingVertical: 8,
-  },
-  cell: {
-    alignItems: 'center',
-  },
-  extraPill: {
-    backgroundColor: colors.extraPill,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    height: 24,
-    justifyContent: 'center',
-  },
-  extraText: {
-    color: colors.extraPillText,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  extraAdd: {
-    backgroundColor: colors.extraPillFaint,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    opacity: 0.6,
-  },
-  extraAddText: { color: colors.extraPillFaintText, fontSize: 13, fontWeight: '600' },
-  extraPillActive: { borderWidth: 2, borderColor: colors.extraPillText },
-  dateBox: {
-    width: 48,
-    height: 60,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  dateBoxToday: {
-    backgroundColor: colors.selectedDay,
-  },
-  dayNum: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.dayText,
-  },
-  dayNumToday: {
-    color: colors.selectedDayText,
-  },
-  monthLabel: {
-    fontSize: 12,
-    color: colors.monthText,
-  },
-  monthLabelToday: {
-    color: colors.selectedDayText,
-  },
-})

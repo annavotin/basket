@@ -39,3 +39,18 @@ export type ReceiptLine = {
 }
 
 export type WeeklyTab = 'basket' | 'extras' | 'pantry'
+
+export type WeightUnit = 'g' | 'oz'
+export type EnergyUnit = 'kcal' | 'kJ'
+export type ThemePref = 'light' | 'dark' | 'system'
+
+export type MacroTargets = { protein: number; carbs: number; fat: number }
+
+export type Preferences = {
+  name: string
+  defaultDays: number
+  units: { weight: WeightUnit; energy: EnergyUnit }
+  theme: ThemePref
+  accent: [string, string, string]
+  macroTargets: MacroTargets
+}

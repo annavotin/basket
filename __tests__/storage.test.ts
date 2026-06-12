@@ -1,5 +1,6 @@
-import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY } from '../src/services/storage'
-import { MealPrepCycle, ExtraMeal, PantryItem } from '../src/types'
+import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY, loadPrefs, savePrefs, STORAGE_KEY_PREFS, exportAll, clearAll } from '../src/services/storage'
+import { MealPrepCycle, ExtraMeal, PantryItem, Preferences } from '../src/types'
+import { DEFAULT_PREFERENCES } from '../src/data'
 
 function fakeStorage(initial: Record<string, string> = {}) {
   const data: Record<string, string> = { ...initial }
@@ -8,6 +9,9 @@ function fakeStorage(initial: Record<string, string> = {}) {
     getItem: jest.fn(async (k: string) => (k in data ? data[k] : null)),
     setItem: jest.fn(async (k: string, v: string) => {
       data[k] = v
+    }),
+    removeItem: jest.fn(async (k: string) => {
+      delete data[k]
     }),
   }
 }
@@ -112,6 +116,99 @@ describe('pantry storage', () => {
   it('savePantry swallows setItem errors', async () => {
     const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
     await expect(savePantry(pantryItems, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('preferences storage', () => {
+  const fullPrefs: Preferences = {
+    name: 'Anna',
+    defaultDays: 7,
+    units: { weight: 'oz', energy: 'kJ' },
+    theme: 'dark',
+    accent: ['#111111', '#222222', '#333333'],
+    macroTargets: { protein: 150, carbs: 200, fat: 60 },
+  }
+
+  it('round-trips a full Preferences object through save→load', async () => {
+    const storage = fakeStorage()
+    await savePrefs(fullPrefs, { storage })
+    expect(storage.setItem).toHaveBeenCalledWith(STORAGE_KEY_PREFS, expect.any(String))
+    const loaded = await loadPrefs({ storage })
+    expect(loaded).toEqual(fullPrefs)
+  })
+
+  it('returns DEFAULT_PREFERENCES when nothing stored', async () => {
+    const storage = fakeStorage()
+    expect(await loadPrefs({ storage })).toEqual(DEFAULT_PREFERENCES)
+  })
+
+  it('deep-merges partial stored prefs over defaults', async () => {
+    const storage = fakeStorage()
+    await storage.setItem(STORAGE_KEY_PREFS, JSON.stringify({ name: 'Anna' }))
+    const loaded = await loadPrefs({ storage })
+    expect(loaded.name).toBe('Anna')
+    expect(loaded.defaultDays).toBe(DEFAULT_PREFERENCES.defaultDays)
+    expect(loaded.units.energy).toBe(DEFAULT_PREFERENCES.units.energy)
+    expect(loaded.macroTargets.protein).toBe(DEFAULT_PREFERENCES.macroTargets.protein)
+  })
+
+  it('returns DEFAULT_PREFERENCES on corrupt JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_PREFS]: '{not valid json' })
+    expect(await loadPrefs({ storage })).toEqual(DEFAULT_PREFERENCES)
+  })
+
+  it('savePrefs swallows setItem errors', async () => {
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    await expect(savePrefs(fullPrefs, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('data management', () => {
+  it('exportAll returns JSON with all stored fields', async () => {
+    const storage = fakeStorage({
+      [STORAGE_KEY]: JSON.stringify(sampleCycles),
+      [STORAGE_KEY_EXTRAS]: JSON.stringify([{ id: 'x', date: '2026-06-02', name: 'Bar', kcal: 220 }]),
+      [STORAGE_KEY_DAILY_GOAL]: JSON.stringify(2000),
+      [STORAGE_KEY_PANTRY]: JSON.stringify([{ id: 'p1', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 }]),
+      [STORAGE_KEY_PREFS]: JSON.stringify({ name: 'Anna', defaultDays: 5, units: { weight: 'g', energy: 'kcal' }, theme: 'dark', accent: ['#111', '#222', '#333'], macroTargets: { protein: 100, carbs: 200, fat: 60 } }),
+    })
+    const json = await exportAll({ storage })
+    const parsed = JSON.parse(json)
+    expect(parsed.cycles).toEqual(sampleCycles)
+    expect(parsed.extras).toEqual([{ id: 'x', date: '2026-06-02', name: 'Bar', kcal: 220 }])
+    expect(parsed.dailyGoal).toBe(2000)
+    expect(parsed.pantry).toEqual([{ id: 'p1', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 }])
+    expect(parsed.preferences.name).toBe('Anna')
+    expect(typeof parsed.exportedAt).toBe('string')
+  })
+
+  it('exportAll yields null for unset keys', async () => {
+    const storage = fakeStorage()
+    const json = await exportAll({ storage })
+    const parsed = JSON.parse(json)
+    expect(parsed.cycles).toBeNull()
+    expect(parsed.extras).toBeNull()
+    expect(parsed.dailyGoal).toBeNull()
+    expect(parsed.pantry).toBeNull()
+    expect(parsed.preferences).toBeNull()
+  })
+
+  it('clearAll calls removeItem for all 5 keys and leaves storage empty', async () => {
+    const storage = fakeStorage({
+      [STORAGE_KEY]: '[]',
+      [STORAGE_KEY_EXTRAS]: '[]',
+      [STORAGE_KEY_DAILY_GOAL]: '2000',
+      [STORAGE_KEY_PANTRY]: '[]',
+      [STORAGE_KEY_PREFS]: '{}',
+    })
+    await clearAll({ storage })
+    expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY)
+    expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_EXTRAS)
+    expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_DAILY_GOAL)
+    expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_PANTRY)
+    expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_PREFS)
+    expect(storage.removeItem).toHaveBeenCalledTimes(5)
+    expect(Object.keys(storage.data)).toHaveLength(0)
   })
 })
 

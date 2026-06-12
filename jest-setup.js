@@ -17,6 +17,10 @@ global.__fbBatchedBridgeConfig = {
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
+jest.mock('expo-font', () => ({ useFonts: () => [true], isLoaded: () => true, loadAsync: () => Promise.resolve() }));
+jest.mock('@expo-google-fonts/fredoka', () => ({ Fredoka_500Medium: 'Fredoka_500Medium', Fredoka_600SemiBold: 'Fredoka_600SemiBold' }));
+jest.mock('@expo-google-fonts/nunito', () => ({ Nunito_400Regular: 'Nunito_400Regular', Nunito_600SemiBold: 'Nunito_600SemiBold', Nunito_700Bold: 'Nunito_700Bold', Nunito_800ExtraBold: 'Nunito_800ExtraBold' }));
+
 global.nativeFabricUIManager = {};
 global.cancelAnimationFrame = (id) => clearTimeout(id);
 global.requestAnimationFrame = (callback) => setTimeout(callback, 0);

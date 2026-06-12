@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { MealPrepCycle, ExtraMeal, PantryItem } from '../types'
+import { MealPrepCycle, ExtraMeal, PantryItem, Preferences } from '../types'
+import { DEFAULT_PREFERENCES } from '../data'
 
 export const STORAGE_KEY = 'basket:cycles:v1'
 
@@ -7,6 +8,7 @@ type StorageDeps = {
   storage: {
     getItem(k: string): Promise<string | null>
     setItem(k: string, v: string): Promise<void>
+    removeItem(k: string): Promise<void>
   }
 }
 
@@ -100,5 +102,55 @@ export async function savePantry(
     await deps.storage.setItem(STORAGE_KEY_PANTRY, JSON.stringify(items))
   } catch {
     // Persistence must never crash the app.
+  }
+}
+
+export const STORAGE_KEY_PREFS = 'basket:prefs:v1'
+
+export async function loadPrefs(deps: StorageDeps = defaultDeps): Promise<Preferences> {
+  try {
+    const raw = await deps.storage.getItem(STORAGE_KEY_PREFS)
+    if (raw == null) return DEFAULT_PREFERENCES
+    const p = JSON.parse(raw)
+    if (typeof p !== 'object' || p == null) return DEFAULT_PREFERENCES
+    return {
+      ...DEFAULT_PREFERENCES,
+      ...p,
+      units: { ...DEFAULT_PREFERENCES.units, ...(p.units ?? {}) },
+      macroTargets: { ...DEFAULT_PREFERENCES.macroTargets, ...(p.macroTargets ?? {}) },
+      accent: Array.isArray(p.accent) && p.accent.length === 3 ? p.accent : DEFAULT_PREFERENCES.accent,
+    }
+  } catch { return DEFAULT_PREFERENCES }
+}
+
+export async function savePrefs(prefs: Preferences, deps: StorageDeps = defaultDeps): Promise<void> {
+  try { await deps.storage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs)) } catch {}
+}
+
+const ALL_KEYS = [STORAGE_KEY, STORAGE_KEY_EXTRAS, STORAGE_KEY_DAILY_GOAL, STORAGE_KEY_PANTRY, STORAGE_KEY_PREFS]
+
+export async function exportAll(deps: StorageDeps = defaultDeps): Promise<string> {
+  const out: Record<string, unknown> = { exportedAt: new Date().toISOString() }
+  const map: Record<string, string> = {
+    [STORAGE_KEY]: 'cycles',
+    [STORAGE_KEY_EXTRAS]: 'extras',
+    [STORAGE_KEY_DAILY_GOAL]: 'dailyGoal',
+    [STORAGE_KEY_PANTRY]: 'pantry',
+    [STORAGE_KEY_PREFS]: 'preferences',
+  }
+  for (const k of ALL_KEYS) {
+    try {
+      const raw = await deps.storage.getItem(k)
+      out[map[k]] = raw == null ? null : JSON.parse(raw)
+    } catch {
+      out[map[k]] = null
+    }
+  }
+  return JSON.stringify(out, null, 2)
+}
+
+export async function clearAll(deps: StorageDeps = defaultDeps): Promise<void> {
+  for (const k of ALL_KEYS) {
+    try { await deps.storage.removeItem(k) } catch {}
   }
 }
