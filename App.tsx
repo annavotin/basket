@@ -29,6 +29,7 @@ import ExtraMealSheet from './src/components/ExtraMealSheet'
 import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import EditItemSheet from './src/components/EditItemSheet'
+import BasketPage from './src/components/BasketPage'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
@@ -125,6 +126,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [weeklyTab, setWeeklyTab] = useState<WeeklyTab>('basket')
   const [pendingExtraDate, setPendingExtraDate] = useState<string | null>(null)
   const [editIndex, setEditIndex] = useState<number | null>(null)
+  const [basketPageOpen, setBasketPageOpen] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
@@ -243,6 +245,19 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           : c
       )
     )
+  }
+
+  function handleDeleteCycle() {
+    Alert.alert('Delete this basket?', "This can't be undone.", [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: () => {
+          setCycles((prev) => prev.filter((c) => c.id !== activeCycleId))
+          setActiveCycleId(null)
+          setBasketPageOpen(false)
+        },
+      },
+    ])
   }
 
   async function handleScanBarcode() {
@@ -459,11 +474,20 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
               <View style={styles.detailArea}>
                 <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} />
                 {weeklyTab === 'basket' && (
-                  <MealPrepDetail
-                    activeCycle={activeCycle}
-                    onRemoveItem={handleRemoveItem}
-                    onEditItem={handleEditItem}
-                  />
+                  <>
+                    <TouchableOpacity
+                      testID="open-basket-page"
+                      onPress={() => setBasketPageOpen(true)}
+                      style={{ alignSelf: 'flex-end', backgroundColor: colors.forest, borderRadius: 13, paddingHorizontal: 11, paddingVertical: 6, marginBottom: 8 }}
+                    >
+                      <Text style={{ fontFamily: fonts.display, fontSize: 12, color: '#fff' }}>Open basket ›</Text>
+                    </TouchableOpacity>
+                    <MealPrepDetail
+                      activeCycle={activeCycle}
+                      onRemoveItem={handleRemoveItem}
+                      onEditItem={handleEditItem}
+                    />
+                  </>
                 )}
                 {weeklyTab === 'extras' && (
                   <ExtrasPeriodList extras={extrasForPeriod} onRemoveExtra={handleRemoveExtra} />
@@ -537,6 +561,22 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onRemove={handleRemovePantry}
           onClose={() => setPantryVisible(false)}
         />
+        {activeCycle && (
+          <BasketPage
+            visible={basketPageOpen}
+            cycle={activeCycle}
+            pantry={pantry}
+            extras={extraMeals}
+            dailyGoal={dailyGoal}
+            macroTargets={prefs.macroTargets}
+            onBack={() => setBasketPageOpen(false)}
+            onAddItem={() => { setBasketPageOpen(false); handleAddManual() }}
+            onScanReceipt={() => { setBasketPageOpen(false); handleScanReceipt() }}
+            onSetDays={handleChangeDays}
+            onDeleteCycle={handleDeleteCycle}
+            onItemPress={(index) => { setBasketPageOpen(false); handleEditItem(index) }}
+          />
+        )}
       </View>
     </SafeAreaView>
   )
