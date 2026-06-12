@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import DismissArea from './DismissArea'
 import { Product } from '../mockProducts'
-import { FoodItem } from '../types'
+import { FoodItem, Macros } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
 import { useFoodSearch } from '../hooks/useFoodSearch'
 import { FoodSuggestion } from '../foods'
@@ -28,6 +28,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
   const [weight, setWeight] = useState('')
   const [qty, setQty] = useState(1)
   const [kcalPer100g, setKcalPer100g] = useState<number | null>(null)
+  const [macrosPer100g, setMacrosPer100g] = useState<Macros | undefined>(undefined)
   const [manualKcal100, setManualKcal100] = useState('')
   const [emoji, setEmoji] = useState('🛒')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -87,10 +88,12 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
       setWeight(String(product.packageWeightG))
       setKcalPer100g(product.kcalPer100g)
       setEmoji(product.emoji)
+      setMacrosPer100g(product.macrosPer100g)
     } else {
       setName('')
       setWeight('')
       setKcalPer100g(null)
+      setMacrosPer100g(undefined)
       setEmoji('🛒')
     }
     setQty(1)
@@ -111,6 +114,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
     setName(s.name)
     setKcalPer100g(s.kcalPer100g)
     setEmoji(s.emoji)
+    setMacrosPer100g(s.macrosPer100g)
     if (s.packageWeightG) setWeight(String(s.packageWeightG))
     setDropdownOpen(false)
     Keyboard.dismiss()
@@ -133,6 +137,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose }: Props
       emoji,
       quantity: qty,
       source: product ? 'barcode' : 'manual',
+      macrosPer100g,
     })
     Keyboard.dismiss()
     onClose()

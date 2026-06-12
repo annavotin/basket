@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, fireEvent, waitFor, within } from '@testing-library/react-native'
+import { ThemeProvider } from '../src/styles/ThemeProvider'
 
 jest.mock('../src/services/foodApi', () => ({
   searchProductsByName: jest.fn().mockResolvedValue([]),
@@ -81,4 +82,16 @@ describe('AddItemSheet — validation guard', () => {
       expect.objectContaining({ name: 'Mystery Soup', weightG: 250, kcal: 200, quantity: 1 })
     )
   })
+})
+
+it('passes the product macrosPer100g onto the added item', () => {
+  const onAdd = jest.fn()
+  const product = { name: 'Yogurt', emoji: '🥛', packageWeightG: 500, kcalPer100g: 59, macrosPer100g: { protein: 10, carbs: 4, fat: 0.4 } }
+  const { getByText } = render(
+    <ThemeProvider theme="light" accent={['#7CC96E','#5FB152','#3E8F38']}>
+      <AddItemSheet visible product={product} onAdd={onAdd} onClose={() => {}} />
+    </ThemeProvider>
+  )
+  fireEvent.press(getByText('Add to period'))
+  expect(onAdd.mock.calls[0][0].macrosPer100g).toEqual({ protein: 10, carbs: 4, fat: 0.4 })
 })
