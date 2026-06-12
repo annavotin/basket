@@ -1,12 +1,13 @@
 import { Product } from '../mockProducts'
 import { FoodSuggestion } from '../foods'
+import { Macros } from '../types'
 
 export const OFF_USER_AGENT = 'basket-mealprep/1.0 (contact@example.com)'
 
-const FIELDS = 'product_name,brands,product_quantity,quantity,nutriments'
+const FIELDS = 'product_name,brands,product_quantity,quantity,nutriments,proteins_100g,carbohydrates_100g,fat_100g'
 const BASE = 'https://world.openfoodfacts.org/api/v2/product'
 const SEARCH_BASE = 'https://world.openfoodfacts.org/cgi/search.pl'
-const SEARCH_FIELDS = 'product_name,product_quantity,quantity,nutriments'
+const SEARCH_FIELDS = 'product_name,product_quantity,quantity,nutriments,proteins_100g,carbohydrates_100g,fat_100g'
 
 const DEFAULT_PACKAGE_G = 100
 
@@ -25,6 +26,12 @@ export function parseQuantityG(s: unknown): number | null {
 }
 
 type Deps = { fetch: typeof fetch }
+
+function macrosFrom(nutriments: any): Macros | undefined {
+  const p = nutriments?.proteins_100g, c = nutriments?.carbohydrates_100g, f = nutriments?.fat_100g
+  if ([p, c, f].some((n) => typeof n !== 'number')) return undefined
+  return { protein: p, carbs: c, fat: f }
+}
 
 function packageWeightFrom(p: any): number | undefined {
   const numeric = parseFloat(p?.product_quantity)
@@ -58,7 +65,7 @@ export async function lookupProductByBarcode(
         ? p.product_name.trim()
         : `Product ${barcode}`
 
-    return { name, emoji: '🛒', packageWeightG, kcalPer100g }
+    return { name, emoji: '🛒', packageWeightG, kcalPer100g, macrosPer100g: macrosFrom(p.nutriments) }
   } catch {
     return null
   }
@@ -81,7 +88,7 @@ export async function searchProductsByName(
       const kcalPer100g = p?.nutriments?.['energy-kcal_100g']
       const name = typeof p?.product_name === 'string' ? p.product_name.trim() : ''
       if (typeof kcalPer100g !== 'number' || kcalPer100g <= 0 || !name) continue
-      out.push({ name, emoji: '🛒', kcalPer100g, packageWeightG: packageWeightFrom(p), source: 'off' })
+      out.push({ name, emoji: '🛒', kcalPer100g, packageWeightG: packageWeightFrom(p), source: 'off', macrosPer100g: macrosFrom(p?.nutriments) })
     }
     return out
   } catch {

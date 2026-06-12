@@ -1,8 +1,11 @@
+import { Macros } from './types'
+
 export type Product = {
   name: string
   emoji: string
   packageWeightG: number
   kcalPer100g: number
+  macrosPer100g?: Macros
 }
 
 export const MOCK_PRODUCTS: Product[] = [

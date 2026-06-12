@@ -144,3 +144,25 @@ describe('searchProductsByName', () => {
     expect(await searchProductsByName('x', { fetch: fetchMock })).toEqual([])
   })
 })
+
+function fetchReturning(product: any) {
+  return async () => ({ ok: true, json: async () => ({ product }) }) as any
+}
+
+describe('OFF macro extraction', () => {
+  it('reads proteins/carbohydrates/fat per 100g into macrosPer100g', async () => {
+    const p = await lookupProductByBarcode('x', {
+      fetch: fetchReturning({
+        product_name: 'Yogurt', product_quantity: '500',
+        nutriments: { 'energy-kcal_100g': 59, proteins_100g: 10, carbohydrates_100g: 4, fat_100g: 0.4 },
+      }),
+    })
+    expect(p?.macrosPer100g).toEqual({ protein: 10, carbs: 4, fat: 0.4 })
+  })
+  it('leaves macrosPer100g undefined when nutriments lack them', async () => {
+    const p = await lookupProductByBarcode('x', {
+      fetch: fetchReturning({ product_name: 'Plain', product_quantity: '500', nutriments: { 'energy-kcal_100g': 100 } }),
+    })
+    expect(p?.macrosPer100g).toBeUndefined()
+  })
+})
