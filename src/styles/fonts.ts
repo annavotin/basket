@@ -1,16 +1,19 @@
-import { Fredoka_500Medium, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka'
-import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito'
+import { Merriweather_700Bold } from '@expo-google-fonts/merriweather'
+import {
+  Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold,
+} from '@expo-google-fonts/inter'
 
 export const fonts = {
-  display: 'Fredoka_600SemiBold',
-  displayMedium: 'Fredoka_500Medium',
-  body: 'Nunito_700Bold',
-  bodyRegular: 'Nunito_400Regular',
-  bodySemi: 'Nunito_600SemiBold',
-  bodyExtra: 'Nunito_800ExtraBold',
+  head: 'Merriweather_700Bold',   // true headings only (greeting, screen/section titles)
+  display: 'Inter_600SemiBold',   // functional UI: numbers, names, buttons, nav
+  displayMedium: 'Inter_500Medium',
+  body: 'Inter_700Bold',
+  bodyRegular: 'Inter_400Regular',
+  bodySemi: 'Inter_600SemiBold',
+  bodyExtra: 'Inter_800ExtraBold',
 }
 
 export const fontMap = {
-  Fredoka_500Medium, Fredoka_600SemiBold,
-  Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold,
+  Merriweather_700Bold,
+  Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold,
 }

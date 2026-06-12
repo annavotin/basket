@@ -6,7 +6,7 @@ module.exports = {
     '^.+\\.jsx?$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@testing-library/react-native|expo|expo-status-bar)/)',
+    'node_modules/(?!(react-native|@react-native|@testing-library/react-native|expo|expo-status-bar|@expo-google-fonts)/)',
   ],
   setupFiles: ['./jest-setup.js'],
   // App integration tests render the full tree with fake timers; under full-suite

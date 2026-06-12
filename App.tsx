@@ -34,7 +34,7 @@ import { todayISO, addDays, daysBetween } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
 import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
 import { UnitsProvider } from './src/styles/UnitsProvider'
-import { fontMap } from './src/styles/fonts'
+import { fonts, fontMap } from './src/styles/fonts'
 import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
@@ -72,6 +72,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     },
     greeting: {
       fontSize: 26,
+      fontFamily: fonts.head,
       fontWeight: '700',
       paddingBottom: 8,
       color: colors.dayText,
@@ -396,7 +397,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <View testID="app-header" style={styles.header}>
-          <Text style={styles.greeting}>{prefs.name ? `Welcome back, ${prefs.name}!` : 'Welcome back!'}</Text>
+          <Text style={styles.greeting}>{prefs.name ? `Hi, ${prefs.name}` : 'Hi there'}</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={styles.headerBtnSpacer}>
               <Text style={styles.headerBtnText}>🥫 Pantry</Text>
