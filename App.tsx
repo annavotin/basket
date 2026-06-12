@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
-  Platform,
   Share,
 } from 'react-native'
 import { useFonts } from 'expo-font'
@@ -29,7 +28,6 @@ import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
 import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
-import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import EditItemSheet from './src/components/EditItemSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween } from './src/utils/dates'
@@ -117,7 +115,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null)
   const [reviewVisible, setReviewVisible] = useState(false)
   const [reviewLines, setReviewLines] = useState<ReceiptLine[]>([])
-  const [webScannerVisible, setWebScannerVisible] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
   const [settingsVisible, setSettingsVisible] = useState(false)
@@ -248,19 +245,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   async function handleScanBarcode() {
-    if (Platform.OS === 'web') {
-      setWebScannerVisible(true)
-      return
-    }
     const barcode = await scanBarcodeWithCamera()
     if (!barcode) return
-    const product = await lookupProductByBarcode(barcode)
-    setSheetProduct(product)
-    setSheetVisible(true)
-  }
-
-  async function handleWebBarcode(barcode: string) {
-    setWebScannerVisible(false)
     const product = await lookupProductByBarcode(barcode)
     setSheetProduct(product)
     setSheetVisible(true)
@@ -520,11 +506,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           visible={extraSheetVisible}
           onSave={handleSaveExtra}
           onClose={() => { setExtraSheetVisible(false); setPendingExtraDate(null) }}
-        />
-        <WebBarcodeScannerModal
-          visible={webScannerVisible}
-          onScanned={handleWebBarcode}
-          onClose={() => setWebScannerVisible(false)}
         />
         <EditItemSheet
           visible={editIndex !== null}

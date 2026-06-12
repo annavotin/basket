@@ -19,9 +19,6 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
       [
         "expo-camera",
@@ -36,9 +33,6 @@
         }
       ],
       "expo-font"
-    ],
-    "experiments": {
-      "baseUrl": "/basket"
-    }
+    ]
   }
 }

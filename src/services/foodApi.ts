@@ -1,4 +1,3 @@
-import { Platform } from 'react-native'
 import { Product } from '../mockProducts'
 import { FoodSuggestion } from '../foods'
 
@@ -11,8 +10,7 @@ const SEARCH_FIELDS = 'product_name,product_quantity,quantity,nutriments'
 
 const DEFAULT_PACKAGE_G = 100
 
-const offHeaders: Record<string, string> =
-  Platform.OS === 'web' ? {} : { 'User-Agent': OFF_USER_AGENT }
+const offHeaders: Record<string, string> = { 'User-Agent': OFF_USER_AGENT }
 
 export function parseQuantityG(s: unknown): number | null {
   if (typeof s !== 'string') return null
