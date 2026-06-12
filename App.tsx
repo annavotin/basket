@@ -23,7 +23,7 @@ import AddItemSheet from './src/components/AddItemSheet'
 import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
 import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
-import ProfileScreen from './src/components/ProfileScreen'
+import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import WebBarcodeScannerModal from './src/components/WebBarcodeScannerModal'
 import EditItemSheet from './src/components/EditItemSheet'
@@ -114,7 +114,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [webScannerVisible, setWebScannerVisible] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
-  const [profileVisible, setProfileVisible] = useState(false)
+  const [settingsVisible, setSettingsVisible] = useState(false)
   const [pantry, setPantry] = useState<PantryItem[]>(initialPantry)
   const [pantryVisible, setPantryVisible] = useState(false)
   const [weeklyTab, setWeeklyTab] = useState<WeeklyTab>('basket')
@@ -390,8 +390,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={styles.headerBtnSpacer}>
               <Text style={styles.headerBtnText}>🥫 Pantry</Text>
             </TouchableOpacity>
-            <TouchableOpacity testID="open-profile" onPress={() => setProfileVisible(true)}>
-              <Text style={styles.headerBtnText}>⚙ Profile</Text>
+            <TouchableOpacity testID="open-settings" onPress={() => setSettingsVisible(true)}>
+              <Text style={styles.headerBtnText}>⚙ Settings</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -507,11 +507,13 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onSave={handleSaveEdit}
           onClose={() => setEditIndex(null)}
         />
-        <ProfileScreen
-          visible={profileVisible}
+        <SettingsScreen
+          visible={settingsVisible}
+          onClose={() => setSettingsVisible(false)}
+          prefs={prefs}
+          setPrefs={setPrefs}
           dailyGoal={dailyGoal}
-          onSave={(g) => { setDailyGoal(g); setProfileVisible(false) }}
-          onClose={() => setProfileVisible(false)}
+          onDailyGoal={setDailyGoal}
         />
         <PantryScreen
           visible={pantryVisible}
