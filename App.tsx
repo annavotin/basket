@@ -354,6 +354,20 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     ])
   }
 
+  function handleSetDefaultGrams(id: string, dailyG: number) {
+    setPantry((prev) => prev.map((p) => p.id === id ? { ...p, dailyG } : p))
+  }
+
+  function handleResetPantryOverride(id: string) {
+    setCycles((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeCycleId) return c
+        const { [id]: _, ...rest } = c.pantryOverrides ?? {}
+        return { ...c, pantryOverrides: rest }
+      })
+    )
+  }
+
   function handleConfirmReceipt(items: FoodItem[]) {
     handleAddItems(items)
     setReviewVisible(false)
@@ -571,6 +585,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onAdd={handleAddPantry}
           onRemove={handleRemovePantry}
           onClose={() => setPantryVisible(false)}
+          cycle={activeCycle}
+          cycleDays={activeDayCount}
+          onSetDefaultGrams={handleSetDefaultGrams}
+          onSetPantryGrams={handleSetPantryGrams}
+          onResetPantryOverride={handleResetPantryOverride}
         />
         {detailTarget && (
           <ItemDetail
