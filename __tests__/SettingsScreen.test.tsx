@@ -130,16 +130,6 @@ describe('SettingsScreen', () => {
     expect(getByTestId('theme-dark').props.accessibilityState?.selected).toBe(true)
   })
 
-  it('selecting accent-1 calls setPrefs with the second accent option', () => {
-    const setPrefs = jest.fn()
-    const { getByTestId } = renderSettings({ setPrefs })
-    fireEvent.press(getByTestId('accent-1'))
-    expect(setPrefs).toHaveBeenCalled()
-    const updater = setPrefs.mock.calls[0][0]
-    const result = updater(DEFAULT_PREFS)
-    expect(result.accent[0]).toBe('#E6A23C')
-  })
-
   it('macro steppers call setPrefs with updated macroTargets', () => {
     const setPrefs = jest.fn()
     const { getByTestId } = renderSettings({ setPrefs })

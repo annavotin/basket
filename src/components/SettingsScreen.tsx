@@ -11,18 +11,9 @@ import SettingsSection from './settings/SettingsSection'
 import SettingsRow from './settings/SettingsRow'
 import Stepper from './settings/Stepper'
 import Segmented from './settings/Segmented'
-import SwatchPicker from './settings/SwatchPicker'
 import ConfirmDialog from './settings/ConfirmDialog'
 import AuthSheet from './settings/AuthSheet'
 
-const ACCENTS: [string, string, string][] = [
-  ['#7CC96E', '#5FB152', '#3E8F38'],
-  ['#E6A23C', '#D98A1F', '#B5710F'],
-  ['#5FA8D3', '#3E8BBE', '#2C6E9C'],
-  ['#E08A5B', '#CF7340', '#B25A2A'],
-  ['#B07CC9', '#9560B4', '#774696'],
-  ['#E1809B', '#C8607E', '#A8475F'],
-]
 
 type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error'
 
@@ -479,18 +470,6 @@ export default function SettingsScreen({
                     { value: 'system', label: 'Auto' },
                   ]}
                   onChange={(v) => setPrefs((p) => ({ ...p, theme: v as 'light' | 'dark' | 'system' }))}
-                />
-              }
-            />
-            <SettingsRow
-              icon="🌈"
-              label="Accent colour"
-              right={
-                <SwatchPicker
-                  testID="accent"
-                  value={prefs.accent}
-                  options={ACCENTS}
-                  onChange={(triple) => setPrefs((p) => ({ ...p, accent: triple }))}
                 />
               }
             />
