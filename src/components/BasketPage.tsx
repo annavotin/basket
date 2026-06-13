@@ -12,7 +12,7 @@ import {
 } from '../utils/nutrition'
 import { daysBetween, formatDay } from '../utils/dates'
 
-const SRC_LABEL: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual' }
+const SRC_LABEL: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
 const R = 60
 const CIRC = 2 * Math.PI * R
 const MAX_PREP_DAYS = 14

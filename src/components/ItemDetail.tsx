@@ -6,7 +6,7 @@ import { FoodItem, ExtraMeal, PantryItem, Macros } from '../types'
 import { itemMacros, kcalDerivedMacros } from '../utils/nutrition'
 
 type Kind = 'item' | 'extra' | 'pantry'
-const SRC_LABELS: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual' }
+const SRC_LABELS: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
 const MAC_DEFS: { key: keyof Macros; label: string; kcalPerG: number }[] = [
   { key: 'protein', label: 'Protein', kcalPerG: 4 },
   { key: 'carbs', label: 'Carbs', kcalPerG: 4 },

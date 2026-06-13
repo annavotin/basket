@@ -4,7 +4,7 @@ export type FoodItem = {
   kcal: number
   emoji: string
   quantity?: number
-  source?: 'barcode' | 'receipt' | 'manual'
+  source?: 'barcode' | 'receipt' | 'manual' | 'carry'
   macrosPer100g?: Macros
 }
 

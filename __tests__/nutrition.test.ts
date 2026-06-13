@@ -1,4 +1,4 @@
-import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct, itemMacros } from '../src/utils/nutrition'
+import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct, itemMacros, carriedItem } from '../src/utils/nutrition'
 import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../src/types'
 
 describe('kcalForWeight', () => {
@@ -160,5 +160,16 @@ describe('itemMacros', () => {
   it('falls back to the kcal estimate (times quantity) when no profile', () => {
     const item = { name: 'Mystery', weightG: 100, kcal: 1000, emoji: '❓', quantity: 2 }
     expect(itemMacros(item)).toEqual({ protein: 125, carbs: 225, fat: 67 }) // kcalDerivedMacros(2000)
+  })
+})
+
+describe('carriedItem', () => {
+  it('scales weight + kcal to the carried remainder and tags it', () => {
+    const it = { name: 'Salmon', weightG: 600, kcal: 1200, emoji: '🐟', macrosPer100g: { protein: 20, carbs: 0, fat: 13 } }
+    expect(carriedItem(it, 300)).toEqual({ name: 'Salmon', emoji: '🐟', weightG: 300, kcal: 600, source: 'carry', macrosPer100g: { protein: 20, carbs: 0, fat: 13 } })
+  })
+  it('accounts for quantity in the total kcal it scales', () => {
+    const it = { name: 'Bar', weightG: 100, kcal: 200, emoji: '🍫', quantity: 2 }
+    expect(carriedItem(it, 50)).toEqual({ name: 'Bar', emoji: '🍫', weightG: 50, kcal: 200, source: 'carry', macrosPer100g: undefined })
   })
 })

@@ -62,6 +62,21 @@ export function itemSharePct(itemKcal: number, totalKcal: number): number {
   return totalKcal > 0 ? (itemKcal / totalKcal) * 100 : 0
 }
 
+/** Build a new "carried over" item from the remaining grams of a prior item.
+ *  kcal scales from the item's TOTAL (kcal × quantity) by left/weightG. */
+export function carriedItem(item: FoodItem, leftG: number): FoodItem {
+  const w = item.weightG || 0
+  const frac = w > 0 ? leftG / w : 0
+  return {
+    name: item.name,
+    emoji: item.emoji,
+    weightG: Math.round(leftG),
+    kcal: Math.round(item.kcal * (item.quantity ?? 1) * frac),
+    source: 'carry',
+    macrosPer100g: item.macrosPer100g,
+  }
+}
+
 /** Total macro grams for an item (includes quantity), mirroring totalKcal.
  *  Uses the per-100g profile when present, else the kcal-derived estimate. */
 export function itemMacros(item: FoodItem): Macros {

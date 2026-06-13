@@ -30,13 +30,14 @@ import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import ItemDetail from './src/components/ItemDetail'
 import BasketPage from './src/components/BasketPage'
+import CarryOverSheet from './src/components/CarryOverSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween, formatDay } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
 import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
 import { UnitsProvider } from './src/styles/UnitsProvider'
 import { fonts, fontMap } from './src/styles/fonts'
-import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences } from './src/types'
+import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences, MealPrepCycle } from './src/types'
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
@@ -129,6 +130,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     { kind: 'item'; index: number } | { kind: 'extra'; id: string } | { kind: 'pantry'; id: string } | null
   >(null)
   const [basketPageOpen, setBasketPageOpen] = useState(false)
+  const [carryOver, setCarryOver] = useState<{ newCycleId: string; prevCycle: MealPrepCycle } | null>(null)
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
@@ -231,12 +233,16 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   function handleCreatePeriod(startDate: string) {
     const id = `cycle-${Date.now()}`
     const newCycle = { id, startDate, endDate: addDays(startDate, prefs.defaultDays - 1), items: [] }
+    const prevCycle = cycles
+      .filter((c) => c.items.length > 0 && c.id !== activeCycleId)
+      .sort((a, b) => (a.endDate < b.endDate ? 1 : -1))[0]
     setCycles((prev) => [
       ...prev.filter((c) => !(c.id === activeCycleId && c.items.length === 0)),
       newCycle,
     ])
     setActiveExtraDate(null)
     setActiveCycleId(id)
+    if (prevCycle) setCarryOver({ newCycleId: id, prevCycle })
   }
 
   function handleChangeDays(days: number) {
@@ -587,6 +593,20 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             onSavePantry={(patch) => { if (detailTarget.kind === 'pantry') handleSavePantryPatch(detailTarget.id, patch) }}
             onRemove={() => handleDetailRemove(detailTarget)}
             onClose={() => setDetailTarget(null)}
+          />
+        )}
+        {carryOver && (
+          <CarryOverSheet
+            visible
+            prevCycle={carryOver.prevCycle}
+            onConfirm={(carried) => {
+              if (carried.length) {
+                setCycles((prev) => prev.map((c) => (c.id === carryOver.newCycleId ? { ...c, items: [...c.items, ...carried] } : c)))
+              }
+              setCarryOver(null)
+            }}
+            onSkip={() => setCarryOver(null)}
+            onClose={() => setCarryOver(null)}
           />
         )}
         {activeCycle && (
