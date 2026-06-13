@@ -29,9 +29,10 @@ import ExtraMealSheet from './src/components/ExtraMealSheet'
 import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import EditItemSheet from './src/components/EditItemSheet'
+import ItemDetail from './src/components/ItemDetail'
 import BasketPage from './src/components/BasketPage'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
-import { todayISO, addDays, daysBetween } from './src/utils/dates'
+import { todayISO, addDays, daysBetween, formatDay } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle } from './src/utils/nutrition'
 import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
 import { UnitsProvider } from './src/styles/UnitsProvider'
@@ -126,6 +127,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [weeklyTab, setWeeklyTab] = useState<WeeklyTab>('basket')
   const [pendingExtraDate, setPendingExtraDate] = useState<string | null>(null)
   const [editIndex, setEditIndex] = useState<number | null>(null)
+  const [detailTarget, setDetailTarget] = useState<
+    { kind: 'item'; index: number } | { kind: 'extra'; id: string } | { kind: 'pantry'; id: string } | null
+  >(null)
   const [basketPageOpen, setBasketPageOpen] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
 
@@ -307,7 +311,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function handleEditItem(index: number) {
-    setEditIndex(index)
+    setDetailTarget({ kind: 'item', index })
   }
 
   function handleSaveEdit(updated: FoodItem) {
@@ -319,6 +323,39 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       )
     )
     setEditIndex(null)
+  }
+
+  function handleSaveItemPatch(index: number, patch: Partial<FoodItem>) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId
+          ? { ...c, items: c.items.map((it, i) => (i === index ? { ...it, ...patch } : it)) }
+          : c
+      )
+    )
+  }
+
+  function handleSaveExtraPatch(id: string, patch: { name: string; kcal: number }) {
+    setExtraMeals((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))
+  }
+
+  function handleSavePantryPatch(id: string, patch: { kcalPer100g: number; dailyG: number }) {
+    setPantry((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  }
+
+  function handleDetailRemove(target: NonNullable<typeof detailTarget>) {
+    if (target.kind === 'item') {
+      setCycles((prev) =>
+        prev.map((c) =>
+          c.id === activeCycleId ? { ...c, items: c.items.filter((_, i) => i !== target.index) } : c
+        )
+      )
+    } else if (target.kind === 'extra') {
+      setExtraMeals((prev) => prev.filter((e) => e.id !== target.id))
+    } else {
+      setPantry((prev) => prev.filter((p) => p.id !== target.id))
+    }
+    setDetailTarget(null)
   }
 
   function handleAddPantry(draft: { name: string; kcalPer100g: number; dailyG: number }) {
@@ -490,7 +527,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   </>
                 )}
                 {weeklyTab === 'extras' && (
-                  <ExtrasPeriodList extras={extrasForPeriod} onRemoveExtra={handleRemoveExtra} />
+                  <ExtrasPeriodList
+                    extras={extrasForPeriod}
+                    onRemoveExtra={handleRemoveExtra}
+                    onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
+                  />
                 )}
                 {weeklyTab === 'pantry' && (
                   <PantryPeriodView
@@ -498,6 +539,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                     pantry={pantry}
                     cycleDays={activeDayCount}
                     onSetPantryGrams={handleSetPantryGrams}
+                    onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
                   />
                 )}
                 <View style={[styles.navWrap, weeklyTab === 'pantry' && styles.navWrapFull]}>
@@ -561,6 +603,31 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onRemove={handleRemovePantry}
           onClose={() => setPantryVisible(false)}
         />
+        {detailTarget && (
+          <ItemDetail
+            visible
+            kind={detailTarget.kind}
+            item={detailTarget.kind === 'item' ? activeCycle?.items[detailTarget.index] : undefined}
+            extra={detailTarget.kind === 'extra' ? extraMeals.find((e) => e.id === detailTarget.id) : undefined}
+            pantryItem={detailTarget.kind === 'pantry' ? pantry.find((p) => p.id === detailTarget.id) : undefined}
+            days={activeDayCount}
+            dateLabel={
+              detailTarget.kind === 'extra'
+                ? (() => {
+                    const e = extraMeals.find((x) => x.id === detailTarget.id)
+                    if (!e) return undefined
+                    const d = formatDay(e.date)
+                    return `${d.day} ${d.month}`
+                  })()
+                : undefined
+            }
+            onSaveItem={(patch) => { if (detailTarget.kind === 'item') handleSaveItemPatch(detailTarget.index, patch) }}
+            onSaveExtra={(patch) => { if (detailTarget.kind === 'extra') handleSaveExtraPatch(detailTarget.id, patch) }}
+            onSavePantry={(patch) => { if (detailTarget.kind === 'pantry') handleSavePantryPatch(detailTarget.id, patch) }}
+            onRemove={() => handleDetailRemove(detailTarget)}
+            onClose={() => setDetailTarget(null)}
+          />
+        )}
         {activeCycle && (
           <BasketPage
             visible={basketPageOpen}
@@ -574,7 +641,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             onScanReceipt={() => { setBasketPageOpen(false); handleScanReceipt() }}
             onSetDays={handleChangeDays}
             onDeleteCycle={handleDeleteCycle}
-            onItemPress={(index) => { setBasketPageOpen(false); handleEditItem(index) }}
+            onItemPress={(index) => setDetailTarget({ kind: 'item', index })}
           />
         )}
       </View>

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { View, Text, TextInput, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
 import { MealPrepCycle, PantryItem } from '../types'
 import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
 import { useColors } from '../styles/ThemeProvider'
@@ -11,9 +11,10 @@ type Props = {
   pantry: PantryItem[]
   cycleDays: number
   onSetPantryGrams?: (id: string, grams: number) => void
+  onOpenPantry?: (id: string) => void
 }
 
-export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantryGrams }: Props) {
+export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantryGrams, onOpenPantry }: Props) {
   const colors = useColors()
   const units = useUnits()
 
@@ -53,7 +54,9 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantry
             return (
               <View key={item.id} testID="pantry-detail-row" style={styles.card}>
                 <Text style={styles.emoji}>{item.emoji}</Text>
-                <Text style={[styles.name, styles.info]}>{item.name}</Text>
+                <TouchableOpacity testID="open-pantry-item" style={styles.info} onPress={() => onOpenPantry?.(item.id)}>
+                  <Text style={styles.name}>{item.name}</Text>
+                </TouchableOpacity>
                 <TextInput
                   testID="pantry-grams"
                   style={styles.gramsInput}
