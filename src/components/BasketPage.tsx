@@ -8,7 +8,7 @@ import { fonts } from '../styles/fonts'
 import { MealPrepCycle, PantryItem, ExtraMeal, MacroTargets } from '../types'
 import {
   totalKcal, cycleBudget, pantryKcalForCycle, extrasKcalInRange,
-  kcalDerivedMacros, ringArcs, itemSharePct,
+  kcalDerivedMacros, ringArcs, itemSharePct, aggregateMacros,
 } from '../utils/nutrition'
 import { daysBetween, formatDay } from '../utils/dates'
 
@@ -55,7 +55,7 @@ export default function BasketPage({
   const arcs = ringArcs([mealPrep, pan, ext], budget)
   const arcColors = [colors.matcha, colors.pantry, colors.rose]
   const pct = (v: number) => (budget > 0 ? Math.max(0, Math.min(100, (v / budget) * 100)) : 0)
-  const macro = kcalDerivedMacros(consumed)
+  const macro = aggregateMacros(cycle.items, pan + ext)
   const macroDefs = [
     { label: 'Protein', got: macro.protein, target: macroTargets.protein * days, color: colors.roseDeep, track: MACRO_TRACK.protein },
     { label: 'Carbs', got: macro.carbs, target: macroTargets.carbs * days, color: colors.pantry, track: MACRO_TRACK.carbs },

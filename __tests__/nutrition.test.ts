@@ -1,4 +1,4 @@
-import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct, itemMacros, carriedItem } from '../src/utils/nutrition'
+import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct, itemMacros, carriedItem, aggregateMacros } from '../src/utils/nutrition'
 import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../src/types'
 
 describe('kcalForWeight', () => {
@@ -171,5 +171,16 @@ describe('carriedItem', () => {
   it('accounts for quantity in the total kcal it scales', () => {
     const it = { name: 'Bar', weightG: 100, kcal: 200, emoji: '🍫', quantity: 2 }
     expect(carriedItem(it, 50)).toEqual({ name: 'Bar', emoji: '🍫', weightG: 50, kcal: 200, source: 'carry', macrosPer100g: undefined })
+  })
+})
+
+describe('aggregateMacros', () => {
+  it('sums real per-food item macros and adds the kcal estimate for other sources', () => {
+    const items = [{ name: 'Salmon', weightG: 600, kcal: 1254, emoji: '🐟', macrosPer100g: { protein: 20, carbs: 0, fat: 13 } }]
+    expect(aggregateMacros(items, 2000)).toEqual({ protein: 245, carbs: 225, fat: 145 })
+  })
+  it('estimates items with no profile from their kcal too', () => {
+    const items = [{ name: 'Mystery', weightG: 100, kcal: 1000, emoji: '❓' }]
+    expect(aggregateMacros(items, 0)).toEqual({ protein: 63, carbs: 113, fat: 33 })
   })
 })

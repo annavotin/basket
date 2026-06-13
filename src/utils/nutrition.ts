@@ -91,3 +91,21 @@ export function itemMacros(item: FoodItem): Macros {
   }
   return kcalDerivedMacros(item.kcal * qty)
 }
+
+/** Aggregate macro grams for a basket: real per-food item macros (estimate per item
+ *  when a food lacks a profile) plus the kcal-derived estimate for other sources. */
+export function aggregateMacros(items: FoodItem[], otherKcal: number): Macros {
+  const fromItems = items.reduce(
+    (a, it) => {
+      const m = itemMacros(it)
+      return { protein: a.protein + m.protein, carbs: a.carbs + m.carbs, fat: a.fat + m.fat }
+    },
+    { protein: 0, carbs: 0, fat: 0 }
+  )
+  const est = kcalDerivedMacros(otherKcal)
+  return {
+    protein: Math.round(fromItems.protein + est.protein),
+    carbs: Math.round(fromItems.carbs + est.carbs),
+    fat: Math.round(fromItems.fat + est.fat),
+  }
+}
