@@ -28,7 +28,6 @@ import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
 import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
-import EditItemSheet from './src/components/EditItemSheet'
 import ItemDetail from './src/components/ItemDetail'
 import BasketPage from './src/components/BasketPage'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
@@ -126,7 +125,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [pantryVisible, setPantryVisible] = useState(false)
   const [weeklyTab, setWeeklyTab] = useState<WeeklyTab>('basket')
   const [pendingExtraDate, setPendingExtraDate] = useState<string | null>(null)
-  const [editIndex, setEditIndex] = useState<number | null>(null)
   const [detailTarget, setDetailTarget] = useState<
     { kind: 'item'; index: number } | { kind: 'extra'; id: string } | { kind: 'pantry'; id: string } | null
   >(null)
@@ -292,37 +290,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     handleAddItems([item])
   }
 
-  function handleRemoveItem(index: number) {
-    Alert.alert('Remove item', 'Remove this item from the period?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () =>
-          setCycles((prev) =>
-            prev.map((c) =>
-              c.id === activeCycleId
-                ? { ...c, items: c.items.filter((_, i) => i !== index) }
-                : c
-            )
-          ),
-      },
-    ])
-  }
-
   function handleEditItem(index: number) {
     setDetailTarget({ kind: 'item', index })
-  }
-
-  function handleSaveEdit(updated: FoodItem) {
-    setCycles((prev) =>
-      prev.map((c) =>
-        c.id === activeCycleId
-          ? { ...c, items: c.items.map((it, i) => (i === editIndex ? updated : it)) }
-          : c
-      )
-    )
-    setEditIndex(null)
   }
 
   function handleSaveItemPatch(index: number, patch: Partial<FoodItem>) {
@@ -521,7 +490,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                     </TouchableOpacity>
                     <MealPrepDetail
                       activeCycle={activeCycle}
-                      onRemoveItem={handleRemoveItem}
                       onEditItem={handleEditItem}
                     />
                   </>
@@ -529,7 +497,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                 {weeklyTab === 'extras' && (
                   <ExtrasPeriodList
                     extras={extrasForPeriod}
-                    onRemoveExtra={handleRemoveExtra}
                     onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
                   />
                 )}
@@ -573,12 +540,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           visible={extraSheetVisible}
           onSave={handleSaveExtra}
           onClose={() => { setExtraSheetVisible(false); setPendingExtraDate(null) }}
-        />
-        <EditItemSheet
-          visible={editIndex !== null}
-          item={editIndex !== null ? activeCycle?.items[editIndex] ?? null : null}
-          onSave={handleSaveEdit}
-          onClose={() => setEditIndex(null)}
         />
         <SettingsScreen
           visible={settingsVisible}

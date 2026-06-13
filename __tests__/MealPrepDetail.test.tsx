@@ -24,23 +24,6 @@ describe('MealPrepDetail', () => {
     expect(getByText('600 g  204 kcal')).toBeTruthy()
   })
 
-  it('calls onRemoveItem with the index of the tapped card', () => {
-    const onRemoveItem = jest.fn()
-    const { getAllByTestId } = render(
-      <MealPrepDetail activeCycle={cycles[0]} onRemoveItem={onRemoveItem} />
-    )
-    const removeButtons = getAllByTestId('remove-item')
-    expect(removeButtons).toHaveLength(cycles[0].items.length)
-    // Tap the third card (index 2) and assert the index is forwarded.
-    fireEvent.press(removeButtons[2])
-    expect(onRemoveItem).toHaveBeenCalledWith(2)
-  })
-
-  it('renders a remove control per card', () => {
-    const { getAllByTestId } = render(<MealPrepDetail activeCycle={cycles[0]} />)
-    expect(getAllByTestId('remove-item')).toHaveLength(cycles[0].items.length)
-  })
-
   it('shows a ×N badge and quantity-multiplied calories', () => {
     const cycle = {
       id: 'c', startDate: '2026-06-01', endDate: '2026-06-04',

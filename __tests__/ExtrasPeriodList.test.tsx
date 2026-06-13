@@ -10,22 +10,22 @@ const extras: ExtraMeal[] = [
 
 describe('ExtrasPeriodList', () => {
   it('shows an empty hint when there are no extras', () => {
-    const { getByText } = render(<ExtrasPeriodList extras={[]} onRemoveExtra={() => {}} />)
+    const { getByText } = render(<ExtrasPeriodList extras={[]} />)
     expect(getByText(/No extra meals/)).toBeTruthy()
   })
 
   it('renders a row per extra with its name and kcal', () => {
-    const { getAllByTestId } = render(<ExtrasPeriodList extras={extras} onRemoveExtra={() => {}} />)
+    const { getAllByTestId } = render(<ExtrasPeriodList extras={extras} />)
     const rows = getAllByTestId('extra-item')
     expect(rows).toHaveLength(2)
     expect(within(rows[0]).getByText('Protein Bar')).toBeTruthy()
     expect(within(rows[0]).getByText(/220 kcal/)).toBeTruthy()
   })
 
-  it('calls onRemoveExtra with the extra id', () => {
-    const onRemoveExtra = jest.fn()
-    const { getAllByTestId } = render(<ExtrasPeriodList extras={extras} onRemoveExtra={onRemoveExtra} />)
-    fireEvent.press(getAllByTestId('remove-extra')[1])
-    expect(onRemoveExtra).toHaveBeenCalledWith('e2')
+  it('calls onOpenExtra with the extra id when a row is tapped', () => {
+    const onOpenExtra = jest.fn()
+    const { getAllByTestId } = render(<ExtrasPeriodList extras={extras} onOpenExtra={onOpenExtra} />)
+    fireEvent.press(getAllByTestId('open-extra')[1])
+    expect(onOpenExtra).toHaveBeenCalledWith('e2')
   })
 })

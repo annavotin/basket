@@ -1,5 +1,4 @@
 import React from 'react'
-import { Alert } from 'react-native'
 import { render, fireEvent, waitFor, within } from '@testing-library/react-native'
 
 // Keep the real camera (expo-camera) out of the jest module graph: stub the
@@ -78,7 +77,7 @@ describe('App scan -> add to active cycle', () => {
     expect(newRow.getByText('500 g  295 kcal')).toBeTruthy()
   })
 
-  it('removes a stocked item when its remove control is tapped', async () => {
+  it('removes a stocked item when deleted via the ItemDetail sheet', async () => {
     const screen = render(<App />)
     // Let the mount-time hydration effect (loadCycles) settle before interacting.
     await waitFor(() => expect(screen.getAllByTestId('food-item').length).toBeGreaterThan(0))
@@ -91,10 +90,13 @@ describe('App scan -> add to active cycle', () => {
 
     const countWithNew = screen.getAllByTestId('food-item').length
 
-    // Remove the newly added item (it is appended last).
-    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, btns) => btns?.[1]?.onPress?.())
-    const removeButtons = screen.getAllByTestId('remove-item')
-    fireEvent.press(removeButtons[removeButtons.length - 1])
+    // Open the detail sheet for the newly added item (appended last).
+    const rows = screen.getAllByTestId('food-item')
+    fireEvent.press(within(rows[rows.length - 1]).getByTestId('edit-item'))
+
+    // Tap "Remove from basket" then confirm deletion.
+    fireEvent.press(screen.getByText('Remove from basket'))
+    fireEvent.press(screen.getByText('Delete'))
 
     await waitFor(() =>
       expect(screen.getAllByTestId('food-item')).toHaveLength(countWithNew - 1)

@@ -1,5 +1,4 @@
 import React from 'react'
-import { Alert } from 'react-native'
 import { render, fireEvent, waitFor, within } from '@testing-library/react-native'
 
 jest.mock('../src/services/scan', () => ({
@@ -17,19 +16,27 @@ beforeEach(async () => {
 afterEach(() => jest.useRealTimers())
 
 describe('delete confirmation', () => {
-  it('keeps the item when the dialog is cancelled and removes it when confirmed', async () => {
-    const { getAllByTestId, findAllByTestId } = render(<App />)
+  it('keeps the item when cancelled and removes it when confirmed via ItemDetail', async () => {
+    const { getAllByTestId, findAllByTestId, getByText, queryAllByTestId } = render(<App />)
     const rows = await findAllByTestId('food-item')
     const count = rows.length
 
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, btns) => {
-      btns?.[0]?.onPress?.()
-    })
-    fireEvent.press(within(rows[0]).getByTestId('remove-item'))
+    // Open the detail sheet for the first item
+    fireEvent.press(within(rows[0]).getByTestId('edit-item'))
+
+    // Tap "Remove from basket" to trigger the confirm state
+    fireEvent.press(getByText('Remove from basket'))
+
+    // Cancel — item should still be there
+    fireEvent.press(getByText('Cancel'))
     expect(getAllByTestId('food-item')).toHaveLength(count)
 
-    alertSpy.mockImplementation((_t, _m, btns) => { btns?.[1]?.onPress?.() })
-    fireEvent.press(within(rows[0]).getByTestId('remove-item'))
+    // Open the detail sheet again and confirm deletion
+    const freshRows = getAllByTestId('food-item')
+    fireEvent.press(within(freshRows[0]).getByTestId('edit-item'))
+    fireEvent.press(getByText('Remove from basket'))
+    fireEvent.press(getByText('Delete'))
+
     await waitFor(() => expect(getAllByTestId('food-item')).toHaveLength(count - 1))
   })
 })

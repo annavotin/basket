@@ -7,11 +7,10 @@ import { formatWeight, formatEnergy } from '../utils/units'
 
 type Props = {
   activeCycle: MealPrepCycle | null
-  onRemoveItem?: (index: number) => void
   onEditItem?: (index: number) => void
 }
 
-export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem }: Props) {
+export default function MealPrepDetail({ activeCycle, onEditItem }: Props) {
   const colors = useColors()
   const units = useUnits()
 
@@ -64,15 +63,6 @@ export default function MealPrepDetail({ activeCycle, onRemoveItem, onEditItem }
               <Text style={styles.meta}>
                 {formatWeight(item.weightG, units)}  {formatEnergy(item.kcal * (item.quantity ?? 1), units)}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="remove-item"
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${item.name}`}
-              style={styles.remove}
-              onPress={() => onRemoveItem?.(idx)}
-            >
-              <Text style={styles.removeText}>✕</Text>
             </TouchableOpacity>
           </View>
         ))}

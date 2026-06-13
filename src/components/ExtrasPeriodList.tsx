@@ -8,11 +8,10 @@ import { formatEnergy } from '../utils/units'
 
 type Props = {
   extras: ExtraMeal[]
-  onRemoveExtra: (id: string) => void
   onOpenExtra?: (id: string) => void
 }
 
-export default function ExtrasPeriodList({ extras, onRemoveExtra, onOpenExtra }: Props) {
+export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
   const colors = useColors()
   const units = useUnits()
 
@@ -49,14 +48,6 @@ export default function ExtrasPeriodList({ extras, onRemoveExtra, onOpenExtra }:
                 <TouchableOpacity testID="open-extra" style={styles.info} onPress={() => onOpenExtra?.(e.id)}>
                   <Text style={styles.name}>{e.name}</Text>
                   <Text style={styles.meta}>{day} {month} · {formatEnergy(e.kcal, units)}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  testID="remove-extra"
-                  accessibilityLabel={`Remove ${e.name}`}
-                  style={styles.remove}
-                  onPress={() => onRemoveExtra(e.id)}
-                >
-                  <Text style={styles.removeText}>✕</Text>
                 </TouchableOpacity>
               </View>
             )
