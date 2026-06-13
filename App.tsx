@@ -534,6 +534,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           visible={sheetVisible}
           product={sheetProduct}
           onAdd={handleAddItem}
+          onScanBarcode={() => { setSheetVisible(false); handleScanBarcode() }}
+          onScanReceipt={() => { setSheetVisible(false); handleScanReceipt() }}
           onClose={() => setSheetVisible(false)}
         />
         <ReceiptReviewSheet
