@@ -14,6 +14,8 @@ export type MealPrepCycle = {
   endDate: string
   items: FoodItem[]
   pantryOverrides?: Record<string, number>
+  updatedAt?: string         // ISO; set on every local mutation
+  deletedAt?: string | null  // ISO when soft-deleted; null/absent = live
 }
 
 export type PantryItem = {
@@ -22,6 +24,8 @@ export type PantryItem = {
   emoji: string
   kcalPer100g: number
   dailyG: number
+  updatedAt?: string         // ISO; set on every local mutation
+  deletedAt?: string | null  // ISO when soft-deleted; null/absent = live
 }
 
 export type ExtraMeal = {
@@ -29,6 +33,8 @@ export type ExtraMeal = {
   date: string  // ISO "YYYY-MM-DD"
   name: string
   kcal: number
+  updatedAt?: string         // ISO; set on every local mutation
+  deletedAt?: string | null  // ISO when soft-deleted; null/absent = live
 }
 
 export type ReceiptLine = {
