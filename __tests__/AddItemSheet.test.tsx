@@ -64,6 +64,14 @@ describe('AddItemSheet — manual mode', () => {
     )
     expect(queryByTestId('manual-kcal-input')).toBeNull()
   })
+
+  it('previews a hint instead of "0 kcal" before calories are entered', () => {
+    const { getByTestId, getByText } = render(
+      <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Plain Item')
+    expect(getByText('Enter weight & calories')).toBeTruthy()
+  })
 })
 
 describe('AddItemSheet — validation guard', () => {

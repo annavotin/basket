@@ -523,7 +523,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   <TouchableOpacity
                     testID="qty-increment"
                     style={styles.qtyBtn}
-                    onPress={() => setQty((q) => q + 1)}
+                    onPress={() => setQty((q) => Math.min(99, q + 1))}
                   >
                     <Text style={styles.qtyBtnText}>+</Text>
                   </TouchableOpacity>
@@ -531,9 +531,11 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
 
                 {/* ── KCAL PREVIEW ── */}
                 <Text style={styles.kcalPreview} testID="kcal-preview">
-                  {qty > 1
-                    ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
-                    : formatEnergy(perUnitKcal, units)}
+                  {perUnitKcal > 0
+                    ? qty > 1
+                      ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
+                      : formatEnergy(perUnitKcal, units)
+                    : 'Enter weight & calories'}
                 </Text>
 
                 {/* ── ADD BUTTON ── */}
