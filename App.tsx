@@ -43,7 +43,7 @@ import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, simulateReceiptScan } from './src/services/scan'
 import { lookupProductByBarcode } from './src/services/foodApi'
 import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll } from './src/services/storage'
-import { stubAuth, Account } from './src/services/auth'
+import { auth as authService, Account } from './src/services/auth'
 
 const DAY_WIDTH = 64
 const TOTAL_DAYS = 45
@@ -575,8 +575,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onClearAll={handleClearAll}
           account={account}
           onAuthed={(a) => setAccount(a)}
-          onSignOut={() => { stubAuth.signOut(); setAccount(null) }}
-          onDeleteAccount={() => { stubAuth.deleteAccount(); setAccount(null); setSettingsVisible(false) }}
+          onSignOut={() => { authService.signOut(); setAccount(null) }}
+          onDeleteAccount={() => { authService.deleteAccount(); setAccount(null); setSettingsVisible(false) }}
+          authService={authService}
           sync={account ? 'synced' : 'offline'}
           version={APP_VERSION}
         />

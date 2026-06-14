@@ -6,7 +6,7 @@ import {
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { Preferences } from '../types'
-import { Account } from '../services/auth'
+import { Account, AuthService } from '../services/auth'
 import SettingsSection from './settings/SettingsSection'
 import SettingsRow from './settings/SettingsRow'
 import Stepper from './settings/Stepper'
@@ -31,6 +31,7 @@ type Props = {
   onAuthed?: (a: Account) => void
   onSignOut?: () => void
   onDeleteAccount?: () => void
+  authService?: AuthService
   sync?: SyncStatus
   version?: string
 }
@@ -50,6 +51,7 @@ export default function SettingsScreen({
   onAuthed = () => {},
   onSignOut = () => {},
   onDeleteAccount = () => {},
+  authService,
   sync = 'offline',
   version = '1.0.0',
 }: Props) {
@@ -547,6 +549,7 @@ export default function SettingsScreen({
           onAuthed(a)
         }}
         initialMode={authMode}
+        auth={authService}
       />
     </Modal>
   )
