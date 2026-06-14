@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react'
+import { newId } from './src/utils/ids'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const appJson = require('./app.json')
 const APP_VERSION: string = (appJson as { expo?: { version?: string } }).expo?.version ?? '1.0.0'
@@ -217,7 +218,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     if (!pendingExtraDate) return
     setExtraMeals((prev) => [
       ...prev,
-      { id: `extra-${Date.now()}`, date: pendingExtraDate, name: draft.name, kcal: draft.kcal },
+      { id: newId(), date: pendingExtraDate, name: draft.name, kcal: draft.kcal },
     ])
     setExtraSheetVisible(false)
     setPendingExtraDate(null)
@@ -231,7 +232,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function handleCreatePeriod(startDate: string) {
-    const id = `cycle-${Date.now()}`
+    const id = newId()
     const newCycle = { id, startDate, endDate: addDays(startDate, prefs.defaultDays - 1), items: [] }
     const prevCycle = cycles
       .filter((c) => c.items.length > 0 && c.id !== activeCycleId)
@@ -334,7 +335,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function handleAddPantry(draft: { name: string; kcalPer100g: number; dailyG: number }) {
-    setPantry((prev) => [...prev, { id: `pantry-${Date.now()}`, emoji: '🥫', ...draft }])
+    setPantry((prev) => [...prev, { id: newId(), emoji: '🥫', ...draft }])
   }
 
   function handleSetPantryGrams(id: string, grams: number) {
