@@ -15,7 +15,7 @@ describe('mergeLWW', () => {
   })
   it('a remote tombstone (deletedAt) with a later updatedAt wins', () => {
     const tomb = { id: 'a', updatedAt: '2026-06-06T00:00:00.000Z', deletedAt: '2026-06-06T00:00:00.000Z' }
-    expect(mergeLWW([A2], [tomb])).toEqual([tomb])
+    expect(mergeLWW<any>([A2], [tomb])).toEqual([tomb])
   })
   it('treats a missing updatedAt as oldest', () => {
     const noMeta = { id: 'a', v: 9 }
