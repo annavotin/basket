@@ -159,3 +159,7 @@ jest.mock(
 );
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => '00000000-0000-4000-8000-' + Date.now().toString().padStart(12, '0') }))
+
+// Prevent native Supabase/SecureStore modules from loading in Jest.
+// createSupabaseAuth() takes the client as a param so tests bypass this.
+jest.mock('./src/services/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))

@@ -1,4 +1,130 @@
-import { stubAuth } from '../src/services/auth'
+import { stubAuth, createSupabaseAuth } from '../src/services/auth'
+
+function mockClient(over: any = {}) {
+  return {
+    auth: {
+      signInWithPassword: jest.fn(async () => ({
+        data: { user: { email: 'a@b.com', user_metadata: { name: 'Ann' } } },
+        error: null,
+      })),
+      signUp: jest.fn(async () => ({
+        data: { user: { email: 'anna@x.com', user_metadata: {} } },
+        error: null,
+      })),
+      resetPasswordForEmail: jest.fn(async () => ({ error: null })),
+      signOut: jest.fn(async () => ({ error: null })),
+      ...over.auth,
+    },
+    rpc: jest.fn(async () => ({ error: null })),
+    ...over,
+  }
+}
+
+describe('createSupabaseAuth', () => {
+  it('signIn returns the account on success', async () => {
+    const a = createSupabaseAuth(mockClient())
+    expect(await a.signIn('a@b.com', 'pw')).toEqual({
+      ok: true,
+      account: { email: 'a@b.com', name: 'Ann' },
+    })
+  })
+
+  it('signIn surfaces the supabase error message', async () => {
+    const a = createSupabaseAuth(
+      mockClient({
+        auth: {
+          signInWithPassword: jest.fn(async () => ({
+            data: {},
+            error: { message: 'Invalid login credentials' },
+          })),
+        },
+      })
+    )
+    expect(await a.signIn('a@b.com', 'x')).toEqual({
+      ok: false,
+      error: 'Invalid login credentials',
+    })
+  })
+
+  it('signUp falls back to a capitalized email name when metadata is absent', async () => {
+    const a = createSupabaseAuth(mockClient())
+    const r = await a.signUp('anna@x.com', 'pw')
+    expect(r).toEqual({ ok: true, account: { email: 'anna@x.com', name: 'Anna' } })
+  })
+
+  it('signUp returns error on supabase failure', async () => {
+    const a = createSupabaseAuth(
+      mockClient({
+        auth: {
+          signUp: jest.fn(async () => ({
+            data: {},
+            error: { message: 'Email already in use' },
+          })),
+        },
+      })
+    )
+    expect(await a.signUp('x@y.com', 'pw')).toEqual({
+      ok: false,
+      error: 'Email already in use',
+    })
+  })
+
+  it('signInWithApple returns deferred message', async () => {
+    const a = createSupabaseAuth(mockClient())
+    expect(await a.signInWithApple()).toEqual({
+      ok: false,
+      error: 'Use email sign-in for now — Apple/Google coming soon.',
+    })
+  })
+
+  it('signInWithGoogle returns deferred message', async () => {
+    const a = createSupabaseAuth(mockClient())
+    expect(await a.signInWithGoogle()).toEqual({
+      ok: false,
+      error: 'Use email sign-in for now — Apple/Google coming soon.',
+    })
+  })
+
+  it('resetPassword rejects an invalid email before calling supabase', async () => {
+    const client = mockClient()
+    const a = createSupabaseAuth(client)
+    expect(await a.resetPassword('nope')).toEqual({ ok: false, error: 'Enter a valid email.' })
+    expect(client.auth.resetPasswordForEmail).not.toHaveBeenCalled()
+  })
+
+  it('resetPassword calls supabase and returns ok for valid email', async () => {
+    const client = mockClient()
+    const a = createSupabaseAuth(client)
+    expect(await a.resetPassword('user@example.com')).toEqual({ ok: true })
+    expect(client.auth.resetPasswordForEmail).toHaveBeenCalledWith('user@example.com')
+  })
+
+  it('resetPassword surfaces supabase error', async () => {
+    const client = mockClient({
+      auth: {
+        resetPasswordForEmail: jest.fn(async () => ({ error: { message: 'Rate limit exceeded' } })),
+      },
+    })
+    const a = createSupabaseAuth(client)
+    expect(await a.resetPassword('user@example.com')).toEqual({
+      ok: false,
+      error: 'Rate limit exceeded',
+    })
+  })
+
+  it('deleteAccount calls the rpc then signs out', async () => {
+    const client = mockClient()
+    await createSupabaseAuth(client).deleteAccount()
+    expect(client.rpc).toHaveBeenCalledWith('delete_account')
+    expect(client.auth.signOut).toHaveBeenCalled()
+  })
+
+  it('signOut calls supabase signOut', async () => {
+    const client = mockClient()
+    await createSupabaseAuth(client).signOut()
+    expect(client.auth.signOut).toHaveBeenCalled()
+  })
+})
 
 describe('stubAuth', () => {
   describe('signIn', () => {
