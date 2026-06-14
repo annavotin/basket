@@ -32,7 +32,8 @@
           "photosPermission": "Allow Basket to access your photos to add a receipt."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ]
   }
 }
