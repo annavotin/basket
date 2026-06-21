@@ -1,8 +1,34 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { MealPrepCycle, ExtraMeal, PantryItem, Preferences } from '../types'
+import { MealPrepCycle, ExtraMeal, PantryItem, Preferences, CustomFood } from '../types'
 import { DEFAULT_PREFERENCES } from '../data'
 
 export const STORAGE_KEY = 'basket:cycles:v1'
+
+export const STORAGE_KEY_CUSTOM_FOODS = 'basket:customFoods:v1'
+
+export async function loadCustomFoods(
+  deps: StorageDeps = defaultDeps
+): Promise<CustomFood[] | null> {
+  try {
+    const raw = await deps.storage.getItem(STORAGE_KEY_CUSTOM_FOODS)
+    if (raw == null) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as CustomFood[]) : null
+  } catch {
+    return null
+  }
+}
+
+export async function saveCustomFoods(
+  foods: CustomFood[],
+  deps: StorageDeps = defaultDeps
+): Promise<void> {
+  try {
+    await deps.storage.setItem(STORAGE_KEY_CUSTOM_FOODS, JSON.stringify(foods))
+  } catch {
+    // Persistence must never crash the app.
+  }
+}
 
 type StorageDeps = {
   storage: {

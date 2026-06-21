@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import * as SecureStore from 'expo-secure-store'
+import { retryingFetch } from './http'
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL
 const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
@@ -25,5 +26,7 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
         persistSession: true,
         detectSessionInUrl: false,
       },
+      // Retry transient iOS connection drops (-1005) so sync/auth don't fail on a blip.
+      global: { fetch: (input, init) => retryingFetch(input, init) },
     })
   : null

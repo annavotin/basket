@@ -42,6 +42,16 @@ describe('createSupabaseRemote', () => {
       { id: 'p1', name: 'Oats', emoji: '🌾', kcal_per_100g: 389, daily_g: 40, updated_at: '2026-06-05T00:00:00.000Z' },
     ])
   })
+  it('stamps updated_at for legacy rows that lack it (NOT NULL column)', async () => {
+    const { client, state } = makeClient()
+    await createSupabaseRemote(client).upsert('extra_meals', [
+      { id: 'e1', date: '2026-06-10', name: 'Snack', kcal: 200 },
+    ])
+    const row = state.upserted.payload[0]
+    expect(typeof row.updated_at).toBe('string')
+    expect(row.updated_at).not.toBeNull()
+    expect(() => new Date(row.updated_at).toISOString()).not.toThrow()
+  })
   it('throws on a query error so the sync coordinator treats it as offline', async () => {
     const client = { from: () => ({ select: () => ({ then: (r: any) => Promise.resolve({ data: null, error: { message: 'boom' } }).then(r) }) }) }
     await expect(createSupabaseRemote(client as any).pullSince('cycles', null)).rejects.toBeTruthy()

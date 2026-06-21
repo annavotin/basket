@@ -40,7 +40,7 @@ create policy own_rows on public.preferences
 
 -- ============================================================ cycles
 create table if not exists public.cycles (
-  id uuid primary key,
+  id text primary key,  -- app-generated opaque id (UUID for new rows; legacy string ids predate that)
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   start_date date,
   end_date date,
@@ -56,11 +56,12 @@ create policy own_rows on public.cycles
 
 -- ============================================================ extra_meals
 create table if not exists public.extra_meals (
-  id uuid primary key,
+  id text primary key,  -- app-generated opaque id (UUID for new rows; legacy string ids predate that)
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   date date,
   name text,
   kcal int,
+  macros jsonb,
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
@@ -71,7 +72,7 @@ create policy own_rows on public.extra_meals
 
 -- ============================================================ pantry_items
 create table if not exists public.pantry_items (
-  id uuid primary key,
+  id text primary key,  -- app-generated opaque id (UUID for new rows; legacy string ids predate that)
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   name text,
   emoji text,

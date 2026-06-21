@@ -13,6 +13,8 @@ function mockClient(over: any = {}) {
       })),
       resetPasswordForEmail: jest.fn(async () => ({ error: null })),
       signOut: jest.fn(async () => ({ error: null })),
+      getSession: jest.fn(async () => ({ data: { session: null }, error: null })),
+      updateUser: jest.fn(async () => ({ data: { user: {} }, error: null })),
       ...over.auth,
     },
     rpc: jest.fn(async () => ({ error: null })),
@@ -124,6 +126,44 @@ describe('createSupabaseAuth', () => {
     await createSupabaseAuth(client).signOut()
     expect(client.auth.signOut).toHaveBeenCalled()
   })
+
+  it('getCurrentAccount returns the account from a persisted session', async () => {
+    const client = mockClient({
+      auth: {
+        getSession: jest.fn(async () => ({
+          data: { session: { user: { email: 'a@b.com', user_metadata: { name: 'Ann' } } } },
+          error: null,
+        })),
+      },
+    })
+    expect(await createSupabaseAuth(client).getCurrentAccount()).toEqual({
+      email: 'a@b.com',
+      name: 'Ann',
+    })
+  })
+
+  it('getCurrentAccount returns null when there is no session', async () => {
+    const client = mockClient()
+    expect(await createSupabaseAuth(client).getCurrentAccount()).toBeNull()
+  })
+
+  it('changePassword calls updateUser and returns ok', async () => {
+    const client = mockClient()
+    expect(await createSupabaseAuth(client).changePassword('newpass123')).toEqual({ ok: true })
+    expect(client.auth.updateUser).toHaveBeenCalledWith({ password: 'newpass123' })
+  })
+
+  it('changePassword surfaces the supabase error', async () => {
+    const client = mockClient({
+      auth: {
+        updateUser: jest.fn(async () => ({ data: {}, error: { message: 'Password too weak' } })),
+      },
+    })
+    expect(await createSupabaseAuth(client).changePassword('x')).toEqual({
+      ok: false,
+      error: 'Password too weak',
+    })
+  })
 })
 
 describe('stubAuth', () => {
@@ -222,6 +262,18 @@ describe('stubAuth', () => {
   describe('deleteAccount', () => {
     it('resolves without error', async () => {
       await expect(stubAuth.deleteAccount()).resolves.toBeUndefined()
+    })
+  })
+
+  describe('getCurrentAccount', () => {
+    it('returns null (no persisted session in local-only mode)', async () => {
+      await expect(stubAuth.getCurrentAccount()).resolves.toBeNull()
+    })
+  })
+
+  describe('changePassword', () => {
+    it('resolves ok in local-only mode', async () => {
+      await expect(stubAuth.changePassword('whatever123')).resolves.toEqual({ ok: true })
     })
   })
 })

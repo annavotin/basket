@@ -1,4 +1,17 @@
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+const WEEKDAYS_LONG = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+
+/** Short weekday for a date, e.g. "Thu". */
+export function weekdayShort(isoDate: string): string {
+  return WEEKDAYS[new Date(isoDate + 'T00:00:00Z').getUTCDay()]
+}
+
+/** Long header date, e.g. "Sunday, 7 Jun". */
+export function formatLong(isoDate: string): string {
+  const d = new Date(isoDate + 'T00:00:00Z')
+  return `${WEEKDAYS_LONG[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
+}
 
 export function addDays(isoDate: string, n: number): string {
   const d = new Date(isoDate + 'T00:00:00Z')

@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker'
 import { CameraView, Camera } from 'expo-camera'
 import { ReceiptLine } from '../types'
-import { getMockReceiptLines } from '../mockReceipts'
+import { supabase } from './supabase'
+import { extractReceiptLines } from './receipt-extract'
 
 let activeSub: { remove: () => void } | null = null
 
@@ -40,6 +41,10 @@ export async function scanBarcodeWithCamera(): Promise<string | null> {
       } catch {
         // ignore — scanner may already be dismissed
       }
+      // Let the native scanner fully tear down before the caller presents a sheet,
+      // otherwise iOS errors "already presenting DataScannerViewController" and the
+      // Add-item sheet never appears.
+      await new Promise((r) => setTimeout(r, 350))
       resolve(value)
     }
 
@@ -55,20 +60,44 @@ export async function scanBarcodeWithCamera(): Promise<string | null> {
 }
 
 /**
- * Phase-2 simulation: let the user pick a photo (stand-in for photographing a
- * receipt), then return mock extracted line items. Returns null if cancelled.
- * Real OCR / vision-LLM comes later behind this same signature.
+ * Pick a receipt photo and extract line items via the `scan-receipt` Supabase Edge
+ * Function (Claude Haiku vision). Returns the parsed lines for review, or null if the
+ * user cancels, sync isn't configured, or extraction fails (caller falls back to manual).
  */
-export async function simulateReceiptScan(): Promise<ReceiptLine[] | null> {
+export async function scanReceipt(onExtractStart?: () => void): Promise<ReceiptLine[] | null> {
   try {
     await ImagePicker.requestMediaLibraryPermissionsAsync()
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 1,
-    })
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
     if (result.canceled) return null
-    return getMockReceiptLines()
+    const asset = result.assets?.[0]
+    if (!asset?.uri) return null
+    if (!supabase) return null // local-only mode — no backend to call
+    const sb = supabase
+    onExtractStart?.() // image picked — extraction (resize + upload + Claude) starts now
+
+    // Downscale before upload: full-res phone photos are multi-MB and time out over
+    // cellular. Cap the long edge at 1600px (Claude downsamples to ~1568 anyway), JPEG q0.6.
+    // Required lazily so the app still boots on a binary that predates this native module
+    // (e.g. a JS reload before the next `expo run:ios`).
+    const ImageManipulator = require('expo-image-manipulator') as typeof import('expo-image-manipulator')
+    const w = asset.width ?? 0
+    const h = asset.height ?? 0
+    const target = Math.min(Math.max(w, h, 1), 1600)
+    const resizeTo = h >= w ? { height: target } : { width: target }
+    const shrunk = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: resizeTo }],
+      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+    )
+    if (!shrunk.base64) return null
+
+    const image = { base64: shrunk.base64, mediaType: 'image/jpeg' }
+    return extractReceiptLines(image, async (body) => {
+      const { data, error } = await sb.functions.invoke('scan-receipt', { body })
+      if (error) throw error
+      return data
+    })
   } catch {
-    return getMockReceiptLines()
+    return null
   }
 }

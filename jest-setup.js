@@ -18,6 +18,13 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
 jest.mock('expo-font', () => ({ useFonts: () => [true], isLoaded: () => true, loadAsync: () => Promise.resolve() }));
+jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: () => Promise.resolve(), hideAsync: () => Promise.resolve() }));
+jest.mock('expo-blur', () => ({ BlurView: require('react-native').View }));
+// Keep the USDA network out of component/hook tests; usda.test.ts uses requireActual.
+jest.mock('./src/services/usda', () => ({
+  usdaLookupByBarcode: jest.fn(async () => null),
+  usdaSearchByName: jest.fn(async () => []),
+}));
 jest.mock('@expo-google-fonts/merriweather', () => ({ Merriweather_700Bold: 'Merriweather_700Bold' }));
 jest.mock('@expo-google-fonts/inter', () => ({ Inter_400Regular: 'Inter_400Regular', Inter_500Medium: 'Inter_500Medium', Inter_600SemiBold: 'Inter_600SemiBold', Inter_700Bold: 'Inter_700Bold', Inter_800ExtraBold: 'Inter_800ExtraBold' }));
 

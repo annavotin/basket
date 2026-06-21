@@ -5,7 +5,7 @@ export type FoodSuggestion = {
   emoji: string
   kcalPer100g: number
   packageWeightG?: number
-  source: 'local' | 'off'
+  source: 'local' | 'off' | 'usda'
   macrosPer100g?: Macros
 }
 

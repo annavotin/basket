@@ -28,7 +28,10 @@ export async function syncTable<T extends SyncRecord>(table: SyncTable, local: T
     const newest = merged.reduce<string | null>((mx, r) => (r.updatedAt && (!mx || r.updatedAt > mx) ? r.updatedAt : mx), since)
     if (newest) await deps.setCursor(table, newest)
     return merged
-  } catch {
+  } catch (err) {
+    // Offline-safe: keep local + the dirty queue so it retries. We surface the error
+    // (offline blips included) so genuine failures — RLS, schema, auth — are visible.
+    console.warn(`[sync] "${table}" did not sync (kept local, will retry):`, err)
     return local
   }
 }

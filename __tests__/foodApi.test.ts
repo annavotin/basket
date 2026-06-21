@@ -47,12 +47,12 @@ describe('lookupProductByBarcode', () => {
     expect(await lookupProductByBarcode('0000', { fetch: fetchMock })).toBeNull()
   })
 
-  it('falls back to a default package weight when product_quantity is absent', async () => {
+  it('reports 0 package weight (unknown) when product_quantity is absent', async () => {
     const fetchMock = fakeFetch({
       product: { product_name: 'Loose', nutriments: { 'energy-kcal_100g': 100 } },
     })
     const product = await lookupProductByBarcode('1', { fetch: fetchMock })
-    expect(product).toMatchObject({ name: 'Loose', packageWeightG: 100, kcalPer100g: 100 })
+    expect(product).toMatchObject({ name: 'Loose', packageWeightG: 0, kcalPer100g: 100 })
   })
 
   it('parses a "200 g" quantity string when product_quantity is absent', async () => {
@@ -114,6 +114,34 @@ describe('lookupProductByBarcode', () => {
       throw new Error('network down')
     }) as unknown as typeof fetch
     expect(await lookupProductByBarcode('1', { fetch: fetchMock })).toBeNull()
+  })
+
+  // Regression for the Oat-ly barista miss (barcode 7394376616228): OFF's v2 API,
+  // when you co-request bare `<nutrient>_100g` fields alongside `nutriments`,
+  // flattens those nutrients to top-level keys and OMITS the `nutriments` object
+  // entirely — taking `energy-kcal_100g` with it, so every lookup returned null.
+  // This mock mimics that real behaviour; the fix is to stop requesting bare fields.
+  it('resolves kcal + macros even though OFF flattens bare nutrient fields', async () => {
+    const fullNutriments = {
+      'energy-kcal_100g': 61, 'energy_100g': 256.8,
+      proteins_100g: 1.1, carbohydrates_100g: 7.1, fat_100g: 3,
+    } as Record<string, number>
+    const offLikeFetch = jest.fn(async (url: string) => {
+      const fields = decodeURIComponent(url.match(/[?&]fields=([^&]*)/)?.[1] ?? '')
+      const bare = fields.split(',').filter((t) => /_100g$/.test(t))
+      const product: any = { product_name: 'Oat-ly Barista', brands: 'Oatly', product_quantity: '1000' }
+      if (bare.length) for (const t of bare) product[t] = fullNutriments[t] // nutriments dropped
+      else product.nutriments = fullNutriments
+      return { ok: true, json: async () => ({ product, status: 1 }) }
+    }) as unknown as typeof fetch
+
+    const product = await lookupProductByBarcode('7394376616228', { fetch: offLikeFetch })
+    expect(product).toMatchObject({
+      name: 'Oat-ly Barista',
+      kcalPer100g: 61,
+      packageWeightG: 1000,
+      macrosPer100g: { protein: 1.1, carbs: 7.1, fat: 3 },
+    })
   })
 })
 

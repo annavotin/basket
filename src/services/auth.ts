@@ -11,6 +11,10 @@ export interface AuthService {
   resetPassword(email: string): Promise<{ ok: boolean; error?: string }>
   signOut(): Promise<void>
   deleteAccount(): Promise<void>
+  /** Restore the signed-in account from a persisted session, or null if none. */
+  getCurrentAccount(): Promise<Account | null>
+  /** Set a new password for the signed-in user (no current password needed). */
+  changePassword(newPassword: string): Promise<{ ok: boolean; error?: string }>
 }
 
 export function capitalize(email: string): string {
@@ -66,6 +70,17 @@ export function createSupabaseAuth(client: any): AuthService {
       await client.rpc('delete_account')
       await client.auth.signOut()
     },
+
+    async getCurrentAccount(): Promise<Account | null> {
+      const { data } = await client.auth.getSession()
+      const user = data?.session?.user
+      return user ? toAccount(user) : null
+    },
+
+    async changePassword(newPassword: string): Promise<{ ok: boolean; error?: string }> {
+      const { error } = await client.auth.updateUser({ password: newPassword })
+      return { ok: !error, error: error ? friendlyError(error) : undefined }
+    },
   }
 }
 
@@ -105,6 +120,15 @@ export const stubAuth: AuthService = {
 
   async deleteAccount(): Promise<void> {
     // no-op stub
+  },
+
+  async getCurrentAccount(): Promise<Account | null> {
+    // local-only mode has no persisted session
+    return null
+  },
+
+  async changePassword(_newPassword: string): Promise<{ ok: boolean; error?: string }> {
+    return { ok: true }
   },
 }
 

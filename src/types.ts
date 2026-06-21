@@ -33,6 +33,7 @@ export type ExtraMeal = {
   date: string  // ISO "YYYY-MM-DD"
   name: string
   kcal: number
+  macros?: Macros            // absolute grams; optional (kcal-derived estimate when absent)
   updatedAt?: string         // ISO; set on every local mutation
   deletedAt?: string | null  // ISO when soft-deleted; null/absent = live
 }
@@ -43,6 +44,20 @@ export type ReceiptLine = {
   weightG: number
   kcal: number
   isFood: boolean
+}
+
+// A reusable food the user has saved (auto-saved when adding a scanned or manual item).
+// Stored locally; keyed by barcode when known, otherwise by name.
+export type CustomFood = {
+  id: string
+  name: string
+  emoji: string
+  kcalPer100g: number
+  macrosPer100g?: Macros
+  packageWeightG?: number  // last-used package size, prefilled when re-adding
+  barcode?: string
+  createdAt: number        // epoch ms
+  updatedAt: number        // epoch ms
 }
 
 export type WeeklyTab = 'basket' | 'extras' | 'pantry'
