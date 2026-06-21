@@ -13,6 +13,8 @@ function makeFakeAuth(overrides?: Partial<AuthService>): AuthService {
     resetPassword: jest.fn().mockResolvedValue({ ok: true }),
     signOut: jest.fn().mockResolvedValue(undefined),
     deleteAccount: jest.fn().mockResolvedValue(undefined),
+    getCurrentAccount: jest.fn().mockResolvedValue(null),
+    changePassword: jest.fn().mockResolvedValue({ ok: true }),
     ...overrides,
   }
 }

@@ -19,7 +19,7 @@ export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
-    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+    backdrop: { flex: 1, backgroundColor: 'rgba(28,36,23,0.5)', justifyContent: 'flex-end' },
     sheet: {
       backgroundColor: colors.surface,
       borderTopLeftRadius: 24, borderTopRightRadius: 24,

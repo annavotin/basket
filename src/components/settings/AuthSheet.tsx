@@ -113,15 +113,18 @@ export default function AuthSheet({
   const styles = StyleSheet.create({
     scrim: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.45)',
+      backgroundColor: 'rgba(28,36,23,0.5)',
       justifyContent: 'flex-end',
+    },
+    scrimFill: {
+      flex: 1,
     },
     sheet: {
       backgroundColor: colors.white,
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
       paddingHorizontal: 24,
-      paddingBottom: 40,
+      paddingBottom: 44,
       paddingTop: 12,
       maxHeight: '92%',
     },
@@ -288,10 +291,9 @@ export default function AuthSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <TouchableOpacity style={styles.scrim} activeOpacity={1} onPress={onClose}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={styles.sheet}>
+      <KeyboardAvoidingView style={styles.scrim} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableOpacity style={styles.scrimFill} activeOpacity={1} onPress={onClose} />
+        <View style={styles.sheet}>
               <View style={styles.grab} />
               <Text style={styles.title}>{title}</Text>
               <Text style={styles.desc}>
@@ -416,10 +418,8 @@ export default function AuthSheet({
                   </>
                 )}
               </ScrollView>
-            </View>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

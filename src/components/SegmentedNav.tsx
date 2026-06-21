@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { BlurView } from 'expo-blur'
 import { WeeklyTab } from '../types'
 import { useColors } from '../styles/ThemeProvider'
 
@@ -16,13 +17,19 @@ const TABS: { key: WeeklyTab; label: string }[] = [
 
 export default function SegmentedNav({ active, onChange }: Props) {
   const colors = useColors()
+  // Light palette uses pure-white surfaces; the dark palette doesn't — use that to pick the
+  // blur tint and a matching translucent overlay (the blur alone is too faint for contrast).
+  const isDark = colors.white !== '#FFFFFF'
 
   const styles = useMemo(() => StyleSheet.create({
     pill: {
       flexDirection: 'row',
-      backgroundColor: colors.navTrack,
       borderRadius: 26,
       padding: 4,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.5)',
+      backgroundColor: isDark ? 'rgba(40,48,33,0.45)' : 'rgba(255,255,255,0.4)',
     },
     segment: {
       flex: 1,
@@ -32,12 +39,12 @@ export default function SegmentedNav({ active, onChange }: Props) {
       justifyContent: 'center',
     },
     segmentActive: { backgroundColor: colors.navSegmentActive },
-    label: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
-    labelActive: { opacity: 1 },
-  }), [colors])
+    label: { fontSize: 15, fontWeight: '600', color: colors.forest, opacity: 0.65 },
+    labelActive: { color: colors.selectedDayText, opacity: 1 },
+  }), [colors, isDark])
 
   return (
-    <View style={styles.pill} testID="segmented-nav">
+    <BlurView intensity={isDark ? 40 : 28} tint={isDark ? 'dark' : 'light'} style={styles.pill} testID="segmented-nav">
       {TABS.map((t) => {
         const isActive = t.key === active
         return (
@@ -54,6 +61,6 @@ export default function SegmentedNav({ active, onChange }: Props) {
           </TouchableOpacity>
         )
       })}
-    </View>
+    </BlurView>
   )
 }

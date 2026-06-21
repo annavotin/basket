@@ -4,8 +4,9 @@ import {
   KeyboardAvoidingView, Keyboard, Platform, ScrollView, StyleSheet,
 } from 'react-native'
 import DismissArea from './DismissArea'
+import Stepper from './settings/Stepper'
 import { Product } from '../mockProducts'
-import { FoodItem, Macros } from '../types'
+import { FoodItem, Macros, CustomFood } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
 import { useFoodSearch } from '../hooks/useFoodSearch'
 import { FoodSuggestion } from '../foods'
@@ -21,9 +22,10 @@ type Props = {
   onClose: () => void
   onScanBarcode?: () => void
   onScanReceipt?: () => void
+  customFoods?: CustomFood[]
 }
 
-export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt }: Props) {
+export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [] }: Props) {
   const colors = useColors()
   const units = useUnits()
   const isManual = product === null
@@ -38,7 +40,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
-    backdrop: { flex: 1, backgroundColor: 'rgba(30,41,20,0.42)', justifyContent: 'flex-end' },
+    backdrop: { flex: 1, backgroundColor: 'rgba(28,36,23,0.5)', justifyContent: 'flex-end' },
     sheet: {
       backgroundColor: colors.cream,
       borderTopLeftRadius: 30, borderTopRightRadius: 30,
@@ -211,18 +213,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       marginBottom: 4,
     },
 
-    // ── Qty stepper ───────────────────────────────────────────────────────────
+    // ── Qty row (label + shared Stepper) ──────────────────────────────────────
     qtyRow: {
-      flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 6,
-    },
-    qtyBtn: {
-      width: 40, height: 40, borderRadius: 20, backgroundColor: colors.sage100,
-      alignItems: 'center', justifyContent: 'center',
-    },
-    qtyBtnText: { fontSize: 22, fontWeight: '600', color: colors.forest },
-    qtyValue: {
-      fontFamily: fonts.display, fontSize: 18, fontWeight: '700', color: colors.forest,
-      marginHorizontal: 20, minWidth: 24, textAlign: 'center',
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      marginTop: 10, marginBottom: 6,
     },
 
     // ── Kcal preview ──────────────────────────────────────────────────────────
@@ -251,7 +245,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   useEffect(() => {
     if (product) {
       setName(product.name)
-      setWeight(String(product.packageWeightG))
+      setWeight(product.packageWeightG > 0 ? String(product.packageWeightG) : '')
       setKcalPer100g(product.kcalPer100g)
       setEmoji(product.emoji)
       setMacrosPer100g(product.macrosPer100g)
@@ -267,7 +261,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setDropdownOpen(false)
   }, [product, visible])
 
-  const { suggestions, loading } = useFoodSearch(isManual && dropdownOpen ? name : '')
+  const { suggestions, loading } = useFoodSearch(isManual && dropdownOpen ? name : '', customFoods)
 
   function handleNameChange(text: string) {
     setName(text)
@@ -509,34 +503,20 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   </>
                 )}
 
-                {/* ── QUANTITY STEPPER ── */}
-                <Text style={styles.sectionLabel}>Quantity</Text>
+                {/* ── QUANTITY ── */}
                 <View style={styles.qtyRow}>
-                  <TouchableOpacity
-                    testID="qty-decrement"
-                    style={styles.qtyBtn}
-                    onPress={() => setQty((q) => Math.max(1, q - 1))}
-                  >
-                    <Text style={styles.qtyBtnText}>−</Text>
-                  </TouchableOpacity>
-                  <Text testID="qty-value" style={styles.qtyValue}>{qty}</Text>
-                  <TouchableOpacity
-                    testID="qty-increment"
-                    style={styles.qtyBtn}
-                    onPress={() => setQty((q) => Math.min(99, q + 1))}
-                  >
-                    <Text style={styles.qtyBtnText}>+</Text>
-                  </TouchableOpacity>
+                  <Text style={[styles.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Quantity</Text>
+                  <Stepper value={qty} min={1} max={99} onChange={setQty} testID="qty" />
                 </View>
 
-                {/* ── KCAL PREVIEW ── */}
-                <Text style={styles.kcalPreview} testID="kcal-preview">
-                  {perUnitKcal > 0
-                    ? qty > 1
+                {/* ── KCAL PREVIEW (only once there's something to total) ── */}
+                {perUnitKcal > 0 && (
+                  <Text style={styles.kcalPreview} testID="kcal-preview">
+                    {qty > 1
                       ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
-                      : formatEnergy(perUnitKcal, units)
-                    : 'Enter weight & calories'}
-                </Text>
+                      : formatEnergy(perUnitKcal, units)}
+                  </Text>
+                )}
 
                 {/* ── ADD BUTTON ── */}
                 <TouchableOpacity

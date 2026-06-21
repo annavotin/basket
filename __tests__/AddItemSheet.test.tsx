@@ -20,7 +20,7 @@ describe('AddItemSheet — scanned mode', () => {
     const weight = getByTestId('weight-input')
     expect(weight.props.value).toBe('400')
     fireEvent.changeText(weight, '200')
-    fireEvent.press(getByTestId('qty-increment'))
+    fireEvent.press(getByTestId('qty-inc'))
     fireEvent.press(getByTestId('add-item-button'))
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -65,12 +65,12 @@ describe('AddItemSheet — manual mode', () => {
     expect(queryByTestId('manual-kcal-input')).toBeNull()
   })
 
-  it('previews a hint instead of "0 kcal" before calories are entered', () => {
-    const { getByTestId, getByText } = render(
+  it('hides the kcal preview until weight & calories are entered', () => {
+    const { getByTestId, queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Plain Item')
-    expect(getByText('Enter weight & calories')).toBeTruthy()
+    expect(queryByTestId('kcal-preview')).toBeNull()
   })
 })
 

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity, ScrollView,
-  SafeAreaView, StyleSheet,
+  SafeAreaView, StyleSheet, Linking,
 } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
@@ -13,7 +13,11 @@ import Stepper from './settings/Stepper'
 import Segmented from './settings/Segmented'
 import ConfirmDialog from './settings/ConfirmDialog'
 import AuthSheet from './settings/AuthSheet'
+import ChangePasswordSheet from './settings/ChangePasswordSheet'
 
+// TODO: swap for real hosted pages before App Store submission.
+const PRIVACY_URL = 'https://basket.app/privacy'
+const TERMS_URL = 'https://basket.app/terms'
 
 type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error'
 
@@ -26,6 +30,7 @@ type Props = {
   onDailyGoal: (n: number) => void
   onExport: () => void
   onClearAll: () => void
+  onOpenMyFoods?: () => void
   // Account/auth props
   account?: Account | null
   onAuthed?: (a: Account) => void
@@ -47,6 +52,7 @@ function syncLabel(sync: SyncStatus): string {
 
 export default function SettingsScreen({
   visible, onClose, prefs, setPrefs, dailyGoal, onDailyGoal, onExport, onClearAll,
+  onOpenMyFoods,
   account = null,
   onAuthed = () => {},
   onSignOut = () => {},
@@ -60,17 +66,21 @@ export default function SettingsScreen({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [authVisible, setAuthVisible] = useState(false)
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
+  const [changePwVisible, setChangePwVisible] = useState(false)
 
   const styles = useMemo(() => StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.surface },
+    screen: { flex: 1, backgroundColor: colors.sageBg },
     topBar: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: 16, paddingVertical: 12,
-      borderBottomWidth: 1, borderBottomColor: '#EEEEEE',
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12,
     },
-    backBtn: { minWidth: 60 },
-    backText: { fontSize: 16, color: colors.monthText },
-    title: { fontSize: 18, fontWeight: '700', color: colors.kcalText },
+    backBtn: {
+      width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white,
+      alignItems: 'center', justifyContent: 'center',
+      shadowColor: '#2C3A1E', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    },
+    backText: { fontFamily: fonts.display, fontSize: 24, color: colors.forest, lineHeight: 26 },
+    title: { fontFamily: fonts.head, fontSize: 22, fontWeight: '700', color: colors.forest },
     scrollContent: { padding: 16, paddingBottom: 40 },
     nameInput: {
       fontSize: 14,
@@ -255,7 +265,6 @@ export default function SettingsScreen({
             <Text style={styles.backText}>‹</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Settings</Text>
-          <View style={styles.backBtn} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
 
@@ -277,7 +286,7 @@ export default function SettingsScreen({
                 <Text testID="sync-status" style={styles.syncText}>{syncLabel(sync)}</Text>
               </View>
               <View>
-                <SettingsRow icon="🪪" label="Manage account" chevron onPress={() => {}} />
+                <SettingsRow icon="🔑" label="Change password" chevron onPress={() => setChangePwVisible(true)} />
                 <SettingsRow
                   testID="account-signout"
                   icon="🚪"
@@ -340,6 +349,18 @@ export default function SettingsScreen({
               value="Optional"
               chevron
               onPress={() => {}}
+            />
+          </SettingsSection>
+
+          {/* Library */}
+          <SettingsSection label="Library">
+            <SettingsRow
+              testID="open-my-foods"
+              icon="🥣"
+              label="My Foods"
+              value="Saved items & barcodes"
+              chevron
+              onPress={onOpenMyFoods}
             />
           </SettingsSection>
 
@@ -502,8 +523,8 @@ export default function SettingsScreen({
             <SettingsRow icon="💬" label="Send feedback" chevron onPress={() => {}} />
             <SettingsRow icon="⭐" label="Rate the app" chevron onPress={() => {}} />
             <SettingsRow icon="⚖️" label="Open-source licenses" chevron onPress={() => {}} />
-            <SettingsRow icon="🔒" label="Privacy Policy" chevron onPress={() => {}} />
-            <SettingsRow icon="📄" label="Terms of Service" chevron onPress={() => {}} />
+            <SettingsRow icon="🔒" label="Privacy Policy" chevron onPress={() => Linking.openURL(PRIVACY_URL)} />
+            <SettingsRow icon="📄" label="Terms of Service" chevron onPress={() => Linking.openURL(TERMS_URL)} />
             <SettingsRow
               label="Realtime sync"
               badge="Soon"
@@ -549,6 +570,12 @@ export default function SettingsScreen({
           onAuthed(a)
         }}
         initialMode={authMode}
+        auth={authService}
+      />
+
+      <ChangePasswordSheet
+        visible={changePwVisible}
+        onClose={() => setChangePwVisible(false)}
         auth={authService}
       />
     </Modal>

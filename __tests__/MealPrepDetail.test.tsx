@@ -21,7 +21,7 @@ describe('MealPrepDetail', () => {
 
   it('displays weight and kcal', () => {
     const { getByText } = render(<MealPrepDetail activeCycle={cycles[0]} />)
-    expect(getByText('600 g  204 kcal')).toBeTruthy()
+    expect(getByText('600 g · 204 kcal')).toBeTruthy()
   })
 
   it('shows a ×N badge and quantity-multiplied calories', () => {

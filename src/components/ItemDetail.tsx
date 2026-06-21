@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { FoodItem, ExtraMeal, PantryItem, Macros } from '../types'
@@ -22,8 +22,8 @@ type Props = {
   days: number
   dateLabel?: string
   onSaveItem?: (patch: Partial<FoodItem>) => void
-  onSaveExtra?: (patch: { name: string; kcal: number }) => void
-  onSavePantry?: (patch: { kcalPer100g: number; dailyG: number }) => void
+  onSaveExtra?: (patch: { name: string; kcal: number; macros: Macros }) => void
+  onSavePantry?: (patch: { name?: string; kcalPer100g: number; dailyG: number }) => void
   onRemove: () => void
   onClose: () => void
 }
@@ -58,9 +58,14 @@ export default function ItemDetail(props: Props) {
       setCStr(String(Math.round(m.carbs)))
       setFStr(String(Math.round(m.fat)))
     } else if (kind === 'extra' && extra) {
+      const em = extra.macros ?? kcalDerivedMacros(extra.kcal)
       setName(extra.name)
       setKcalStr(String(extra.kcal))
+      setPStr(String(Math.round(em.protein)))
+      setCStr(String(Math.round(em.carbs)))
+      setFStr(String(Math.round(em.fat)))
     } else if (kind === 'pantry' && pantryItem) {
+      setName(pantryItem.name)
       setPer100Str(String(pantryItem.kcalPer100g))
       setDailyStr(String(pantryItem.dailyG))
     }
@@ -88,8 +93,8 @@ export default function ItemDetail(props: Props) {
     props.onSaveItem?.({ name: name.trim() || item?.name || 'Item', weightG: w, kcal: perUnitKcal, quantity: Math.max(1, Math.round(num(qtyStr))), macrosPer100g })
     setEditing(false)
   }
-  function saveExtra() { props.onSaveExtra?.({ name: name.trim() || extra?.name || 'Extra', kcal: Math.max(0, Math.round(num(kcalStr))) }); setEditing(false) }
-  function savePantry() { props.onSavePantry?.({ kcalPer100g: Math.max(0, Math.round(num(per100Str))), dailyG: Math.max(0, Math.round(num(dailyStr))) }); setEditing(false) }
+  function saveExtra() { props.onSaveExtra?.({ name: name.trim() || extra?.name || 'Extra', kcal: Math.max(0, Math.round(num(kcalStr))), macros: { protein: num(pStr), carbs: num(cStr), fat: num(fStr) } }); setEditing(false) }
+  function savePantry() { props.onSavePantry?.({ name: name.trim() || pantryItem?.name || 'Staple', kcalPer100g: Math.max(0, Math.round(num(per100Str))), dailyG: Math.max(0, Math.round(num(dailyStr))) }); setEditing(false) }
 
   const emoji = kind === 'extra' ? '🍴' : kind === 'pantry' ? '🥫' : (item?.emoji ?? '🛒')
   const displayName = kind === 'extra' ? extra?.name : kind === 'pantry' ? pantryItem?.name : item?.name
@@ -101,18 +106,24 @@ export default function ItemDetail(props: Props) {
   else if (kind === 'pantry' && pantryItem) cals = Math.round((pantryItem.dailyG * days * pantryItem.kcalPer100g) / 100)
 
   const editingItem = editing && kind === 'item'
-  const macroGrams: Macros = editingItem
+  const editingExtra = editing && kind === 'extra'
+  const editingMacros = editingItem || editingExtra
+  const macroGrams: Macros = editingMacros
     ? { protein: num(pStr), carbs: num(cStr), fat: num(fStr) }
-    : kind === 'item' && item ? itemMacros(item) : kcalDerivedMacros(cals)
+    : kind === 'item' && item ? itemMacros(item)
+    : kind === 'extra' && extra?.macros ? extra.macros
+    : kcalDerivedMacros(cals)
   const macroKcal = MAC_DEFS.map((d) => macroGrams[d.key] * d.kcalPerG)
   const macroSum = Math.max(1, macroKcal.reduce((s, v) => s + v, 0))
 
   const removeLabel = kind === 'extra' ? 'Delete this extra' : kind === 'pantry' ? 'Remove staple' : 'Remove from basket'
-  const estimated = kind !== 'item'
+  const estimated = kind === 'pantry' || (kind === 'extra' && !extra?.macros)
 
   const styles = useMemo(() => StyleSheet.create({
-    scrim: { flex: 1, backgroundColor: 'rgba(28,36,23,.4)', justifyContent: 'flex-end' },
-    sheet: { backgroundColor: colors.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 34 },
+    scrim: { flex: 1, backgroundColor: 'rgba(28,36,23,0.5)', justifyContent: 'flex-end' },
+    scrimFill: { flex: 1 },
+    sheet: { backgroundColor: colors.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 22, maxHeight: '90%' },
+    sheetBody: { paddingHorizontal: 22, paddingBottom: 34 },
     grab: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.sage100, alignSelf: 'center', marginBottom: 16 },
     head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     av: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.sageBg2, alignItems: 'center', justifyContent: 'center' },
@@ -140,6 +151,8 @@ export default function ItemDetail(props: Props) {
     fieldL: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.moss },
     input: { fontFamily: fonts.display, fontSize: 16, color: colors.forest, textAlign: 'right', minWidth: 80, padding: 0 },
     inputName: { fontFamily: fonts.display, fontSize: 16, color: colors.forest, textAlign: 'right', minWidth: 140, padding: 0 },
+    // Filled pill so it reads as a tappable field, not plain display text.
+    macroInput: { fontFamily: fonts.display, fontSize: 15, color: colors.forest, textAlign: 'right', minWidth: 60, backgroundColor: colors.sageBg2, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 4 },
     foot: { fontFamily: fonts.body, fontSize: 12, color: colors.mossFaint, textAlign: 'center', marginTop: 4, marginBottom: 10 },
     btn: { borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 10, backgroundColor: colors.forest },
     btnTxt: { fontFamily: fonts.display, fontSize: 15, color: '#fff' },
@@ -165,9 +178,15 @@ export default function ItemDetail(props: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.scrim} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={styles.sheet} onPress={() => {}}>
+      <KeyboardAvoidingView style={styles.scrim} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableOpacity style={styles.scrimFill} activeOpacity={1} onPress={onClose} />
+        <View style={styles.sheet}>
           <View style={styles.grab} />
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.sheetBody}
+          >
 
           <View style={styles.head}>
             <View style={styles.av}><Text style={styles.avTxt}>{emoji}</Text></View>
@@ -197,14 +216,14 @@ export default function ItemDetail(props: Props) {
           )}
           {kind === 'extra' && dateLabel && !editing && <Text style={styles.when}>Logged {dateLabel}</Text>}
 
-          <Text style={styles.seclbl}>Macros{estimated ? ' · estimated' : editingItem ? ' · tap to edit' : ''}</Text>
+          <Text style={styles.seclbl}>Macros{editingMacros ? ' · tap to edit' : estimated ? ' · estimated' : ''}</Text>
           <View style={styles.macroRow}>
             {MAC_DEFS.map((d, i) => (
               <View style={styles.macro} key={d.key}>
                 <View style={styles.macroTop}>
                   <Text style={styles.macroL}>{d.label}</Text>
-                  {editingItem
-                    ? <TextInput testID={`id-macro-${d.key}`} style={styles.input} keyboardType="numeric" selectTextOnFocus
+                  {editingMacros
+                    ? <TextInput testID={`id-macro-${d.key}`} style={styles.macroInput} keyboardType="numeric" selectTextOnFocus
                         value={d.key === 'protein' ? pStr : d.key === 'carbs' ? cStr : fStr}
                         onChangeText={d.key === 'protein' ? setPStr : d.key === 'carbs' ? setCStr : setFStr} />
                     : <Text style={styles.macroV}>{Math.round(macroGrams[d.key])}g</Text>}
@@ -230,6 +249,7 @@ export default function ItemDetail(props: Props) {
           )}
           {editing && kind === 'pantry' && (
             <View style={{ marginTop: 16 }}>
+              {renderField('Name', name, setName, 'id-pantry-name', 'default', true)}
               {renderField('Calories / 100g', per100Str, setPer100Str, 'id-pantry-per100')}
               {renderField('Per day (g)', dailyStr, setDailyStr, 'id-pantry-daily')}
             </View>
@@ -258,8 +278,9 @@ export default function ItemDetail(props: Props) {
               <TouchableOpacity style={[styles.btn, styles.ghost]} onPress={() => setConfirmDel(true)}><Text style={styles.ghostTxt}>{removeLabel}</Text></TouchableOpacity>
             </>
           )}
-        </TouchableOpacity>
-      </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

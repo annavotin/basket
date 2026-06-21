@@ -15,7 +15,7 @@ export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manu
   const rotate = useRef(new Animated.Value(0)).current
 
   const styles = useMemo(() => StyleSheet.create({
-    wrap: { position: 'absolute', right: 20, bottom: 28, alignItems: 'flex-end' },
+    wrap: { position: 'absolute', right: 20, bottom: 6, alignItems: 'flex-end' },
     fab: {
       width: 56,
       height: 56,

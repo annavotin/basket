@@ -22,6 +22,7 @@ type Props = {
   onSetDefaultGrams?: (id: string, dailyG: number) => void
   onSetPantryGrams?: (id: string, grams: number) => void
   onResetPantryOverride?: (id: string) => void
+  onOpenPantry?: (id: string) => void
 }
 
 function Stepper({
@@ -69,7 +70,7 @@ const stepperStyles = StyleSheet.create({
 
 export default function PantryScreen({
   visible, pantry, onAdd, onRemove, onClose,
-  cycle, cycleDays = 7, onSetDefaultGrams, onSetPantryGrams, onResetPantryOverride,
+  cycle, cycleDays = 7, onSetDefaultGrams, onSetPantryGrams, onResetPantryOverride, onOpenPantry,
 }: Props) {
   const colors = useColors()
   const [mode, setMode] = useState<Mode>('defaults')
@@ -328,10 +329,15 @@ export default function PantryScreen({
                           <View key={item.id} testID="pantry-row" style={styles.card}>
                             <View style={styles.cardH}>
                               <View style={styles.av}><Text style={styles.avTxt}>{item.emoji}</Text></View>
-                              <View style={styles.nm}>
+                              <TouchableOpacity
+                                testID={`pantry-edit-${item.id}`}
+                                style={styles.nm}
+                                onPress={() => onOpenPantry?.(item.id)}
+                                activeOpacity={0.7}
+                              >
                                 <Text style={styles.nmB}>{item.name}</Text>
                                 <Text style={styles.nmS}>{item.kcalPer100g} kcal / 100g</Text>
-                              </View>
+                              </TouchableOpacity>
                               <TouchableOpacity
                                 testID="pantry-remove"
                                 onPress={() => onRemove(item.id)}

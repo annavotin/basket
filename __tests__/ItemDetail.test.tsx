@@ -48,7 +48,16 @@ describe('ItemDetail — extra', () => {
     fireEvent.press(getByText('Edit'))
     fireEvent.changeText(getByTestId('id-extra-kcal'), '300')
     fireEvent.press(getByText('Save'))
-    expect(onSaveExtra).toHaveBeenCalledWith({ name: 'Pizza slice', kcal: 300 })
+    expect(onSaveExtra).toHaveBeenCalledWith(expect.objectContaining({ name: 'Pizza slice', kcal: 300 }))
+  })
+
+  it('lets you edit macros and saves them', () => {
+    const onSaveExtra = jest.fn()
+    const { getByText, getByTestId } = wrap(<ItemDetail visible kind="extra" extra={extra} days={5} onRemove={jest.fn()} onClose={jest.fn()} onSaveExtra={onSaveExtra} />)
+    fireEvent.press(getByText('Edit'))
+    fireEvent.changeText(getByTestId('id-macro-protein'), '22')
+    fireEvent.press(getByText('Save'))
+    expect(onSaveExtra.mock.calls[0][0].macros.protein).toBe(22)
   })
 })
 
@@ -60,6 +69,6 @@ describe('ItemDetail — pantry', () => {
     fireEvent.press(getByText('Edit'))
     fireEvent.changeText(getByTestId('id-pantry-daily'), '50')
     fireEvent.press(getByText('Save'))
-    expect(onSavePantry).toHaveBeenCalledWith({ kcalPer100g: 389, dailyG: 50 })
+    expect(onSavePantry).toHaveBeenCalledWith(expect.objectContaining({ kcalPer100g: 389, dailyG: 50 }))
   })
 })

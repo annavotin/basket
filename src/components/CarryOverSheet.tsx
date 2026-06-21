@@ -35,7 +35,7 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
   }
 
   const styles = useMemo(() => StyleSheet.create({
-    scrim: { flex: 1, backgroundColor: 'rgba(28,36,23,.4)', justifyContent: 'flex-end' },
+    scrim: { flex: 1, backgroundColor: 'rgba(28,36,23,0.5)', justifyContent: 'flex-end' },
     sheet: { backgroundColor: colors.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 34 },
     grab: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.sage100, alignSelf: 'center', marginBottom: 14 },
     h: { fontFamily: fonts.head, fontSize: 20, color: colors.forest },

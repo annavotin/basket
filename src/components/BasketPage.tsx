@@ -11,6 +11,7 @@ import {
   kcalDerivedMacros, ringArcs, itemSharePct, aggregateMacros,
 } from '../utils/nutrition'
 import { daysBetween, formatDay } from '../utils/dates'
+import Stepper from './settings/Stepper'
 
 const SRC_LABEL: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
 const R = 60
@@ -132,12 +133,8 @@ export default function BasketPage({
     grab: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.sage100, alignSelf: 'center', marginBottom: 14 },
     sheetH: { fontFamily: fonts.head, fontSize: 20, color: colors.forest },
     sheetDesc: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.mossFaint, marginTop: 2, marginBottom: 14 },
-    lenTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 },
+    lenTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
     lenL: { fontFamily: fonts.display, fontSize: 14, color: colors.forest },
-    lenV: { fontFamily: fonts.display, fontSize: 24, color: colors.matchaDeep },
-    lenRow: { flexDirection: 'row', gap: 8, marginVertical: 6 },
-    lenStep: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.sageBg2, alignItems: 'center' },
-    lenStepTxt: { fontFamily: fonts.display, fontSize: 18, color: colors.forest },
     lenFoot: { fontFamily: fonts.body, fontSize: 12, color: colors.moss, textAlign: 'center', marginTop: 10, paddingTop: 12, borderTopWidth: 1.5, borderTopColor: colors.line },
     del: { marginTop: 18, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(180,92,124,.12)', alignItems: 'center' },
     delTxt: { fontFamily: fonts.display, fontSize: 15, color: colors.roseDeep },
@@ -280,11 +277,14 @@ export default function BasketPage({
               <Text style={styles.sheetDesc}>{rangeLabel}</Text>
               <View style={styles.lenTop}>
                 <Text style={styles.lenL}>Prep length</Text>
-                <Text style={styles.lenV}>{days} <Text style={{ fontSize: 13, color: colors.mossFaint }}>day{days === 1 ? '' : 's'}</Text></Text>
-              </View>
-              <View style={styles.lenRow}>
-                <TouchableOpacity style={styles.lenStep} onPress={() => onSetDays(Math.max(1, days - 1))}><Text style={styles.lenStepTxt}>−</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.lenStep} onPress={() => onSetDays(Math.min(MAX_PREP_DAYS, days + 1))}><Text style={styles.lenStepTxt}>＋</Text></TouchableOpacity>
+                <Stepper
+                  value={days}
+                  min={1}
+                  max={MAX_PREP_DAYS}
+                  suffix={days === 1 ? ' day' : ' days'}
+                  onChange={onSetDays}
+                  testID="prep-days"
+                />
               </View>
               <Text style={styles.lenFoot}>{a.day} {a.month} → {b.day} {b.month} · {(days * dailyGoal).toLocaleString()} kcal budget</Text>
               <TouchableOpacity style={styles.del} onPress={() => { setMenu(false); onDeleteCycle() }}>

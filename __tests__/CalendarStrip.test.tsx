@@ -36,8 +36,8 @@ describe('CalendarStrip', () => {
     expect(getByText('7')).toBeTruthy()
   })
 
-  it('renders an Extra label on dates with extra meals', () => {
-    const { getByText } = render(
+  it('marks dates with extra meals with a dot', () => {
+    const { getAllByTestId } = render(
       <CalendarStrip
         windowStart={WINDOW_START}
         totalDays={DAYS}
@@ -47,7 +47,7 @@ describe('CalendarStrip', () => {
         dayWidth={64}
       />
     )
-    expect(getByText('Extra')).toBeTruthy()
+    expect(getAllByTestId('extra-pill')).toHaveLength(1)
   })
 
   it('renders a faint add-extra pill on a day with no extra and fires onExtraPress', () => {

@@ -42,7 +42,7 @@ export default function ReceiptReviewSheet({ visible, lines, onConfirm, onClose 
   const [rows, setRows] = useState<Row[]>(() => toRows(lines))
 
   const styles = useMemo(() => StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+    backdrop: { flex: 1, backgroundColor: 'rgba(28,36,23,0.5)', justifyContent: 'flex-end' },
     sheet: {
       backgroundColor: colors.surface,
       borderTopLeftRadius: 24,
