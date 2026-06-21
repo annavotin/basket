@@ -2,7 +2,7 @@ import React from 'react'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 jest.mock('../src/services/scan', () => ({
   scanBarcodeWithCamera: jest.fn(),
-  simulateReceiptScan: jest.fn(),
+  scanReceipt: jest.fn(),
 }))
 import App from '../App'
 import AsyncStorage from '@react-native-async-storage/async-storage'

@@ -6,7 +6,7 @@ import { render, fireEvent, waitFor, within } from '@testing-library/react-nativ
 // any native scanner.
 jest.mock('../src/services/scan', () => ({
   scanBarcodeWithCamera: jest.fn(async () => '0000000000001'),
-  simulateReceiptScan: jest.fn(async () => null),
+  scanReceipt: jest.fn(async () => null),
 }))
 
 // Stub the product lookup so the barcode resolves to a deterministic product
@@ -18,7 +18,8 @@ const LOOKED_UP_PRODUCT = {
   kcalPer100g: 59,
 }
 jest.mock('../src/services/foodApi', () => ({
-  lookupProductByBarcode: jest.fn(async () => LOOKED_UP_PRODUCT),
+  lookupBarcode: jest.fn(async () => LOOKED_UP_PRODUCT),
+  searchProductsByName: jest.fn(async () => []),
 }))
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -74,7 +75,7 @@ describe('App scan -> add to active cycle', () => {
     const rows = screen.getAllByTestId('food-item')
     const newRow = within(rows[rows.length - 1])
     expect(newRow.getByText('Greek Yogurt')).toBeTruthy()
-    expect(newRow.getByText('500 g  295 kcal')).toBeTruthy()
+    expect(newRow.getByText('500 g · 295 kcal')).toBeTruthy()
   })
 
   it('removes a stocked item when deleted via the ItemDetail sheet', async () => {

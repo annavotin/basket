@@ -33,7 +33,14 @@
         }
       ],
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFE3FC",
+          "resizeMode": "contain"
+        }
+      ]
     ]
   }
 }
