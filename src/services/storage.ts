@@ -105,6 +105,19 @@ export async function saveDailyGoal(goal: number, deps: StorageDeps = defaultDep
   try { await deps.storage.setItem(STORAGE_KEY_DAILY_GOAL, JSON.stringify(goal)) } catch {}
 }
 
+export const STORAGE_KEY_KEEP_SCANNING = 'basket:keepScanning:v1'
+
+export async function loadKeepScanning(deps: StorageDeps = defaultDeps): Promise<boolean> {
+  try {
+    const raw = await deps.storage.getItem(STORAGE_KEY_KEEP_SCANNING)
+    return raw != null && JSON.parse(raw) === true
+  } catch { return false }
+}
+
+export async function saveKeepScanning(on: boolean, deps: StorageDeps = defaultDeps): Promise<void> {
+  try { await deps.storage.setItem(STORAGE_KEY_KEEP_SCANNING, JSON.stringify(on)) } catch {}
+}
+
 export const STORAGE_KEY_PANTRY = 'basket:pantry:v1'
 
 export async function loadPantry(
