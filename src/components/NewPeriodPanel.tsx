@@ -49,12 +49,12 @@ export default function NewPeriodPanel({
     iconOnLight: { backgroundColor: colors.sageBg2 },
     iconEmoji: { fontSize: 26 },
     cardText: { flex: 1 },
-    cardTitle: { fontFamily: fonts.head, fontSize: 17, fontWeight: '600' },
+    cardTitle: { fontFamily: fonts.display, fontSize: 17, fontWeight: '600' },
     cardTitleDark: { color: colors.white },
     cardTitleLight: { color: colors.forest },
     cardSub: { fontFamily: fonts.body, fontSize: 13, fontWeight: '600', marginTop: 2 },
     cardSubDark: { color: 'rgba(255,255,255,0.7)' },
-    cardSubLight: { color: colors.mossFaint },
+    cardSubLight: { color: colors.moss },
 
     // Prep-length card
     prep: {
@@ -62,15 +62,16 @@ export default function NewPeriodPanel({
       shadowColor: '#2C3A1E', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
     },
     prepTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-    prepLabel: { fontFamily: fonts.head, fontSize: 16, fontWeight: '600', color: colors.forest },
-    prepValue: { fontFamily: fonts.head, fontSize: 22, fontWeight: '700', color: colors.matchaDeep },
+    prepLabel: { fontFamily: fonts.display, fontSize: 16, fontWeight: '600', color: colors.forest },
+    prepValue: { fontFamily: fonts.num, fontSize: 22, color: colors.matchaDeep },
     prepUnit: { fontSize: 14, fontWeight: '600', color: colors.moss },
     slider: { width: '100%', height: 40, marginTop: 6 },
     scale: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: -4 },
     scaleText: { fontSize: 12, fontWeight: '700', color: colors.mossFaint },
     foot: {
       fontFamily: fonts.body, fontSize: 13, fontWeight: '600', color: colors.moss,
-      textAlign: 'center', marginTop: 12,
+      textAlign: 'center', marginTop: 13, paddingTop: 13,
+      borderTopWidth: 1.5, borderTopColor: colors.line,
     },
   }), [colors])
 
