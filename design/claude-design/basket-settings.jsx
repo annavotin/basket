@@ -158,7 +158,7 @@ function Confirm({ title, body, confirmLabel, onConfirm, onClose }) {
 function SettingsPage(props) {
   const { onBack, account, onSignOut, onDeleteAccount, onAuthed,
     displayName, onName, goal, onGoal, macros, onMacros, defaultDays, onDefaultDays,
-    units, onUnits, theme, onTheme, accent, onAccent, sync,
+    units, onUnits, theme, onTheme, sync,
     onExport, onImport, onClearAll, version } = props;
 
   const [auth, setAuth] = useS(false);
@@ -172,15 +172,6 @@ function SettingsPage(props) {
     offline: { t: "Offline — will sync later", c: "warn" },
     error: { t: "Sync error — tap to retry", c: "err" },
   }[sync] || { t: "Synced just now", c: "ok" };
-
-  const ACCENTS = [
-    ["#7CC96E", "#5FB152", "#3E8F38"],
-    ["#E6A23C", "#D98A1F", "#B5710F"],
-    ["#5FA8D3", "#3E8BBE", "#2C6E9C"],
-    ["#E08A5B", "#CF7340", "#B25A2A"],
-    ["#B07CC9", "#9560B4", "#774696"],
-    ["#E1809B", "#C8607E", "#A8475F"],
-  ];
 
   return (
     <div className="bpage se-page">
@@ -258,13 +249,6 @@ function SettingsPage(props) {
         {/* APPEARANCE */}
         <Section label="Appearance">
           <Row icon="🎨" label="Theme" children={<Seg value={theme} options={[{ v: "light", l: "Light" }, { v: "dark", l: "Dark" }, { v: "system", l: "Auto" }]} onChange={onTheme} />} />
-          <Row icon="🌈" label="Accent colour" children={
-            <div className="se-swatches" onClick={e => e.stopPropagation()}>
-              {ACCENTS.map((a, i) => (
-                <button key={i} className={"se-sw" + (accent[0] === a[0] ? " on" : "")} style={{ background: a[1] }} onClick={() => onAccent(a)} aria-label={"Accent " + (i + 1)}></button>
-              ))}
-            </div>
-          } />
         </Section>
 
         {/* DATA */}

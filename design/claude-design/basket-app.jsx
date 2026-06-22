@@ -86,21 +86,30 @@ function Budget({ meal, pan, ext, budget, macros, days }) {
 }
 
 /* ============ PANEL (tabbed list) ============ */
-function Panel({ tab, cycle, extras, pantry, dailyGoal, onRemove, onRemoveExtra, onRemovePantry, onGrams, onOpen, onSetDays, onOpenPantry }) {
+function Panel({ tab, cycle, extras, pantry, dailyGoal, onRemove, onRemoveExtra, onRemovePantry, onGrams, onSetDays, onOpenPantry, onDetail, onScan }) {
   const days = cycleDays(cycle);
+  const planMode = tab === "basket" && cycle.items.length === 0;
   let title, count, body;
   if (tab === "basket") {
     title = "This basket"; count = cycle.items.length;
     body = cycle.items.length ? cycle.items.map(it => (
-      <div className="row" key={it.id}>
+      <div className="row tap" key={it.id} onClick={() => onDetail("item", it.id)}>
         <div className="av"><E>{it.e}</E></div>
         <div className="tx"><div className="nm">{it.n}</div><div className="mt">{it.w} g · {it.k.toLocaleString()} kcal</div></div>
         <div className="kc">{it.k.toLocaleString()}<small>KCAL</small></div>
-        <button className="rm" onClick={() => onRemove(it.id)}>✕</button>
       </div>
     )) : (
       <div className="bk-plan">
-        <Empty e="🧺" h="Plan this shop" p="Set how long this prep runs, then tap + to scan a receipt or add your food." />
+        <div className="bk-plan-scan">
+          <button className="bp-scanbig primary" onClick={() => onScan("receipt")}>
+            <span className="bp-scanbig-ic"><E>🧾</E></span>
+            <span className="bp-scanbig-tx"><b>Scan a receipt</b><small>Add a whole shop in one tap</small></span>
+          </button>
+          <button className="bp-scanbig alt" onClick={() => onScan("barcode")}>
+            <span className="bp-scanbig-ic"><E>📷</E></span>
+            <span className="bp-scanbig-tx"><b>Scan a barcode</b><small>Add items one at a time</small></span>
+          </button>
+        </div>
         <window.LengthSlider cycle={cycle} dailyGoal={dailyGoal} onSetDays={onSetDays} />
       </div>
     );
@@ -110,43 +119,44 @@ function Panel({ tab, cycle, extras, pantry, dailyGoal, onRemove, onRemoveExtra,
     body = list.length ? list.map(x => {
       const d = fmtDay(x.date);
       return (
-        <div className="row" key={x.id}>
+        <div className="row tap" key={x.id} onClick={() => onDetail("extra", x.id)}>
           <div className="av" style={{ background: "rgba(239,168,192,.30)" }}><E>🍴</E></div>
           <div className="tx"><div className="nm">{x.name}</div><div className="mt">{d.wd} {d.dn} {d.mo}</div></div>
           <div className="kc" style={{ color: "var(--rose-deep)" }}>{x.kcal}<small>KCAL</small></div>
-          <button className="rm" onClick={() => onRemoveExtra(x.id)}>✕</button>
         </div>
       );
     }) : <Empty e="🍴" h="No extras logged" p="Eaten something outside your prep? Tap the pink + on any day to log it." />;
   } else {
     title = "Pantry staples"; count = pantry.length;
     body = pantry.length ? pantry.map(p => (
-      <div className="row" key={p.id}>
+      <div className="row tap" key={p.id} onClick={() => onDetail("pantry", p.id)}>
         <div className="av"><E>{p.e}</E></div>
         <div className="tx"><div className="nm">{p.n}</div><div className="mt">{p.per100} kcal / 100g</div></div>
-        <input className="gin" type="number" value={pantryGrams(p, cycle)}
+        <input className="gin" type="number" value={pantryGrams(p, cycle)} onClick={e => e.stopPropagation()}
           onChange={e => onGrams(p.id, parseInt(e.target.value, 10) || 0)} />
         <div className="kc">{pantryKcal(p, cycle).toLocaleString()}<small>KCAL</small></div>
-        <button className="rm" onClick={() => onRemovePantry(p.id)}>✕</button>
+        <button className="rm" onClick={e => { e.stopPropagation(); onRemovePantry(p.id); }}>✕</button>
       </div>
     )) : <Empty e="🫙" h="No staples yet" p="Add the basics you always cook with — they're spread across each prep automatically." />;
   }
   return (
     <div className="panel">
-      <div className="ph">
-        {tab !== "basket" && <h3>{title}</h3>}
-        {tab === "basket" && <button className="bp-open" onClick={onOpen} style={{ marginLeft: "auto" }}>Open basket ›</button>}
-        {tab === "extras" && <span className="cnt">{count} item{count === 1 ? "" : "s"}</span>}
-        {tab === "pantry" && (
-          <div className="ph-r">
-            <span className="cnt">over {days} days</span>
-            <button className="bp-open" onClick={onOpenPantry}>Manage ›</button>
-          </div>
-        )}
-      </div>
+      {!planMode && (
+        <div className="ph">
+          <h3>{title}</h3>
+          {tab === "basket" && <span className="cnt">{count} item{count === 1 ? "" : "s"}</span>}
+          {tab === "extras" && <span className="cnt">{count} item{count === 1 ? "" : "s"}</span>}
+          {tab === "pantry" && (
+            <div className="ph-r">
+              <span className="cnt">over {days} days</span>
+              <button className="bp-open" onClick={onOpenPantry}>Manage ›</button>
+            </div>
+          )}
+        </div>
+      )}
       {Array.isArray(body)
         ? <div className="list">{body}</div>
-        : <div className="list" style={{ display: "flex" }}>{body}</div>}
+        : <div className="list" style={planMode ? undefined : { display: "flex" }}>{body}</div>}
     </div>
   );
 }
@@ -302,29 +312,33 @@ function ProfileSheet({ goal, onSet, onClose }) {
 
 /* ============ APP ============ */
 const MOODS = {
-  sage: { "--sage-bg":"#E7EEDD", "--sage-bg2":"#EDF2E6", "--sage-100":"#DCEACF" },
-  cream:{ "--sage-bg":"#F3F1E7", "--sage-bg2":"#FBFBF4", "--sage-100":"#E7E6D6" },
-  mist: { "--sage-bg":"#E5EEEB", "--sage-bg2":"#EEF4F2", "--sage-100":"#D6E7E1" },
+  white: { "--sage-bg":"#FFFFFF", "--sage-bg2":"#F1F5EB", "--sage-100":"#EAF0E2" },
+  linen: { "--sage-bg":"#FBFAF4", "--sage-bg2":"#F2F1E7", "--sage-100":"#EAE8DA" },
+  mist:  { "--sage-bg":"#F5F8F6", "--sage-bg2":"#EBF3EF", "--sage-100":"#DEEAE4" },
 };
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "name": "Anna",
-  "extraAccent": ["#EFA8C0", "#B45C7C"],
-  "greenTone": ["#7CC96E", "#5FB152", "#3E8F38"],
-  "mood": "sage"
+  "brand": "#2C3A1E",
+  "greenTone": ["#6E9249", "#5C7A3C", "#46612F"],
+  "pantry": "#D9A441",
+  "extraAccent": ["#C56A4C", "#A8512F"],
+  "mood": "white"
 }/*EDITMODE-END*/;
 
 function App() {
   const [t, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
   useEffect(() => {
     const r = document.documentElement.style;
+    r.setProperty("--forest", t.brand);
+    r.setProperty("--amber", t.pantry);
     r.setProperty("--rose", t.extraAccent[0]);
     r.setProperty("--rose-deep", t.extraAccent[1]);
     r.setProperty("--matcha", t.greenTone[0]);
     r.setProperty("--matcha-600", t.greenTone[1]);
     r.setProperty("--matcha-deep", t.greenTone[2]);
-    const m = MOODS[t.mood] || MOODS.sage;
+    const m = MOODS[t.mood] || MOODS.white;
     Object.entries(m).forEach(([k, v]) => r.setProperty(k, v));
-  }, [t.extraAccent, t.greenTone, t.mood]);
+  }, [t.brand, t.pantry, t.extraAccent, t.greenTone, t.mood]);
 
   const [cycles, setCycles] = useState(SEED.cycles);
   const [extras, setExtras] = useState(SEED.extras);
@@ -341,8 +355,9 @@ function App() {
   const [defaultDays, setDefaultDays] = useState(4);
   const [macros, setMacros] = useState({ p: 140, c: 220, f: 70 });
   const [theme, setTheme] = useState("light");
-  const [basketOpen, setBasketOpen] = useState(false);
   const [pantryOpen, setPantryOpen] = useState(false);
+  const [detail, setDetail] = useState(null);   // {kind:'item'|'extra'|'pantry', id}
+  const [carry, setCarry] = useState(null);   // {date, source}
   const [toast, setToast] = useState(null);
   const tRef = useRef(null);
 
@@ -381,18 +396,42 @@ function App() {
   function removeExtra(id) { setExtras(xs => xs.filter(x => x.id !== id)); flash("Removed"); }
   function removePantry(id) { setPantry(ps => ps.filter(p => p.id !== id)); flash("Removed"); }
   function setGrams(id, g) { setCycles(cs => cs.map(c => c.id === selId ? { ...c, overrides: { ...c.overrides, [id]: g } } : c)); }
+  function editDetail(id, patch) {
+    const k = detail && detail.kind;
+    if (k === "extra") setExtras(xs => xs.map(x => x.id === id ? { ...x, ...patch } : x));
+    else if (k === "pantry") setPantry(ps => ps.map(p => p.id === id ? { ...p, ...patch } : p));
+    else setCycles(cs => cs.map(c => c.id === selId ? { ...c, items: c.items.map(i => i.id === id ? { ...i, ...patch } : i) } : c));
+    flash("Updated");
+  }
+  function removeDetail(id) {
+    const k = detail && detail.kind;
+    if (k === "extra") removeExtra(id);
+    else if (k === "pantry") removePantry(id);
+    else removeItem(id);
+    setDetail(null);
+  }
   function resetGrams(id) { setCycles(cs => cs.map(c => { if (c.id !== selId) return c; const o = { ...c.overrides }; delete o[id]; return { ...c, overrides: o }; })); }
   function setPantryDefault(id, dailyG) { setPantry(ps => ps.map(p => p.id === id ? { ...p, dailyG: Math.max(0, dailyG) } : p)); }
   function setCycleDays(n) { setCycles(cs => cs.map(c => c.id === selId ? { ...c, end: addDays(c.start, n - 1) } : c)); }
   function deleteCycle() {
     const rest = cycles.filter(c => c.id !== selId);
     if (!rest.length) { flash("Can't delete your only basket"); return; }
-    setCycles(rest); setSelId(rest[0].id); setBasketOpen(false); flash("Basket deleted");
+    setCycles(rest); setSelId(rest[0].id); flash("Basket deleted");
   }
   function createPeriod(date) {
+    const source = cycles.filter(c => c.items.length).sort((a, b) => b.start.localeCompare(a.start))[0];
+    if (source) { setCarry({ date, source }); return; }
+    doCreatePeriod(date, []);
+  }
+  function doCreatePeriod(date, picks) {
     const id = "c" + Date.now();
-    setCycles(cs => [...cs.filter(c => !(c.id === selId && c.items.length === 0)), { id, start: date, end: addDays(date, defaultDays - 1), items: [], overrides: {} }]);
-    setSelId(id); setTab("basket"); flash(`New prep period · ${defaultDays} days`);
+    const items = picks.map((p, i) => {
+      const s = p.item, frac = s.w ? p.left / s.w : 0;
+      return { id: id + "_" + i, e: s.e, n: s.n, src: "carry", m: s.m, w: Math.round(p.left), k: Math.round((s.k || 0) * frac) };
+    });
+    setCycles(cs => [...cs.filter(c => !(c.id === selId && c.items.length === 0)), { id, start: date, end: addDays(date, defaultDays - 1), items, overrides: {} }]);
+    setSelId(id); setTab("basket");
+    flash(items.length ? `New prep · ${items.length} carried over` : `New prep period · ${defaultDays} days`);
   }
   function exportData() {
     const blob = new Blob([JSON.stringify({ cycles, extras, pantry, dailyGoal, macros, units, defaultDays, exportedAt: new Date().toISOString() }, null, 2)], { type: "application/json" });
@@ -418,9 +457,10 @@ function App() {
     <Device>
       <div className="app">
         <div className="blob"></div>
+        <div className="home-layer">
         <div className="hd">
           <div className="l">
-            <div className="hi">{displayName ? `Welcome back, ${displayName}` : "Welcome back"} <span className="wave"><E>👋</E></span></div>
+            <div className="hi">{displayName ? `Hi, ${displayName}` : "Hi"} <span className="wave"><E>👋</E></span></div>
             <div className="sub">{fmtLong(TODAY)}</div>
           </div>
           <div className="acts">
@@ -436,9 +476,11 @@ function App() {
 
         <Panel tab={tab} cycle={cycle} extras={extras} pantry={pantry} dailyGoal={dailyGoal}
           onRemove={removeItem} onRemoveExtra={removeExtra} onRemovePantry={removePantry} onGrams={setGrams}
-          onOpen={() => setBasketOpen(true)} onSetDays={setCycleDays} onOpenPantry={() => setPantryOpen(true)} />
+          onSetDays={setCycleDays} onOpenPantry={() => setPantryOpen(true)}
+          onDetail={(kind, id) => setDetail({ kind, id })} onScan={scan} />
 
         <Navbar tab={tab} onTab={setTab} onFab={onFab} fabOpen={false} />
+        </div>
 
         {toast && <div className="toast">{toast}</div>}
         {sheet && <AddSheet type={sheet.type} date={sheet.date} onClose={() => setSheet(null)}
@@ -458,33 +500,50 @@ function App() {
           defaultDays={defaultDays} onDefaultDays={setDefaultDays}
           units={units} onUnits={setUnits}
           theme={theme} onTheme={setTheme}
-          accent={t.greenTone} onAccent={a => setTweak("greenTone", a)}
           onExport={exportData} onImport={importData} onClearAll={clearAll}
           version="1.0.0" />}
-
-        {basketOpen && <BasketPage cycle={cycle} pantry={pantry} extras={extras} dailyGoal={dailyGoal} macros={macros}
-          onBack={() => setBasketOpen(false)}
-          onAdd={() => setSheet({ type: "food", date: null })}
-          onScan={scan} onRemove={removeItem} onSetDays={setCycleDays} onDelete={deleteCycle} />}
 
         {pantryOpen && <PantryPage cycle={cycle} pantry={pantry}
           onBack={() => setPantryOpen(false)}
           onSetDefault={setPantryDefault} onRemove={removePantry}
           onAdd={() => setSheet({ type: "pantry", date: null })}
           onGrams={setGrams} onReset={resetGrams} />}
+
+        {(() => {
+          if (!detail) return null;
+          let obj, days2, dateLabel;
+          if (detail.kind === "item") { obj = cycle.items.find(i => i.id === detail.id); days2 = cycleDays(cycle); }
+          else if (detail.kind === "extra") { obj = extras.find(x => x.id === detail.id); dateLabel = obj ? fmtLong(obj.date) : ""; }
+          else { obj = pantry.find(p => p.id === detail.id); days2 = cycleDays(cycle); }
+          if (!obj) return null;
+          return <window.ItemDetail kind={detail.kind} item={obj} days={days2} dateLabel={dateLabel}
+            onEdit={editDetail} onRemove={removeDetail} onClose={() => setDetail(null)} />;
+        })()}
+
+        {carry && <window.CarryOverSheet source={carry.source} date={carry.date}
+          onConfirm={picks => { doCreatePeriod(carry.date, picks); setCarry(null); }}
+          onSkip={() => { doCreatePeriod(carry.date, []); setCarry(null); }}
+          onClose={() => setCarry(null)} />}
       </div>
     </Device>
     <window.TweaksPanel>
       <window.TweakSection label="Personal" />
       <window.TweakText label="Your name" value={t.name} onChange={v => setTweak("name", v || "there")} />
-      <window.TweakSection label="Colour & mood" />
-      <window.TweakColor label="Extra accent" value={t.extraAccent}
-        options={[["#EFA8C0","#B45C7C"],["#F0B79A","#C2724A"],["#F1A79A","#C2554A"],["#C9B7E0","#7A5AA8"]]}
-        onChange={v => setTweak("extraAccent", v)} />
-      <window.TweakColor label="Greens" value={t.greenTone}
-        options={[["#7CC96E","#5FB152","#3E8F38"],["#5FAE56","#46913E","#2E6F2A"],["#A6D938","#7FBE2A","#5C9117"]]}
+      <window.TweakSection label="Accent colours" />
+      <window.TweakColor label="Brand" value={t.brand}
+        options={["#2C3A1E","#24423A","#3B4A26","#2E2B26"]}
+        onChange={v => setTweak("brand", v)} />
+      <window.TweakColor label="Meal greens" value={t.greenTone}
+        options={[["#6E9249","#5C7A3C","#46612F"],["#7CC96E","#5FB152","#3E8F38"],["#9CB23E","#7F942C","#5C6E1A"],["#5E9E7A","#4A8463","#2F6048"]]}
         onChange={v => setTweak("greenTone", v)} />
-      <window.TweakRadio label="Surface" value={t.mood} options={["sage","cream","mist"]}
+      <window.TweakColor label="Pantry" value={t.pantry}
+        options={["#D9A441","#E0A93C","#C98A2E","#CDAE5A"]}
+        onChange={v => setTweak("pantry", v)} />
+      <window.TweakColor label="Extras" value={t.extraAccent}
+        options={[["#C56A4C","#A8512F"],["#EFA8C0","#B45C7C"],["#E0A150","#B97A2A"],["#C9779E","#9E4E78"]]}
+        onChange={v => setTweak("extraAccent", v)} />
+      <window.TweakSection label="Surface" />
+      <window.TweakRadio label="Tone" value={t.mood} options={["white","linen","mist"]}
         onChange={v => setTweak("mood", v)} />
     </window.TweaksPanel>
     </React.Fragment>

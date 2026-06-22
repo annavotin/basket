@@ -2,9 +2,33 @@
    BASKET — full-screen Basket detail page
    ============================================================ */
 
-.bpage{position:absolute;inset:52px 0 0;z-index:38;display:flex;flex-direction:column;
-  background:var(--sage-bg);animation:bpIn .34s cubic-bezier(.2,.85,.3,1)}
-@keyframes bpIn{from{transform:translateX(34px);opacity:0}to{transform:none;opacity:1}}
+.bpage{position:absolute;inset:0;z-index:38;display:flex;flex-direction:column;
+  background:var(--sage-bg);animation:bpIn .38s cubic-bezier(.2,.85,.3,1)}
+@keyframes bpIn{from{transform:translateY(100%)}to{transform:none}}
+
+/* full-screen basket expansion — rises all the way up, content slides in */
+.bpage-full{inset:0;animation:bpRise .42s cubic-bezier(.2,.85,.25,1)}
+@keyframes bpRise{from{transform:translateY(45%);opacity:.45}to{transform:none;opacity:1}}
+.bpage-full .bp-top{padding-top:48px}
+.bpage-full .bp-hero{animation:bpHeroIn .55s cubic-bezier(.2,.8,.3,1) .12s both}
+@keyframes bpHeroIn{from{opacity:0;transform:translateY(-18px) scale(.97)}to{opacity:1;transform:none}}
+.bpage-full .bp-stats{animation:bpSecIn .5s cubic-bezier(.2,.8,.3,1) .22s both}
+.bpage-full .bp-seclbl{animation:bpSecIn .5s cubic-bezier(.2,.8,.3,1) .28s both}
+@keyframes bpSecIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.bpage-full .bp-item{animation:bpCardIn .5s cubic-bezier(.2,.8,.3,1) both}
+@keyframes bpCardIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.bpage-full .bp-item:nth-child(1){animation-delay:.3s}
+.bpage-full .bp-item:nth-child(2){animation-delay:.36s}
+.bpage-full .bp-item:nth-child(3){animation-delay:.42s}
+.bpage-full .bp-item:nth-child(4){animation-delay:.48s}
+.bpage-full .bp-item:nth-child(5){animation-delay:.54s}
+.bpage-full .bp-item:nth-child(6){animation-delay:.6s}
+.bpage-full .bp-item:nth-child(7){animation-delay:.66s}
+.bpage-full .bp-item:nth-child(8){animation-delay:.72s}
+.bpage-full .bp-item:nth-child(n+9){animation-delay:.78s}
+@media (prefers-reduced-motion:reduce){
+  .bpage-full,.bpage-full .bp-hero,.bpage-full .bp-stats,.bpage-full .bp-seclbl,.bpage-full .bp-item{animation:none}
+}
 
 /* top bar */
 .bp-top{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;position:relative;z-index:3}
@@ -17,6 +41,11 @@
 .bp-menu{width:42px;height:42px;border-radius:14px;background:transparent;border:none;cursor:pointer;flex:0 0 auto;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .bp-menu span{width:4px;height:4px;border-radius:50%;background:var(--moss)}
+.bp-menu.on{background:var(--white);box-shadow:0 2px 8px rgba(44,58,30,.08)}
+
+/* meal-prep options sheet (opened by the ⋮ button) */
+.bp-menu-sheet .bp-len{margin-top:4px}
+.bp-menu-del{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:18px}
 
 .bp-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:0 16px}
 .bp-scroll::-webkit-scrollbar{display:none}
@@ -120,6 +149,36 @@
 .bp-len-scale{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;font-weight:700;color:var(--moss-faint)}
 .bp-len-foot{margin-top:13px;padding-top:13px;border-top:1.5px solid var(--line);font-size:12px;font-weight:700;color:var(--moss);text-align:center}
 
+/* ============================================================
+   NEW SHOP — empty basket, scan-first non-scroll layout
+   ============================================================ */
+.bp-new{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:4px 16px 88px;overflow:hidden}
+.bp-new-intro{flex:0 0 auto;text-align:center;padding:6px 8px 0}
+.bp-new-h{font-family:var(--font-display);font-weight:600;font-size:23px;color:var(--forest);margin:0}
+.bp-new-p{font-size:13px;font-weight:600;color:var(--moss);line-height:1.5;margin:7px auto 0;max-width:26em}
+
+.bp-scanzone{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:12px}
+.bp-scanbig{flex:1 1 0;min-height:0;display:flex;align-items:center;gap:16px;width:100%;cursor:pointer;
+  border-radius:26px;padding:20px 22px;text-align:left;transition:transform .12s}
+.bp-scanbig:active{transform:scale(.985)}
+.bp-scanbig-ic{width:60px;height:60px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+  font-size:30px;flex:0 0 auto}
+.bp-scanbig-tx{display:flex;flex-direction:column;gap:3px;min-width:0}
+.bp-scanbig-tx b{font-family:var(--font-display);font-weight:600;font-size:21px;line-height:1.1}
+.bp-scanbig-tx small{font-size:13px;font-weight:600;line-height:1.3}
+
+.bp-scanbig.primary{background:var(--forest);box-shadow:0 12px 30px rgba(44,58,30,.28)}
+.bp-scanbig.primary .bp-scanbig-ic{background:rgba(255,255,255,.14)}
+.bp-scanbig.primary b{color:#fff}
+.bp-scanbig.primary small{color:var(--matcha-soft)}
+
+.bp-scanbig.alt{background:var(--white);border:1.5px solid var(--sage-100);box-shadow:0 3px 12px rgba(44,58,30,.06)}
+.bp-scanbig.alt .bp-scanbig-ic{background:var(--sage-bg2)}
+.bp-scanbig.alt b{color:var(--forest)}
+.bp-scanbig.alt small{color:var(--moss-faint)}
+
+.bp-new .bp-len{flex:0 0 auto;margin-top:0}
+
 /* scan promo */
 .bp-scan{display:flex;align-items:center;gap:13px;width:100%;margin-top:14px;background:var(--forest);border:none;cursor:pointer;
   border-radius:20px;padding:14px 16px;text-align:left;transition:transform .12s}
@@ -139,6 +198,8 @@
   cursor:pointer;background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;
   box-shadow:0 10px 26px rgba(44,58,30,.32);transition:transform .12s}
 .bp-addbtn:active{transform:scale(.98)}
+.bp-addbtn.ghost{background:transparent;color:var(--moss);box-shadow:none;font-size:14px;padding:13px}
+.bp-addbtn.ghost:active{transform:none;color:var(--forest)}
 .bp-plus{font-size:22px;line-height:1}
 
 /* open affordance on basket panel header */
@@ -172,12 +233,17 @@
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cnew .field input{background:var(--white)}
 
-/* home-panel "plan this shop" (empty basket) */
-.bk-plan{display:flex;flex-direction:column;width:100%}
-.bk-plan .empty{flex:0 0 auto;justify-content:flex-start;padding:4px 24px 2px}
-.bk-plan .empty .big{font-size:34px;margin-bottom:7px}
-.bk-plan .empty p{font-size:12.5px}
-.bk-plan .bp-len{margin-top:8px;padding:15px 16px 13px}
+/* home-panel "plan this shop" (empty basket) — fits above the navbar, no scroll */
+.list.bk-fit{display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:4px 16px 80px}
+.list.bk-fit .bk-plan{flex:0 0 auto;gap:8px}
+.bk-plan{display:flex;flex-direction:column;width:100%;gap:10px;padding-top:2px}
+.bk-plan-scan{display:flex;flex-direction:column;gap:9px}
+.bk-plan .bp-scanbig{flex:0 0 auto;padding:14px 16px;border-radius:20px;gap:13px}
+.bk-plan .bp-scanbig-ic{width:46px;height:46px;border-radius:14px;font-size:23px}
+.bk-plan .bp-scanbig-tx b{font-size:16px}
+.bk-plan .bp-scanbig-tx small{font-size:12px}
+.bk-plan .bp-scanbig.primary{box-shadow:0 6px 18px rgba(44,58,30,.2)}
+.bk-plan .bp-len{margin-top:2px;padding:14px 16px 12px}
 .bk-plan .bp-len-foot{margin-top:10px;padding-top:10px}
 
 /* pantry tab header group */

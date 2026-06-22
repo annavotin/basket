@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Batch — Logo variations</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --pink:#FBE3F1; --pink-2:#F7D2E8; --ink:#15110F; --cream:#F4F7EF;
+    --matcha:#5C7A3C; --matcha-d:#3E5A2A; --matcha-l:#A7C586; --forest:#27331C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#ECEBE4;color:var(--ink);
+    font-family:'Hanken Grotesk',sans-serif;-webkit-font-smoothing:antialiased;padding:46px 40px 90px}
+  .head{max-width:1180px;margin:0 auto 30px}
+  .head h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;letter-spacing:-.8px;margin:0 0 8px}
+  .head p{margin:0;max-width:680px;color:#5d5a52;font-size:15px;line-height:1.55;font-weight:500}
+  .wrap{max-width:1180px;margin:0 auto}
+
+  .sec-h{display:flex;align-items:baseline;gap:12px;margin:42px 0 18px;padding-bottom:11px;border-bottom:1.5px solid rgba(21,17,15,.12)}
+  .sec-h h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;letter-spacing:.4px;text-transform:uppercase;margin:0}
+  .sec-h span{font-size:13px;color:#8a877e;font-weight:600}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .card{background:#fff;border-radius:20px;padding:22px 22px 18px;box-shadow:0 2px 14px rgba(40,40,30,.06);
+    display:flex;flex-direction:column;gap:16px}
+  .icon-lg{width:100%;aspect-ratio:1;border-radius:26px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .row{display:flex;align-items:center;gap:14px}
+  .mini{border-radius:11px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto}
+  .mini.s60{width:60px;height:60px;border-radius:14px}
+  .mini.s44{width:44px;height:44px;border-radius:10px}
+  .mini.s29{width:29px;height:29px;border-radius:7px}
+  .mini-lbl{font-size:11px;color:#9a978e;font-weight:600;margin-left:auto;letter-spacing:.2px}
+  .meta .nm{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;letter-spacing:-.2px}
+  .meta .ds{font-size:12.5px;color:#86837b;font-weight:500;margin-top:3px;line-height:1.4}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    padding:3px 8px;border-radius:20px;margin-top:9px}
+  .tag.best{background:rgba(92,122,60,.14);color:var(--matcha-d)}
+  .tag.lock{background:rgba(21,17,15,.07);color:#6c6960}
+
+  .lock-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  .lock-card{background:#fff;border-radius:20px;padding:30px;box-shadow:0 2px 14px rgba(40,40,30,.06);
+    display:flex;flex-direction:column;gap:18px;min-height:150px;justify-content:center}
+
+  svg{display:block}
+  .bg-pink{background:var(--pink)} .bg-pink2{background:var(--pink-2)}
+  .bg-ink{background:var(--ink)} .bg-matcha{background:var(--matcha)}
+  .bg-forest{background:var(--forest)} .bg-cream{background:var(--cream)}
+  .bg-grad{background:linear-gradient(150deg,#3C5A28,#243A1A)}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>Batch — logo variations</h1>
+    <p>Your concept reads great large, but the BATCH wordmark between the two trays disappears at icon size. These keep the stacked meal-prep-tray idea as an <b>icon-only mark</b> that survives down to 29px — the full wordmark lockup is kept for splash screens and headers, where there's room for it.</p>
+  </div>
+
+  <div class="wrap">
+
+    <!-- reference -->
+    <div class="sec-h"><h2>Starting point</h2><span>the original at three sizes — note the text at 44 / 29</span></div>
+    <div class="grid">
+      <div class="card">
+        <div class="icon-lg bg-pink">
+          <svg width="74%" viewBox="0 0 200 200" id="orig-lg"></svg>
+        </div>
+        <div class="row">
+          <div class="mini s60 bg-pink"><svg width="80%" viewBox="0 0 200 200" class="orig-mark"></svg></div>
+          <div class="mini s44 bg-pink"><svg width="80%" viewBox="0 0 200 200" class="orig-mark"></svg></div>
+          <div class="mini s29 bg-pink"><svg width="80%" viewBox="0 0 200 200" class="orig-mark"></svg></div>
+          <span class="mini-lbl">60 · 44 · 29 px</span>
+        </div>
+        <div class="meta">
+          <div class="nm">Original concept</div>
+          <div class="ds">Two trays + BATCH wordmark. The letters blur below ~80px.</div>
+          <span class="tag lock">Reference</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- icon-only marks -->
+    <div class="sec-h"><h2>App-icon marks</h2><span>icon only — built to read small</span></div>
+    <div class="grid" id="icon-grid"></div>
+
+    <!-- colorways -->
+    <div class="sec-h"><h2>Colorways</h2><span>recommended mark across backgrounds</span></div>
+    <div class="grid" id="color-grid"></div>
+
+    <!-- lockups -->
+    <div class="sec-h"><h2>Wordmark lockups</h2><span>for splash, headers, onboarding — where text has room</span></div>
+    <div class="lock-grid" id="lock-grid"></div>
+
+  </div>
+
+<script>
+/* ============================================================
+   Reusable tray glyphs. All drawn in a 200x200 box, currentColor.
+   ============================================================ */
+
+/* one meal-prep tray: bracket-top outline + filled lid bar.
+   cx-centered, given vertical center cy and scale s (1 = ~150 tall). */
+function tray(cy, opt){
+  opt = opt || {};
+  const sw = opt.sw || 13;          // stroke width
+  const w  = opt.w  || 130;         // tray width
+  const h  = opt.h  || 74;          // tray body height
+  const lid= opt.lid===false ? false : true;
+  const cx = 100;
+  const L = cx - w/2, R = cx + w/2;
+  const T = cy - h/2, B = cy + h/2;
+  const r = Math.min(26, h*0.42);   // bottom corner radius
+  const tick = w*0.14;              // inward top tick
+  const d = `M${L+tick} ${T} H${L} V${B-r} Q${L} ${B} ${L+r} ${B} H${R-r} Q${R} ${B} ${R} ${B-r} V${T} H${R-tick}`;
+  let s = `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(lid){
+    const lw = w*0.52, lh = sw*1.55;
+    s += `<rect x="${cx-lw/2}" y="${T-lh*0.32}" width="${lw}" height="${lh}" rx="${lh/2}" fill="currentColor"/>`;
+  }
+  return s;
+}
+
+/* a filled lid/portion bar centred at cy */
+function bar(cy, w, h){
+  const cx=100; h=h||20;
+  return `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="${h/2}" fill="currentColor"/>`;
+}
+
+/* ---- the original concept mark (two trays + BATCH) ---- */
+function origMark(){
+  return tray(46,{w:150,h:62,sw:11})
+    + `<text x="100" y="112" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-weight="700" font-size="46" letter-spacing="-1" fill="currentColor">BATCH</text>`
+    + tray(160,{w:150,h:62,sw:11});
+}
+
+/* ============================================================
+   Variations (icon-only)
+   ============================================================ */
+const VARIATIONS = [
+  { id:"stack", nm:"Stacked trays", best:true,
+    ds:"The literal mark with the text removed — two prep trays, stacked. Cleanest link to the concept.",
+    draw:()=> tray(54,{w:150,h:66,sw:15}) + tray(156,{w:150,h:66,sw:15}) },
+
+  { id:"triple", nm:"Batch layers", best:true,
+    ds:"One tray holding three stacked portions — reads as a batch of meals in a single container.",
+    draw:()=> tray(118,{w:150,h:128,sw:15,lid:false})
+      + bar(70,82,17) + bar(104,82,17) + bar(138,82,17) },
+
+  { id:"mono", nm:"Tray + B",
+    ds:"A bold B nested in a single tray. Keeps a letter but only one, so it holds at small sizes.",
+    draw:()=> tray(112,{w:150,h:140,sw:14,lid:false})
+      + `<text x="100" y="150" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-weight="700" font-size="118" letter-spacing="-2" fill="currentColor">B</text>` },
+
+  { id:"single", nm:"Single tray",
+    ds:"Just one tray with its lid bar. The simplest, boldest, most scalable option.",
+    draw:()=> tray(104,{w:158,h:104,sw:17}) },
+
+  { id:"nest", nm:"Nested pair",
+    ds:"A small tray tucked inside a larger one — multiples without stacking height.",
+    draw:()=> tray(108,{w:160,h:120,sw:15,lid:false}) + tray(118,{w:96,h:74,sw:13}) },
+
+  { id:"lidstack", nm:"Lid stack",
+    ds:"Three rounded lids stacked like trays seen edge-on. Abstract, very legible tiny.",
+    draw:()=> bar(64,140,30) + bar(104,140,30) + bar(144,140,30) },
+];
+
+/* ============================================================
+   Render
+   ============================================================ */
+function svgMark(draw, size, frac){
+  return `<svg width="${frac||'74%'}" viewBox="0 0 200 200" style="color:inherit">${draw()}</svg>`;
+}
+
+// original
+document.getElementById('orig-lg').innerHTML = origMark();
+document.querySelectorAll('.orig-mark').forEach(s=>s.innerHTML = origMark());
+
+// icon grid
+const ig = document.getElementById('icon-grid');
+VARIATIONS.forEach(v=>{
+  const card = document.createElement('div');
+  card.className='card';
+  card.innerHTML = `
+    <div class="icon-lg bg-pink" style="color:var(--ink)"><svg width="68%" viewBox="0 0 200 200">${v.draw()}</svg></div>
+    <div class="row">
+      <div class="mini s60 bg-pink" style="color:var(--ink)"><svg width="74%" viewBox="0 0 200 200">${v.draw()}</svg></div>
+      <div class="mini s44 bg-pink" style="color:var(--ink)"><svg width="74%" viewBox="0 0 200 200">${v.draw()}</svg></div>
+      <div class="mini s29 bg-pink" style="color:var(--ink)"><svg width="74%" viewBox="0 0 200 200">${v.draw()}</svg></div>
+      <span class="mini-lbl">60 · 44 · 29 px</span>
+    </div>
+    <div class="meta">
+      <div class="nm">${v.nm}</div>
+      <div class="ds">${v.ds}</div>
+      ${v.best?'<span class="tag best">Reads small ✓</span>':'<span class="tag lock">Icon mark</span>'}
+    </div>`;
+  ig.appendChild(card);
+});
+
+// colorways — use the "stack" mark
+const stack = VARIATIONS[0].draw;
+const COLORWAYS = [
+  {nm:"Ink on pink", cls:"bg-pink", color:"var(--ink)"},
+  {nm:"Pink on ink", cls:"bg-ink", color:"var(--pink)"},
+  {nm:"Cream on matcha", cls:"bg-matcha", color:"var(--cream)"},
+  {nm:"Matcha on cream", cls:"bg-cream", color:"var(--matcha-d)"},
+  {nm:"Sage on forest", cls:"bg-forest", color:"var(--matcha-l)"},
+  {nm:"Cream on gradient", cls:"bg-grad", color:"var(--cream)"},
+];
+const cg = document.getElementById('color-grid');
+COLORWAYS.forEach(c=>{
+  const card=document.createElement('div');
+  card.className='card';
+  card.innerHTML = `
+    <div class="icon-lg ${c.cls}" style="color:${c.color}"><svg width="64%" viewBox="0 0 200 200">${stack()}</svg></div>
+    <div class="row">
+      <div class="mini s60 ${c.cls}" style="color:${c.color}"><svg width="70%" viewBox="0 0 200 200">${stack()}</svg></div>
+      <div class="mini s44 ${c.cls}" style="color:${c.color}"><svg width="70%" viewBox="0 0 200 200">${stack()}</svg></div>
+      <div class="mini s29 ${c.cls}" style="color:${c.color}"><svg width="70%" viewBox="0 0 200 200">${stack()}</svg></div>
+      <span class="mini-lbl">${c.nm}</span>
+    </div>`;
+  cg.appendChild(card);
+});
+
+// lockups
+const lg = document.getElementById('lock-grid');
+function lockup(markFrac, layout){
+  const mark = `<svg viewBox="0 0 200 200" style="color:inherit">${VARIATIONS[3].draw()}</svg>`;
+  return mark;
+}
+const LOCKS = [
+  { nm:"Horizontal", cls:"bg-pink", color:"var(--ink)", layout:"row",
+    html:`<div style="display:flex;align-items:center;gap:20px">
+        <svg width="70" height="70" viewBox="0 0 200 200">${VARIATIONS[3].draw()}</svg>
+        <div style="font-family:'Space Grotesk';font-weight:700;font-size:46px;letter-spacing:-2px">BATCH</div>
+      </div>` },
+  { nm:"Stacked", cls:"bg-pink2", color:"var(--ink)", layout:"col",
+    html:`<div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <svg width="76" height="76" viewBox="0 0 200 200">${VARIATIONS[0].draw()}</svg>
+        <div style="font-family:'Space Grotesk';font-weight:700;font-size:34px;letter-spacing:4px">BATCH</div>
+      </div>` },
+  { nm:"On matcha", cls:"bg-matcha", color:"var(--cream)", layout:"row",
+    html:`<div style="display:flex;align-items:center;gap:20px">
+        <svg width="68" height="68" viewBox="0 0 200 200">${VARIATIONS[5].draw()}</svg>
+        <div style="font-family:'Space Grotesk';font-weight:700;font-size:46px;letter-spacing:-2px">BATCH</div>
+      </div>` },
+  { nm:"With tagline", cls:"bg-cream", color:"var(--forest)", layout:"row",
+    html:`<div style="display:flex;align-items:center;gap:18px">
+        <svg width="64" height="64" viewBox="0 0 200 200">${VARIATIONS[1].draw()}</svg>
+        <div style="line-height:1">
+          <div style="font-family:'Space Grotesk';font-weight:700;font-size:40px;letter-spacing:-1.5px">BATCH</div>
+          <div style="font-family:'Hanken Grotesk';font-weight:700;font-size:12px;letter-spacing:3px;color:var(--matcha);margin-top:4px">EAT ON BUDGET</div>
+        </div>
+      </div>` },
+];
+LOCKS.forEach(l=>{
+  const card=document.createElement('div');
+  card.className='lock-card '+l.cls;
+  card.style.color=l.color;
+  card.innerHTML = l.html + `<div style="font-size:12px;font-weight:600;color:currentColor;opacity:.5;text-align:center">${l.nm}</div>`;
+  lg.appendChild(card);
+});
+</script>
+</body>
+</html>

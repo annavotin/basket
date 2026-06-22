@@ -82,7 +82,7 @@ function Ring({ segs, budget, consumed }) {
   );
 }
 
-function BasketPage({ cycle, pantry, extras, dailyGoal, macros, onBack, onAdd, onScan, onRemove, onSetDays, onDelete }) {
+function BasketPage({ cycle, pantry, extras, dailyGoal, macros, onBack, onAdd, onScan, onRemove, onSetDays, onDelete, onItem }) {
   const [menu, setMenu] = React.useState(false);
   const days = cycleDays(cycle);
   const total = mealPrepKcal(cycle);
@@ -95,7 +95,7 @@ function BasketPage({ cycle, pantry, extras, dailyGoal, macros, onBack, onAdd, o
   const a = fmtDay(cycle.start), b = fmtDay(cycle.end);
 
   return (
-    <div className="bpage">
+    <div className="bpage bpage-full">
       <div className="bp-top">
         <button className="bp-back" onClick={onBack} aria-label="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -109,22 +109,50 @@ function BasketPage({ cycle, pantry, extras, dailyGoal, macros, onBack, onAdd, o
         <button className={"bp-menu" + (menu ? " on" : "")} aria-label="More" onClick={() => setMenu(m => !m)}>
           <span></span><span></span><span></span>
         </button>
-        {menu && (
-          <React.Fragment>
-            <div className="bp-pop-scrim" onClick={() => setMenu(false)}></div>
-            <div className="bp-pop">
-              <div className="bp-pop-lbl">Adjust prep length</div>
-              <LengthSlider cycle={cycle} dailyGoal={dailyGoal} onSetDays={onSetDays} />
-              <div className="bp-pop-div"></div>
-              <button className="bp-pop-del" onClick={() => { setMenu(false); onDelete(); }}>
-                <span className="bp-pop-del-i"><E>🗑️</E></span> Delete this basket
-              </button>
-            </div>
-          </React.Fragment>
-        )}
       </div>
 
-      <div className="bp-scroll">
+      {menu && (
+        <div className="scrim" onClick={() => setMenu(false)}>
+          <div className="sheet bp-menu-sheet" onClick={e => e.stopPropagation()}>
+            <div className="grab"></div>
+            <h2>Meal Prep</h2>
+            <p className="desc">{a.dn} {a.mo} – {b.dn} {b.mo} · {days} days</p>
+            <LengthSlider cycle={cycle} dailyGoal={dailyGoal} onSetDays={onSetDays} />
+            <button className="btn id-danger bp-menu-del" onClick={() => { setMenu(false); onDelete(); }}>
+              <E>🗑️</E> Delete this basket
+            </button>
+          </div>
+        </div>
+      )}
+
+      {cycle.items.length === 0 ? (
+        <div className="bp-new">
+          <div className="bp-new-intro">
+            <h3 className="bp-new-h">Start this shop</h3>
+            <p className="bp-new-p">Scan to add everything at once — we'll fill in the weights and calories for you.</p>
+          </div>
+
+          <div className="bp-scanzone">
+            <button className="bp-scanbig primary" onClick={() => onScan("receipt")}>
+              <span className="bp-scanbig-ic"><E>🧾</E></span>
+              <span className="bp-scanbig-tx">
+                <b>Scan a receipt</b>
+                <small>Add a whole shop in one tap</small>
+              </span>
+            </button>
+            <button className="bp-scanbig alt" onClick={() => onScan("barcode")}>
+              <span className="bp-scanbig-ic"><E>📷</E></span>
+              <span className="bp-scanbig-tx">
+                <b>Scan a barcode</b>
+                <small>Add items one at a time</small>
+              </span>
+            </button>
+          </div>
+
+          <LengthSlider cycle={cycle} dailyGoal={dailyGoal} onSetDays={onSetDays} />
+        </div>
+      ) : (
+        <div className="bp-scroll">
         <div className="bp-hero">
           <div className="bp-hero-blob"></div>
           <Ring segs={[{ v: total, c: "var(--matcha)" }, { v: pan, c: "var(--amber)" }, { v: ext, c: "var(--rose)" }]} budget={budget} consumed={consumed} />
@@ -172,12 +200,11 @@ function BasketPage({ cycle, pantry, extras, dailyGoal, macros, onBack, onAdd, o
             {cycle.items.map(it => {
               const share = total ? (it.k / total) * 100 : 0;
               return (
-                <div className="bp-item" key={it.id}>
+                <div className="bp-item tap" key={it.id} onClick={() => onItem && onItem(it)}>
                   <div className="bp-av"><E>{it.e}</E></div>
                   <div className="bp-it-mid">
                     <div className="bp-it-top">
                       <span className="bp-it-nm">{it.n}</span>
-                      <button className="bp-rm" onClick={() => onRemove(it.id)} aria-label="Remove">✕</button>
                     </div>
                     <div className="bp-it-meta">
                       <span className="bp-tag">{SRC_LABEL[it.src] || "Manual"}</span>
@@ -193,15 +220,9 @@ function BasketPage({ cycle, pantry, extras, dailyGoal, macros, onBack, onAdd, o
               );
             })}
           </div>
-        ) : (
-          <div className="bp-empty">
-            <div className="bp-empty-e"><E>🧺</E></div>
-            <h4>Basket's empty</h4>
-            <p>Scan your receipt to add a whole shop at once — or add items one by one.</p>
-          </div>
-        )}
+        ) : null}
 
-        <button className={"bp-scan" + (cycle.items.length ? "" : " emph")} onClick={() => onScan("receipt")}>
+        <button className="bp-scan" onClick={() => onScan("receipt")}>
           <span className="bp-scan-ic"><E>🧾</E></span>
           <span className="bp-scan-tx">
             <b>Scan a receipt</b>
@@ -211,12 +232,17 @@ function BasketPage({ cycle, pantry, extras, dailyGoal, macros, onBack, onAdd, o
         </button>
 
         <div className="bp-pad"></div>
-      </div>
+        </div>
+      )}
 
       <div className="bp-cta">
-        <button className="bp-addbtn" onClick={onAdd}>
-          <span className="bp-plus">+</span> Add to basket
-        </button>
+        {cycle.items.length === 0 ? (
+          <button className="bp-addbtn ghost" onClick={onAdd}>Enter an item manually</button>
+        ) : (
+          <button className="bp-addbtn" onClick={onAdd}>
+            <span className="bp-plus">+</span> Add to basket
+          </button>
+        )}
       </div>
     </div>
   );
