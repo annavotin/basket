@@ -35,20 +35,34 @@ export default function SettingsSection({ label, hint, children }: SettingsSecti
       shadowRadius: 9,
       elevation: 2,
     },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.line,
+      marginLeft: 57,
+    },
     hint: {
       fontSize: 11.5,
       fontWeight: '600',
-      color: colors.mossFaint,
+      color: colors.moss,
       paddingHorizontal: 8,
       paddingTop: 9,
       lineHeight: 11.5 * 1.45,
     },
   }), [colors])
 
+  const childArray = React.Children.toArray(children)
+
   return (
     <View style={styles.section}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.card}>{children}</View>
+      <View style={styles.card}>
+        {childArray.map((child, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <View style={styles.divider} />}
+            {child}
+          </React.Fragment>
+        ))}
+      </View>
       {hint && <Text style={styles.hint}>{hint}</Text>}
     </View>
   )

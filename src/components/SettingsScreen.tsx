@@ -83,8 +83,9 @@ export default function SettingsScreen({
     title: { fontFamily: fonts.head, fontSize: 22, fontWeight: '700', color: colors.forest },
     scrollContent: { padding: 16, paddingBottom: 40 },
     nameInput: {
+      fontFamily: fonts.bodySemi,
       fontSize: 14,
-      fontWeight: '500',
+      fontWeight: '600',
       color: colors.forest,
       textAlign: 'right',
       minWidth: 120,
@@ -92,64 +93,66 @@ export default function SettingsScreen({
     },
     // Account section — signed out
     signInCard: {
-      backgroundColor: colors.white,
-      borderRadius: 20,
-      padding: 18,
+      backgroundColor: colors.forest,
+      borderRadius: 24,
+      padding: 20,
       marginBottom: 4,
-      shadowColor: '#2C3A1E',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 9,
-      elevation: 2,
+      overflow: 'hidden',
+    },
+    signInHighlight: {
+      position: 'absolute',
+      top: -50,
+      right: -40,
+      width: 150,
+      height: 150,
+      borderRadius: 75,
+      backgroundColor: 'rgba(124,201,110,0.22)',
     },
     signInText: {
-      alignItems: 'center',
-      marginBottom: 14,
+      marginBottom: 16,
+      position: 'relative',
     },
     signInTitle: {
       fontFamily: fonts.display,
       fontWeight: '600',
-      fontSize: 16,
-      color: colors.forest,
+      fontSize: 20,
+      color: '#FFFFFF',
       marginBottom: 4,
-      textAlign: 'center',
     },
     signInSub: {
       fontFamily: fonts.bodySemi,
       fontSize: 13,
-      color: colors.mossFaint,
-      textAlign: 'center',
+      fontWeight: '600',
+      color: colors.matchaSoft,
     },
     signInBtns: {
       flexDirection: 'row',
       gap: 10,
+      position: 'relative',
     },
     btnPrimary: {
       flex: 1,
-      backgroundColor: colors.matcha,
-      borderRadius: 12,
-      paddingVertical: 12,
+      paddingVertical: 13,
       alignItems: 'center',
     },
     btnPrimaryText: {
       fontFamily: fonts.display,
       fontWeight: '600',
-      fontSize: 14,
+      fontSize: 15,
       color: '#FFFFFF',
     },
     btnGhost: {
       flex: 1,
-      borderWidth: 1.5,
-      borderColor: colors.matcha,
-      borderRadius: 12,
-      paddingVertical: 12,
+      backgroundColor: 'rgba(255,255,255,0.14)',
+      borderRadius: 14,
+      paddingVertical: 13,
       alignItems: 'center',
     },
     btnGhostText: {
       fontFamily: fonts.display,
       fontWeight: '600',
-      fontSize: 14,
-      color: colors.matcha600,
+      fontSize: 15,
+      color: '#FFFFFF',
     },
     // Account section — signed in
     acctCard: {
@@ -304,9 +307,11 @@ export default function SettingsScreen({
             </View>
           ) : (
             <View style={styles.signInCard}>
+              {/* Soft radial highlight top-right */}
+              <View style={styles.signInHighlight} pointerEvents="none" />
               <View style={styles.signInText}>
                 <Text style={styles.signInTitle}>Sign in to Basket</Text>
-                <Text style={styles.signInSub}>Sync your data across devices.</Text>
+                <Text style={styles.signInSub}>Sync your data across devices</Text>
               </View>
               <View style={styles.signInBtns}>
                 <TouchableOpacity

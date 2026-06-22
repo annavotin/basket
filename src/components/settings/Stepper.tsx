@@ -57,7 +57,7 @@ export default function Stepper({
       justifyContent: 'center',
     },
     value: {
-      fontFamily: fonts.display,
+      fontFamily: fonts.num,
       fontWeight: '600',
       fontSize: 14,
       color: colors.forest,
