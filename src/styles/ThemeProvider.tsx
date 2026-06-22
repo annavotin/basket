@@ -10,7 +10,7 @@ interface ThemeContextValue {
   colors: Palette
 }
 
-export const DEFAULT_ACCENT_VALUE: [string, string, string] = ['#7CC96E', '#5FB152', '#3E8F38']
+export const DEFAULT_ACCENT_VALUE: [string, string, string] = ['#6E9249', '#5C7A3C', '#46612F']
 
 const defaultContextValue: ThemeContextValue = {
   theme: 'system',

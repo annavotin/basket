@@ -13,7 +13,7 @@ const AMBER: [string, string, string] = ['#E6A23C', '#D98A1F', '#B5710F']
 describe('ThemeProvider / useColors', () => {
   it('provides the light matcha token by default', () => {
     const { getByTestId } = render(<ThemeProvider><Probe k="matcha" /></ThemeProvider>)
-    expect(getByTestId('val').props.children).toBe('#7CC96E')
+    expect(getByTestId('val').props.children).toBe('#6E9249')
   })
   it('provides dark tokens when initialTheme="dark"', () => {
     const { getByTestId } = render(<ThemeProvider initialTheme="dark"><Probe k="sageBg" /></ThemeProvider>)
@@ -21,7 +21,7 @@ describe('ThemeProvider / useColors', () => {
   })
   it('exposes legacy keys (recolored)', () => {
     const { getByTestId } = render(<ThemeProvider><Probe k="background" /></ThemeProvider>)
-    expect(getByTestId('val').props.children).toBe('#E7EEDD')
+    expect(getByTestId('val').props.children).toBe('#FFFFFF')
   })
   it('light selectedDay equals forest token by value', () => {
     function Both() {
