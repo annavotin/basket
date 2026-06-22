@@ -103,3 +103,49 @@ it('passes the product macrosPer100g onto the added item', () => {
   fireEvent.press(getByText('Add to period'))
   expect(onAdd.mock.calls[0][0].macrosPer100g).toEqual({ protein: 10, carbs: 4, fat: 0.4 })
 })
+
+describe('AddItemSheet — scan toggles', () => {
+  const scanned: Product = { name: 'Oatly', emoji: '🥛', packageWeightG: 1000, kcalPer100g: 61 }
+
+  it('shows Remember + Keep-scanning toggles in scanned mode', () => {
+    const { getByTestId } = render(
+      <AddItemSheet visible product={scanned} scanned onAdd={() => {}} onClose={() => {}} />
+    )
+    expect(getByTestId('toggle-remember')).toBeTruthy()
+    expect(getByTestId('toggle-keep-scanning')).toBeTruthy()
+  })
+
+  it('hides the toggles when not opened from a scan', () => {
+    const { queryByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={() => {}} onClose={() => {}} />
+    )
+    expect(queryByTestId('toggle-remember')).toBeNull()
+    expect(queryByTestId('toggle-keep-scanning')).toBeNull()
+  })
+
+  it('reports toggle changes to the parent', () => {
+    const onSaveForLater = jest.fn()
+    const onKeepScanning = jest.fn()
+    const { getByTestId } = render(
+      <AddItemSheet
+        visible product={scanned} scanned
+        saveForLater onSaveForLater={onSaveForLater}
+        keepScanning={false} onKeepScanning={onKeepScanning}
+        onAdd={() => {}} onClose={() => {}}
+      />
+    )
+    fireEvent.press(getByTestId('toggle-remember'))      // true -> false
+    expect(onSaveForLater).toHaveBeenCalledWith(false)
+    fireEvent.press(getByTestId('toggle-keep-scanning'))  // false -> true
+    expect(onKeepScanning).toHaveBeenCalledWith(true)
+  })
+
+  it('still emits the item on Add with toggles present', () => {
+    const onAdd = jest.fn()
+    const { getByTestId } = render(
+      <AddItemSheet visible product={scanned} scanned onAdd={onAdd} onClose={() => {}} />
+    )
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Oatly', source: 'barcode' }))
+  })
+})

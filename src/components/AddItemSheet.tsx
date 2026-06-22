@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import DismissArea from './DismissArea'
 import Stepper from './settings/Stepper'
+import Toggle from './settings/Toggle'
 import { Product } from '../mockProducts'
 import { FoodItem, Macros, CustomFood } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
@@ -23,9 +24,14 @@ type Props = {
   onScanBarcode?: () => void
   onScanReceipt?: () => void
   customFoods?: CustomFood[]
+  scanned?: boolean
+  saveForLater?: boolean
+  onSaveForLater?: (next: boolean) => void
+  keepScanning?: boolean
+  onKeepScanning?: (next: boolean) => void
 }
 
-export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [] }: Props) {
+export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [], scanned = false, saveForLater = true, onSaveForLater, keepScanning = false, onKeepScanning }: Props) {
   const colors = useColors()
   const units = useUnits()
   const isManual = product === null
@@ -224,6 +230,26 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       fontFamily: fonts.display, fontSize: 14, color: colors.matchaDeep,
       fontWeight: '600', textAlign: 'center', marginVertical: 6,
     },
+
+    // ── Scan toggles (scanned mode only) ──────────────────────────────────────
+    toggleGroup: {
+      backgroundColor: colors.white, borderRadius: 16,
+      paddingHorizontal: 14, marginTop: 8, marginBottom: 4,
+      shadowColor: colors.forest, shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+    },
+    toggleRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingVertical: 12,
+    },
+    toggleLabelWrap: { flex: 1, paddingRight: 12 },
+    toggleLabel: {
+      fontFamily: fonts.display, fontSize: 15, color: colors.forest, fontWeight: '600',
+    },
+    toggleHint: {
+      fontFamily: fonts.display, fontSize: 12, color: colors.mossFaint, marginTop: 2,
+    },
+    toggleDivider: { height: 1, backgroundColor: colors.line },
 
     // ── Add button ────────────────────────────────────────────────────────────
     addBtn: {
@@ -516,6 +542,35 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
                       : formatEnergy(perUnitKcal, units)}
                   </Text>
+                )}
+
+                {/* ── SCAN TOGGLES (scan-opened sheets only) ── */}
+                {scanned && (
+                  <View style={styles.toggleGroup}>
+                    <View style={styles.toggleRow}>
+                      <View style={styles.toggleLabelWrap}>
+                        <Text style={styles.toggleLabel}>Remember this item</Text>
+                        <Text style={styles.toggleHint}>Preload it next time you scan this barcode</Text>
+                      </View>
+                      <Toggle
+                        value={saveForLater}
+                        onValueChange={onSaveForLater ?? (() => {})}
+                        testID="toggle-remember"
+                      />
+                    </View>
+                    <View style={styles.toggleDivider} />
+                    <View style={styles.toggleRow}>
+                      <View style={styles.toggleLabelWrap}>
+                        <Text style={styles.toggleLabel}>Keep scanning</Text>
+                        <Text style={styles.toggleHint}>Reopen the scanner after you add</Text>
+                      </View>
+                      <Toggle
+                        value={keepScanning}
+                        onValueChange={onKeepScanning ?? (() => {})}
+                        testID="toggle-keep-scanning"
+                      />
+                    </View>
+                  </View>
                 )}
 
                 {/* ── ADD BUTTON ── */}
