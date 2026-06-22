@@ -5,6 +5,7 @@ import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
 import { useColors } from '../styles/ThemeProvider'
 import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
+import { fonts } from '../styles/fonts'
 import ItemRow from './ItemRow'
 
 type Props = {
@@ -20,12 +21,22 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantr
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
-      backgroundColor: colors.detailBackground,
+      backgroundColor: colors.white,
       borderTopLeftRadius: 20, borderTopRightRadius: 20,
       paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32,
     },
-    header: { fontSize: 15, fontWeight: '700', color: colors.kcalText, marginBottom: 12 },
-    empty: { fontSize: 14, color: colors.monthText, marginTop: 8 },
+    header: {
+      fontFamily: fonts.display,
+      fontSize: 15,
+      color: colors.forest,
+      marginBottom: 12,
+    },
+    empty: {
+      fontFamily: fonts.body,
+      fontSize: 14,
+      color: colors.moss,
+      marginTop: 8,
+    },
   }), [colors])
 
   return (

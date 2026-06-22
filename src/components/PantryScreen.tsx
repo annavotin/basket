@@ -26,7 +26,7 @@ type Props = {
 }
 
 function Stepper({
-  value, step, suffix, onChange, min = 0, testIDDec, testIDInc, testIDVal,
+  value, step, suffix, onChange, min = 0, testIDDec, testIDInc, testIDVal, stepperStyles,
 }: {
   value: number
   step: number
@@ -36,6 +36,7 @@ function Stepper({
   testIDDec?: string
   testIDInc?: string
   testIDVal?: string
+  stepperStyles: ReturnType<typeof makeStepperStyles>
 }) {
   return (
     <View style={stepperStyles.wrap}>
@@ -60,13 +61,17 @@ function Stepper({
   )
 }
 
-const stepperStyles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EDF2E6', borderRadius: 13, padding: 4 },
-  btn: { width: 30, height: 30, borderRadius: 9, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  btnTxt: { fontFamily: fonts.display, fontSize: 18, color: '#2C3A1E', lineHeight: 20 },
-  val: { minWidth: 54, textAlign: 'center', fontFamily: fonts.display, fontSize: 15, color: '#2C3A1E' },
-  suffix: { fontFamily: fonts.body, fontSize: 11, color: '#8A9A72' },
-})
+// Stepper styles use a function to receive colors — called once and cached per mount
+function makeStepperStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    wrap: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.sageBg2, borderRadius: 13, padding: 4 },
+    btn: { width: 30, height: 30, borderRadius: 9, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center',
+      shadowColor: colors.forest, shadowOpacity: 0.10, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+    btnTxt: { fontFamily: fonts.display, fontSize: 18, color: colors.forest, lineHeight: 20 },
+    val: { minWidth: 54, textAlign: 'center', fontFamily: fonts.num, fontSize: 15, color: colors.forest },
+    suffix: { fontFamily: fonts.body, fontSize: 11, color: colors.mossFaint },
+  })
+}
 
 export default function PantryScreen({
   visible, pantry, onAdd, onRemove, onClose,
@@ -97,6 +102,8 @@ export default function PantryScreen({
     ? pantry.reduce((s, p) => s + kcalForWeight(p.kcalPer100g, pantryGramsForCycle(p, cycle, cycleDays)), 0)
     : 0
 
+  const ss = useMemo(() => makeStepperStyles(colors), [colors])
+
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
     screen: { flex: 1, backgroundColor: colors.sageBg },
@@ -107,7 +114,7 @@ export default function PantryScreen({
     back: {
       width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white,
       alignItems: 'center', justifyContent: 'center',
-      shadowColor: '#2C3A1E', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+      shadowColor: colors.forest, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
       elevation: 2,
     },
     backTxt: { fontFamily: fonts.display, fontSize: 22, color: colors.forest, lineHeight: 24 },
@@ -126,7 +133,7 @@ export default function PantryScreen({
       position: 'absolute', top: 4, bottom: 4,
       width: '50%',  // will be offset via left
       backgroundColor: colors.white, borderRadius: 11,
-      shadowColor: '#2C3A1E', shadowOpacity: 0.10, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+      shadowColor: colors.forest, shadowOpacity: 0.10, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
       elevation: 2,
     },
     segBtn: {
@@ -144,7 +151,7 @@ export default function PantryScreen({
       backgroundColor: colors.sageBg2, borderRadius: 16, padding: 12, marginTop: 12,
     },
     noteIcon: {
-      width: 34, height: 34, borderRadius: 11, backgroundColor: colors.white,
+      width: 34, height: 34, borderRadius: 11, backgroundColor: colors.sage100,
       alignItems: 'center', justifyContent: 'center',
     },
     noteIconTxt: { fontSize: 18 },
@@ -167,7 +174,7 @@ export default function PantryScreen({
     list: { gap: 11, marginTop: 13 },
     card: {
       backgroundColor: colors.white, borderRadius: 20, padding: 14,
-      shadowColor: '#2C3A1E', shadowOpacity: 0.06, shadowRadius: 9, shadowOffset: { width: 0, height: 2 },
+      shadowColor: colors.forest, shadowOpacity: 0.06, shadowRadius: 9, shadowOffset: { width: 0, height: 2 },
       elevation: 2, borderWidth: 1.5, borderColor: 'transparent',
     },
     cardCustom: {
@@ -181,14 +188,14 @@ export default function PantryScreen({
     avTxt: { fontSize: 23 },
     nm: { flex: 1, minWidth: 0 },
     nmB: { fontFamily: fonts.display, fontSize: 16, color: colors.forest },
-    nmS: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.mossFaint, marginTop: 2 },
+    nmS: { fontFamily: fonts.num, fontSize: 12, color: colors.mossFaint, marginTop: 2 },
     nmSCustom: { color: colors.matchaDeep },
     rmBtn: {
       width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
     },
     rmTxt: { fontFamily: fonts.body, fontSize: 13, color: colors.mossFaint },
     kcRight: { alignItems: 'flex-end' },
-    kcV: { fontFamily: fonts.display, fontSize: 15, color: colors.matchaDeep },
+    kcV: { fontFamily: fonts.num, fontSize: 15, color: colors.matchaDeep },
     kcL: { fontFamily: fonts.body, fontSize: 9, color: colors.mossFaint },
     resetBtn: {
       borderWidth: 1.5, borderColor: colors.matcha,
@@ -203,8 +210,8 @@ export default function PantryScreen({
       borderTopWidth: 1.5, borderTopColor: colors.line,
     },
     ctrlL: { fontFamily: fonts.body, fontSize: 12, color: colors.moss },
-    ctrlK: { marginLeft: 'auto' as const, fontFamily: fonts.display, fontSize: 14, color: colors.forest },
-    ctrlKS: { fontFamily: fonts.bodySemi, fontSize: 11, color: colors.mossFaint },
+    ctrlK: { marginLeft: 'auto' as const, fontFamily: fonts.num, fontSize: 14, color: colors.forest },
+    ctrlKS: { fontFamily: fonts.num, fontSize: 11, color: colors.mossFaint },
 
     // Summary bar
     sum: {
@@ -213,7 +220,7 @@ export default function PantryScreen({
       backgroundColor: colors.forest,
     },
     sumSpan: { fontFamily: fonts.body, fontSize: 13, color: colors.matchaSoft },
-    sumB: { fontFamily: fonts.display, fontSize: 19, color: colors.white },
+    sumB: { fontFamily: fonts.num, fontSize: 19, color: colors.white },
 
     // Add staple button
     addBtn: {
@@ -356,6 +363,7 @@ export default function PantryScreen({
                                 testIDDec={`dec-default-${item.id}`}
                                 testIDInc={`inc-default-${item.id}`}
                                 testIDVal={`val-default-${item.id}`}
+                                stepperStyles={ss}
                               />
                               <Text style={styles.ctrlK}>
                                 {kcalDay}{' '}
@@ -512,6 +520,7 @@ export default function PantryScreen({
                                     testIDDec={`dec-prep-${item.id}`}
                                     testIDInc={`inc-prep-${item.id}`}
                                     testIDVal={`val-prep-${item.id}`}
+                                    stepperStyles={ss}
                                   />
                                   {isCustom && (
                                     <Text style={styles.ctrlK}>
