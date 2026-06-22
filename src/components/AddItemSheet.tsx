@@ -129,12 +129,16 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     suggestionEmoji: { fontSize: 21 },
     suggestionTx: { flex: 1, minWidth: 0 },
     suggestionName: {
-      fontFamily: fonts.display,
-      fontSize: 15, color: colors.forest,
+      fontFamily: fonts.displayMedium,
+      fontSize: 15.5, color: colors.forest,
     },
     suggestionMeta: {
       fontFamily: fonts.display,
       fontSize: 12, color: colors.mossFaint, marginTop: 1,
+    },
+    suggestionMetaNum: {
+      fontFamily: fonts.num,
+      fontSize: 12, color: colors.mossFaint,
     },
     suggestionAdd: {
       width: 30, height: 30, borderRadius: 15,
@@ -268,7 +272,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     editBtn: {
       position: 'absolute', top: 12, right: 14, zIndex: 2,
       flexDirection: 'row', alignItems: 'center', gap: 5,
-      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12,
+      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
       backgroundColor: colors.sageBg2,
     },
     editBtnText: {
@@ -484,9 +488,13 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                           <Text style={styles.suggestionEmoji}>{s.emoji}</Text>
                         </View>
                         <View style={styles.suggestionTx}>
-                          <Text style={styles.suggestionName}>{s.name}</Text>
-                          <Text style={styles.suggestionMeta}>
-                            {s.kcalPer100g} kcal/100g{s.source === 'off' ? '  · OFF' : ''}
+                          <Text style={styles.suggestionName} numberOfLines={1}>{s.name}</Text>
+                          <Text style={styles.suggestionMeta} numberOfLines={1}>
+                            {s.packageWeightG
+                              ? <><Text style={styles.suggestionMetaNum}>{s.packageWeightG}</Text>{' g · '}<Text style={styles.suggestionMetaNum}>{kcalForWeight(s.kcalPer100g, s.packageWeightG)}</Text>{' kcal'}</>
+                              : <><Text style={styles.suggestionMetaNum}>{s.kcalPer100g}</Text>{' kcal/100g'}</>
+                            }
+                            {s.source === 'off' ? '  · OFF' : ''}
                           </Text>
                         </View>
                         <View style={styles.suggestionAdd}>
