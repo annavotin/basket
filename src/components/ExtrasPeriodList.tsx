@@ -20,7 +20,7 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
     container: {
       backgroundColor: colors.detailBackground,
       borderTopLeftRadius: 20, borderTopRightRadius: 20,
-      paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, flex: 1,
+      paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32,
     },
     header: { fontSize: 15, fontWeight: '700', color: colors.kcalText, marginBottom: 12 },
     empty: { fontSize: 14, color: colors.monthText, marginTop: 8 },

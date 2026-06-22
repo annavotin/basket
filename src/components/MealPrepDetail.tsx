@@ -18,7 +18,7 @@ export default function MealPrepDetail({ activeCycle, onEditItem, headerContent 
   const units = useUnits()
 
   const styles = useMemo(() => StyleSheet.create({
-    container: { flex: 1, paddingHorizontal: 16 },
+    container: { paddingHorizontal: 16 },
   }), [colors])
 
   if (!activeCycle) return null

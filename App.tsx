@@ -141,7 +141,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     },
     // Cards (cream budget card + green basket sheet) float on the page background — no panel.
     detailArea: {
-      flex: 1,
       paddingTop: 4,
     },
     grab: {
@@ -154,7 +153,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     },
     // New-shop (empty cycle) sits on the page background — cards float on green, no panel.
     newShopArea: {
-      flex: 1,
+      paddingTop: 4,
     },
     // In-tree overlay (not a native Modal): showing it via <Modal> meant it had to
     // *dismiss* in the same frame the AddItemSheet/ReceiptReviewSheet Modal *presented*,
@@ -186,13 +185,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       fontSize: 15,
       color: colors.forest,
     },
+    // Sizes to its content inside the single page scroll (no flex:1 — that would clip the
+    // list to the viewport and stop it scrolling past the pinned nav).
     basketSheet: {
-      flex: 1,
       marginTop: 10,
-      // Bleed the green fill through the SafeAreaView bottom inset so the sheet reaches the
-      // physical screen edge; the matching paddingBottom keeps inner content above the inset.
-      marginBottom: -48,
-      paddingBottom: 48,
+      paddingBottom: 14,
       backgroundColor: colors.matcha,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
