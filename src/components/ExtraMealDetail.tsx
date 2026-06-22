@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { ExtraMeal } from '../types'
 import { formatDay } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
+import { fonts } from '../styles/fonts'
 
 type Props = {
   date: string
@@ -19,33 +20,65 @@ export default function ExtraMealDetail({ date, extras, onRemoveExtra }: Props) 
       borderTopLeftRadius: 20, borderTopRightRadius: 20,
       paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, flex: 1,
     },
-    header: { fontSize: 15, fontWeight: '700', color: colors.kcalText, marginBottom: 12 },
-    empty: { fontSize: 14, color: colors.monthText, marginTop: 8 },
-    card: {
-      flexDirection: 'row', alignItems: 'center',
-      backgroundColor: colors.itemCard, borderRadius: 14, padding: 14, marginBottom: 10,
+    seclbl: {
+      flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between',
+      paddingTop: 4, paddingBottom: 11,
     },
-    info: { flex: 1 },
-    name: { fontSize: 16, fontWeight: '600', color: colors.kcalText, marginBottom: 2 },
-    meta: { fontSize: 13, color: colors.monthText },
-    remove: { paddingHorizontal: 8, paddingVertical: 4 },
-    removeText: { fontSize: 18, color: colors.monthText },
+    seclblTitle: { fontFamily: fonts.head, fontSize: 18, color: colors.forest },
+    seclblCount: { fontFamily: fonts.display, fontSize: 12, fontWeight: '700', color: colors.moss },
+    empty: { fontSize: 14, color: colors.moss, marginTop: 8 },
+    row: {
+      flexDirection: 'row', alignItems: 'center', gap: 13,
+      backgroundColor: 'transparent',
+      paddingVertical: 13, paddingHorizontal: 2,
+      borderBottomWidth: 1, borderBottomColor: colors.line,
+    },
+    tile: {
+      width: 44, height: 44, borderRadius: 12,
+      backgroundColor: colors.extraPillFaint,
+      alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    },
+    tileText: { fontSize: 23 },
+    tx: { flex: 1, minWidth: 0 },
+    name: { fontFamily: fonts.display, fontWeight: '500', fontSize: 15.5, color: colors.forest },
+    meta: { fontSize: 12, fontWeight: '600', color: colors.mossFaint, marginTop: 1 },
+    kc: { alignItems: 'flex-end', flexShrink: 0 },
+    kcVal: { fontFamily: fonts.num, fontWeight: '700', fontSize: 15, color: colors.roseDeep },
+    kcUnit: { fontSize: 9, fontWeight: '700', color: colors.mossFaint, marginTop: 1 },
+    remove: {
+      width: 28, height: 28, borderRadius: 14,
+      alignItems: 'center', justifyContent: 'center',
+      marginLeft: 4,
+    },
+    removeText: { fontSize: 15, color: colors.mossFaint },
   }), [colors])
 
   const { day, month } = formatDay(date)
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{`Extra meals · ${day} ${month}`}</Text>
+      <View style={styles.seclbl}>
+        <Text style={styles.seclblTitle}>{`Extra meals · ${day} ${month}`}</Text>
+        {extras.length > 0 && (
+          <Text style={styles.seclblCount}>{extras.length} {extras.length === 1 ? 'item' : 'items'}</Text>
+        )}
+      </View>
       {extras.length === 0 ? (
         <Text style={styles.empty}>No extra meals yet — tap ＋ to add one.</Text>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
           {extras.map((e) => (
-            <View key={e.id} testID="extra-item" style={styles.card}>
-              <View style={styles.info}>
-                <Text style={styles.name}>{e.name}</Text>
+            <View key={e.id} testID="extra-item" style={styles.row}>
+              <View style={styles.tile}>
+                <Text style={styles.tileText}>🍴</Text>
+              </View>
+              <View style={styles.tx}>
+                <Text style={styles.name} numberOfLines={1}>{e.name}</Text>
                 <Text style={styles.meta}>{e.kcal} kcal</Text>
+              </View>
+              <View style={styles.kc}>
+                <Text style={styles.kcVal}>{Math.round(e.kcal)}</Text>
+                <Text style={styles.kcUnit}>KCAL</Text>
               </View>
               <TouchableOpacity
                 testID="remove-extra"

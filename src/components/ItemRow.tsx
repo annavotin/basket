@@ -10,9 +10,13 @@ type Props = {
   kcal: number
   onPress?: () => void
   testID?: string
+  /** Override the emoji tile background color (default: colors.sageBg2) */
+  tileColor?: string
+  /** Override the kcal value color (default: colors.matchaDeep) */
+  kcalColor?: string
 }
 
-export default function ItemRow({ emoji, name, subtitle, kcal, onPress, testID }: Props) {
+export default function ItemRow({ emoji, name, subtitle, kcal, onPress, testID, tileColor, kcalColor }: Props) {
   const colors = useColors()
   const styles = useMemo(() => StyleSheet.create({
     row: {
@@ -21,15 +25,15 @@ export default function ItemRow({ emoji, name, subtitle, kcal, onPress, testID }
       paddingVertical: 13, paddingHorizontal: 2,
       borderBottomWidth: 1, borderBottomColor: colors.line,
     },
-    av: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.sageBg2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    av: { width: 44, height: 44, borderRadius: 12, backgroundColor: tileColor ?? colors.sageBg2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     avText: { fontSize: 23 },
     tx: { flex: 1, minWidth: 0 },
     nm: { fontFamily: fonts.display, fontWeight: '500', fontSize: 15.5, color: colors.forest },
     mt: { fontSize: 12, fontWeight: '600', color: colors.mossFaint, marginTop: 1 },
     kc: { alignItems: 'flex-end', flexShrink: 0 },
-    kcVal: { fontFamily: fonts.num, fontWeight: '700', fontSize: 15, color: colors.matchaDeep },
+    kcVal: { fontFamily: fonts.num, fontWeight: '700', fontSize: 15, color: kcalColor ?? colors.matchaDeep },
     kcUnit: { fontSize: 9, fontWeight: '700', color: colors.mossFaint, marginTop: 1 },
-  }), [colors])
+  }), [colors, tileColor, kcalColor])
 
   return (
     <TouchableOpacity testID={testID} style={styles.row} onPress={onPress} activeOpacity={0.7}>

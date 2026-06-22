@@ -5,6 +5,7 @@ import { formatDay } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
 import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
+import { fonts } from '../styles/fonts'
 import ItemRow from './ItemRow'
 
 type Props = {
@@ -22,13 +23,23 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
       borderTopLeftRadius: 20, borderTopRightRadius: 20,
       paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32,
     },
-    header: { fontSize: 15, fontWeight: '700', color: colors.kcalText, marginBottom: 12 },
-    empty: { fontSize: 14, color: colors.monthText, marginTop: 8 },
+    seclbl: {
+      flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between',
+      paddingTop: 4, paddingBottom: 11,
+    },
+    seclblTitle: { fontFamily: fonts.head, fontSize: 18, color: colors.forest },
+    seclblCount: { fontFamily: fonts.display, fontSize: 12, fontWeight: '700', color: colors.moss },
+    empty: { fontSize: 14, color: colors.moss, marginTop: 8 },
   }), [colors])
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Extra meals</Text>
+      <View style={styles.seclbl}>
+        <Text style={styles.seclblTitle}>Extra meals</Text>
+        {extras.length > 0 && (
+          <Text style={styles.seclblCount}>{extras.length} {extras.length === 1 ? 'item' : 'items'}</Text>
+        )}
+      </View>
       {extras.length === 0 ? (
         <Text style={styles.empty}>No extra meals in this period — tap ＋ to add one.</Text>
       ) : (
@@ -43,6 +54,8 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
                   name={e.name}
                   subtitle={`${day} ${month} · ${formatEnergy(e.kcal, units)}`}
                   kcal={e.kcal}
+                  tileColor={colors.extraPillFaint}
+                  kcalColor={colors.roseDeep}
                   onPress={() => onOpenExtra?.(e.id)}
                 />
               </View>
