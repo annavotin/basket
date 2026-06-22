@@ -4,6 +4,7 @@ import Slider from '@react-native-community/slider'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { addDays, formatDay } from '../utils/dates'
+import { BarcodeIcon, ReceiptIcon } from './icons'
 
 export const MIN_DAYS = 1
 export const MAX_DAYS = 14
@@ -81,7 +82,7 @@ export default function NewPeriodPanel({
   return (
     <View style={styles.container} testID="new-period-panel">
       <TouchableOpacity testID="scan-receipt" style={[styles.card, styles.cardReceipt]} onPress={onScanReceipt} activeOpacity={0.85}>
-        <View style={[styles.icon, styles.iconOnDark]}><Text style={styles.iconEmoji}>🧾</Text></View>
+        <View style={[styles.icon, styles.iconOnDark]}><ReceiptIcon size={24} color={colors.white} /></View>
         <View style={styles.cardText}>
           <Text style={[styles.cardTitle, styles.cardTitleDark]}>Scan a receipt</Text>
           <Text style={[styles.cardSub, styles.cardSubDark]}>Add a whole shop in one tap</Text>
@@ -89,7 +90,7 @@ export default function NewPeriodPanel({
       </TouchableOpacity>
 
       <TouchableOpacity testID="scan-barcode" style={[styles.card, styles.cardBarcode]} onPress={onScanBarcode} activeOpacity={0.85}>
-        <View style={[styles.icon, styles.iconOnLight]}><Text style={styles.iconEmoji}>📷</Text></View>
+        <View style={[styles.icon, styles.iconOnLight]}><BarcodeIcon size={24} color={colors.forest} /></View>
         <View style={styles.cardText}>
           <Text style={[styles.cardTitle, styles.cardTitleLight]}>Scan a barcode</Text>
           <Text style={[styles.cardSub, styles.cardSubLight]}>Add items one at a time</Text>

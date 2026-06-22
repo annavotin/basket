@@ -35,6 +35,7 @@ import PantryScreen from './src/components/PantryScreen'
 import ItemDetail from './src/components/ItemDetail'
 import BasketOptionsSheet from './src/components/BasketOptionsSheet'
 import CarryOverSheet from './src/components/CarryOverSheet'
+import { CanIcon, SettingsIcon } from './src/components/icons'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween, formatDay, formatLong } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle, pantryGramsForCycle, aggregateMacros } from './src/utils/nutrition'
@@ -819,10 +820,10 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             </View>
             <View style={styles.headerButtons}>
               <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={[styles.iconBtn, styles.headerBtnSpacer]}>
-                <Text style={styles.iconBtnText}>🥫</Text>
+                <CanIcon size={20} color={colors.forest} />
               </TouchableOpacity>
               <TouchableOpacity testID="open-settings" onPress={() => setSettingsVisible(true)} style={styles.iconBtn}>
-                <Text style={styles.iconBtnText}>⚙️</Text>
+                <SettingsIcon size={20} color={colors.forest} />
               </TouchableOpacity>
             </View>
           </View>

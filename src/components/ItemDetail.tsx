@@ -4,6 +4,7 @@ import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { FoodItem, ExtraMeal, PantryItem, Macros } from '../types'
 import { itemMacros, kcalDerivedMacros } from '../utils/nutrition'
+import { EditIcon } from './icons'
 
 type Kind = 'item' | 'extra' | 'pantry'
 const SRC_LABELS: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
@@ -286,7 +287,7 @@ export default function ItemDetail(props: Props) {
             </View>
           ) : (
             <>
-              <TouchableOpacity style={styles.btn} onPress={startEdit}><Text style={styles.btnTxt}>Edit</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }]} onPress={startEdit}><EditIcon size={15} color={colors.white} /><Text style={styles.btnTxt}>Edit</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.btn, styles.ghost]} onPress={() => setConfirmDel(true)}><Text style={styles.ghostTxt}>{removeLabel}</Text></TouchableOpacity>
             </>
           )}

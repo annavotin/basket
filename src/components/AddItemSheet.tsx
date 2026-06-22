@@ -6,6 +6,7 @@ import {
 import DismissArea from './DismissArea'
 import Stepper from './settings/Stepper'
 import Toggle from './settings/Toggle'
+import { BarcodeIcon, ReceiptIcon, EditIcon } from './icons'
 import { Product } from '../mockProducts'
 import { FoodItem, Macros, CustomFood } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
@@ -266,6 +267,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     // ── Edit button (top-right of a found scan) ───────────────────────────────
     editBtn: {
       position: 'absolute', top: 12, right: 14, zIndex: 2,
+      flexDirection: 'row', alignItems: 'center', gap: 5,
       paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12,
       backgroundColor: colors.sageBg2,
     },
@@ -391,6 +393,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     testID="edit-product-button"
                     accessibilityLabel="Edit item"
                   >
+                    <EditIcon size={13} color={colors.forest} />
                     <Text style={styles.editBtnText}>Edit</Text>
                   </TouchableOpacity>
                 )}
@@ -413,7 +416,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       onPress={() => { onClose(); onScanBarcode?.() }}
                       accessibilityLabel="Scan barcode"
                     >
-                      <Text>📷</Text>
+                      <BarcodeIcon size={17} color={colors.white} />
                       <Text style={styles.scanBtnText}>Scan barcode</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -421,7 +424,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       onPress={() => { onClose(); onScanReceipt?.() }}
                       accessibilityLabel="Scan receipt"
                     >
-                      <Text>🧾</Text>
+                      <ReceiptIcon size={17} color={colors.white} />
                       <Text style={styles.scanBtnText}>Scan receipt</Text>
                     </TouchableOpacity>
                   </View>
