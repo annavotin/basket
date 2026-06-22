@@ -27,6 +27,8 @@ jest.mock('./src/services/usda', () => ({
 }));
 jest.mock('@expo-google-fonts/merriweather', () => ({ Merriweather_700Bold: 'Merriweather_700Bold' }));
 jest.mock('@expo-google-fonts/inter', () => ({ Inter_400Regular: 'Inter_400Regular', Inter_500Medium: 'Inter_500Medium', Inter_600SemiBold: 'Inter_600SemiBold', Inter_700Bold: 'Inter_700Bold', Inter_800ExtraBold: 'Inter_800ExtraBold' }));
+jest.mock('@expo-google-fonts/hanken-grotesk', () => ({ HankenGrotesk_400Regular: 'HankenGrotesk_400Regular', HankenGrotesk_500Medium: 'HankenGrotesk_500Medium', HankenGrotesk_600SemiBold: 'HankenGrotesk_600SemiBold', HankenGrotesk_700Bold: 'HankenGrotesk_700Bold', HankenGrotesk_800ExtraBold: 'HankenGrotesk_800ExtraBold' }));
+jest.mock('@expo-google-fonts/space-grotesk', () => ({ SpaceGrotesk_500Medium: 'SpaceGrotesk_500Medium', SpaceGrotesk_600SemiBold: 'SpaceGrotesk_600SemiBold', SpaceGrotesk_700Bold: 'SpaceGrotesk_700Bold' }));
 
 global.nativeFabricUIManager = {};
 global.cancelAnimationFrame = (id) => clearTimeout(id);
