@@ -55,9 +55,11 @@ export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetK
     divider: { height: 1, backgroundColor: colors.line, marginTop: 14, marginBottom: 12 },
     macrosRow: { flexDirection: 'row', gap: 14 },
     macroCol: { flex: 1 },
-    macroHead: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 5 },
+    // Label over numbers (stacked) so wide values like "2483/220g" don't overflow the
+    // third-width column when sat beside the label.
+    macroHead: { marginBottom: 5 },
     macroName: { fontSize: 10.5, fontWeight: '700', color: colors.moss, letterSpacing: 0.3 },
-    macroNums: { fontSize: 12.5, fontWeight: '700', color: colors.forest, marginLeft: 5 },
+    macroNums: { fontSize: 12.5, fontWeight: '700', color: colors.forest, marginTop: 2 },
     macroTarget: { color: colors.mossFaint, fontWeight: '600' },
     macroBar: { height: 6, borderRadius: 3 },
     macroFill: { height: '100%', borderRadius: 3 },
