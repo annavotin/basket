@@ -844,18 +844,18 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   onExtraPress={handleExtraPress}
                   activeExtraDate={activeExtraDate}
                 />
-                <TimelineView
-                  cycles={liveCycles}
-                  windowStart={windowStart}
-                  totalDays={TOTAL_DAYS}
-                  activeCycleId={activeCycleId}
-                  onCyclePress={handleCyclePress}
-                  onCreatePeriod={handleCreatePeriod}
-                  dayWidth={DAY_WIDTH}
-                />
               </View>
             </ScrollView>
           </View>
+          <TimelineView
+            cycles={liveCycles}
+            windowStart={windowStart}
+            totalDays={TOTAL_DAYS}
+            activeCycleId={activeCycleId}
+            onCyclePress={handleCyclePress}
+            onCreatePeriod={handleCreatePeriod}
+            dayWidth={DAY_WIDTH}
+          />
           {activeExtraDate ? (
             <View style={styles.detailArea}>
               <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />

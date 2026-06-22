@@ -6,7 +6,7 @@ import { cycles } from '../src/data'
 const WINDOW_START = '2026-05-28'
 
 describe('TimelineView', () => {
-  it('renders a bar for each cycle', () => {
+  it('renders a pill for each cycle', () => {
     const { getAllByTestId } = render(
       <TimelineView
         cycles={cycles}
@@ -21,7 +21,7 @@ describe('TimelineView', () => {
     expect(getAllByTestId('cycle-bar')).toHaveLength(cycles.length)
   })
 
-  it('calls onCyclePress with the cycle id when a bar is tapped', () => {
+  it('calls onCyclePress with the cycle id when a pill is tapped', () => {
     const onCyclePress = jest.fn()
     const { getAllByTestId } = render(
       <TimelineView
@@ -37,9 +37,42 @@ describe('TimelineView', () => {
     fireEvent.press(getAllByTestId('cycle-bar')[0])
     expect(onCyclePress).toHaveBeenCalledWith(cycles[0].id)
   })
+
+  it('shows a cluster of up to 3 item emojis on a stocked cycle pill', () => {
+    const stocked = [
+      {
+        id: 'c1',
+        startDate: '2026-06-02',
+        endDate: '2026-06-05',
+        items: [
+          { name: 'Salmon', weightG: 600, kcal: 1254, emoji: '🐟' },
+          { name: 'Sweet Potato', weightG: 500, kcal: 430, emoji: '🍠' },
+          { name: 'Kale', weightG: 200, kcal: 66, emoji: '🥬' },
+          { name: 'Apples', weightG: 670, kcal: 342, emoji: '🍎' },
+        ],
+      },
+    ]
+    const { getByText, queryByText } = render(
+      <TimelineView
+        cycles={stocked}
+        windowStart="2026-06-01"
+        totalDays={10}
+        activeCycleId={null}
+        onCyclePress={jest.fn()}
+        onCreatePeriod={jest.fn()}
+        dayWidth={64}
+      />
+    )
+    expect(getByText('Meal Prep')).toBeTruthy()
+    expect(getByText('🐟')).toBeTruthy()
+    expect(getByText('🍠')).toBeTruthy()
+    expect(getByText('🥬')).toBeTruthy()
+    // capped at 3 — the 4th emoji is not shown
+    expect(queryByText('🍎')).toBeNull()
+  })
 })
 
-describe('TimelineView empty slots', () => {
+describe('TimelineView create tile', () => {
   const oneCycle = [
     {
       id: 'c1',
@@ -49,9 +82,7 @@ describe('TimelineView empty slots', () => {
     },
   ]
 
-  it('renders an empty slot for each uncovered day', () => {
-    // window 2026-06-01 .. 2026-06-05 (5 days); cycle covers 06-02 and 06-03
-    // => uncovered: 06-01, 06-04, 06-05 = 3 slots
+  it('renders a single create-period tile', () => {
     const { getAllByTestId } = render(
       <TimelineView
         cycles={oneCycle}
@@ -63,12 +94,12 @@ describe('TimelineView empty slots', () => {
         dayWidth={64}
       />
     )
-    expect(getAllByTestId('empty-slot')).toHaveLength(3)
+    expect(getAllByTestId('create-period')).toHaveLength(1)
   })
 
-  it('calls onCreatePeriod with the tapped day', () => {
+  it('calls onCreatePeriod when the + tile is tapped', () => {
     const onCreatePeriod = jest.fn()
-    const { getAllByTestId } = render(
+    const { getByTestId } = render(
       <TimelineView
         cycles={oneCycle}
         windowStart="2026-06-01"
@@ -79,9 +110,10 @@ describe('TimelineView empty slots', () => {
         dayWidth={64}
       />
     )
-    // first empty slot corresponds to 2026-06-01
-    fireEvent.press(getAllByTestId('empty-slot')[0])
-    expect(onCreatePeriod).toHaveBeenCalledWith('2026-06-01')
+    fireEvent.press(getByTestId('create-period'))
+    expect(onCreatePeriod).toHaveBeenCalledTimes(1)
+    // start date is an ISO YYYY-MM-DD string
+    expect(onCreatePeriod.mock.calls[0][0]).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
   it('labels an empty cycle as New shop', () => {
