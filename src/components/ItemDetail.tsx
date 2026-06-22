@@ -2,16 +2,17 @@ import React, { useMemo, useState } from 'react'
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
+import type { Palette } from '../styles/palette'
 import { FoodItem, ExtraMeal, PantryItem, Macros } from '../types'
 import { itemMacros, kcalDerivedMacros } from '../utils/nutrition'
 import { EditIcon } from './icons'
 
 type Kind = 'item' | 'extra' | 'pantry'
 const SRC_LABELS: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
-const MAC_DEFS: { key: keyof Macros; label: string; kcalPerG: number }[] = [
-  { key: 'protein', label: 'Protein', kcalPerG: 4 },
-  { key: 'carbs', label: 'Carbs', kcalPerG: 4 },
-  { key: 'fat', label: 'Fat', kcalPerG: 9 },
+const MAC_DEFS: { key: keyof Macros; label: string; kcalPerG: number; fillKey: keyof Palette; trackColor: string }[] = [
+  { key: 'protein', label: 'Protein', kcalPerG: 4, fillKey: 'rose',        trackColor: 'rgba(197,106,76,0.15)' },
+  { key: 'carbs',   label: 'Carbs',   kcalPerG: 4, fillKey: 'pantry',      trackColor: 'rgba(217,164,65,0.18)' },
+  { key: 'fat',     label: 'Fat',     kcalPerG: 9, fillKey: 'matchaDeep',  trackColor: 'rgba(70,97,47,0.15)' },
 ]
 
 type Props = {
@@ -142,29 +143,29 @@ export default function ItemDetail(props: Props) {
     avTxt: { fontSize: 27 },
     headTx: { flex: 1, minWidth: 0 },
     name: { fontFamily: fonts.head, fontSize: 19, color: colors.forest },
-    tag: { fontFamily: fonts.body, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.3, color: colors.moss, marginTop: 3 },
+    tag: { fontFamily: fonts.body, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.3, color: colors.moss, marginTop: 3, backgroundColor: colors.sage100, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 9, alignSelf: 'flex-start' },
     kc: { alignItems: 'flex-end' },
-    kcV: { fontFamily: fonts.display, fontSize: 22, color: colors.matchaDeep },
+    kcV: { fontFamily: fonts.num, fontSize: 22, color: colors.matchaDeep },
     kcL: { fontFamily: fonts.body, fontSize: 9, color: colors.mossFaint },
     stats: { flexDirection: 'row', gap: 9, marginTop: 16 },
     stat: { flex: 1, backgroundColor: colors.sageBg2, borderRadius: 16, paddingVertical: 12, alignItems: 'center' },
-    statV: { fontFamily: fonts.display, fontSize: 17, color: colors.forest },
+    statV: { fontFamily: fonts.num, fontSize: 17, color: colors.forest },
     statL: { fontFamily: fonts.body, fontSize: 10, color: colors.mossFaint, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
     when: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.moss, marginTop: 14 },
     seclbl: { fontFamily: fonts.bodyExtra, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: colors.mossFaint, marginTop: 18, marginBottom: 10 },
     macroRow: { gap: 11 },
     macro: { },
     macroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-    macroL: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.forest },
-    macroV: { fontFamily: fonts.display, fontSize: 13, color: colors.forest },
-    macroBar: { height: 7, borderRadius: 4, backgroundColor: colors.sage100, overflow: 'hidden' },
-    macroFill: { height: '100%', borderRadius: 4, backgroundColor: colors.matcha },
+    macroL: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.moss },
+    macroV: { fontFamily: fonts.num, fontSize: 13, color: colors.forest },
+    macroBar: { height: 7, borderRadius: 4, overflow: 'hidden' },
+    macroFill: { height: '100%', borderRadius: 4 },
     field: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.sageBg2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 9 },
     fieldL: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.moss },
-    input: { fontFamily: fonts.display, fontSize: 16, color: colors.forest, textAlign: 'right', minWidth: 80, padding: 0 },
-    inputName: { fontFamily: fonts.display, fontSize: 16, color: colors.forest, textAlign: 'right', minWidth: 140, padding: 0 },
+    input: { fontFamily: fonts.num, fontSize: 16, color: colors.forest, textAlign: 'right', minWidth: 80, padding: 0 },
+    inputName: { fontFamily: fonts.num, fontSize: 16, color: colors.forest, textAlign: 'right', minWidth: 140, padding: 0 },
     // Filled pill so it reads as a tappable field, not plain display text.
-    macroInput: { fontFamily: fonts.display, fontSize: 15, color: colors.forest, textAlign: 'right', minWidth: 60, backgroundColor: colors.sageBg2, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 4 },
+    macroInput: { fontFamily: fonts.num, fontSize: 15, color: colors.forest, textAlign: 'right', minWidth: 60, backgroundColor: colors.sageBg2, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 4 },
     foot: { fontFamily: fonts.body, fontSize: 12, color: colors.mossFaint, textAlign: 'center', marginTop: 4, marginBottom: 10 },
     btn: { borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 10, backgroundColor: colors.forest },
     btnTxt: { fontFamily: fonts.display, fontSize: 15, color: '#fff' },
@@ -240,7 +241,7 @@ export default function ItemDetail(props: Props) {
                         onChangeText={d.key === 'protein' ? setPStr : d.key === 'carbs' ? setCStr : setFStr} />
                     : <Text style={styles.macroV}>{Math.round(macroGrams[d.key])}g</Text>}
                 </View>
-                <View style={styles.macroBar}><View style={[styles.macroFill, { width: `${(macroKcal[i] / macroSum) * 100}%` }]} /></View>
+                <View style={[styles.macroBar, { backgroundColor: d.trackColor }]}><View style={[styles.macroFill, { width: `${(macroKcal[i] / macroSum) * 100}%`, backgroundColor: colors[d.fillKey] }]} /></View>
               </View>
             ))}
           </View>
