@@ -599,7 +599,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     const barcode = await scanBarcodeWithCamera()
     if (!barcode) return
     setScanBarcode(barcode)
-    setSaveForLater(true)
     // Check the user's own saved foods first — instant, and covers store-brand / produce
     // items the public databases never had.
     const saved = findCustomByBarcode(customFoods, barcode)
@@ -619,6 +618,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
         `No match for barcode ${barcode}.\n\nCheck this is the code on the pack — scanners sometimes grab a nearby barcode. If your connection is patchy, try again. Otherwise add it manually below and it'll be saved so the next scan finds it instantly.`,
       )
     }
+    // Found items are trusted from the DB — only "remember" them once the user taps Edit
+    // (handled in the sheet). Not-found items are typed from scratch, so default to saving.
+    setSaveForLater(product == null)
     setSheetProduct(product)
     setSheetVisible(true)
   }

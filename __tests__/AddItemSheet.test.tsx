@@ -12,11 +12,27 @@ import { Product } from '../src/mockProducts'
 const product: Product = { name: 'Nutella', emoji: '🍫', packageWeightG: 400, kcalPer100g: 539 }
 
 describe('AddItemSheet — scanned mode', () => {
-  it('prefills the editable weight and emits quantity + per-unit kcal', () => {
+  it('adds a found item straight from the summary without editing', () => {
+    const onAdd = jest.fn()
+    const { getByTestId, queryByTestId } = render(
+      <AddItemSheet visible product={product} scanned onAdd={onAdd} onClose={() => {}} />
+    )
+    // Default scanned view: summary only — no editable fields until you tap Edit.
+    expect(queryByTestId('weight-input')).toBeNull()
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Nutella', weightG: 400, kcal: 2156, quantity: 1, source: 'barcode',
+      })
+    )
+  })
+
+  it('edits the prefilled weight after tapping Edit and emits quantity + per-unit kcal', () => {
     const onAdd = jest.fn()
     const { getByTestId } = render(
-      <AddItemSheet visible product={product} onAdd={onAdd} onClose={() => {}} />
+      <AddItemSheet visible product={product} scanned onAdd={onAdd} onClose={() => {}} />
     )
+    fireEvent.press(getByTestId('edit-product-button'))
     const weight = getByTestId('weight-input')
     expect(weight.props.value).toBe('400')
     fireEvent.changeText(weight, '200')
@@ -107,28 +123,53 @@ it('passes the product macrosPer100g onto the added item', () => {
 describe('AddItemSheet — scan toggles', () => {
   const scanned: Product = { name: 'Oatly', emoji: '🥛', packageWeightG: 1000, kcalPer100g: 61 }
 
-  it('shows Remember + Keep-scanning toggles in scanned mode', () => {
-    const { getByTestId } = render(
+  it('found scan: Edit button + Keep-scanning, but no Remember until you edit', () => {
+    const { getByTestId, queryByTestId } = render(
       <AddItemSheet visible product={scanned} scanned onAdd={() => {}} onClose={() => {}} />
+    )
+    expect(getByTestId('edit-product-button')).toBeTruthy()
+    expect(getByTestId('toggle-keep-scanning')).toBeTruthy()
+    expect(queryByTestId('toggle-remember')).toBeNull()
+  })
+
+  it('reveals Remember + editable fields after tapping Edit (Remember defaults on)', () => {
+    const onSaveForLater = jest.fn()
+    const { getByTestId, queryByTestId } = render(
+      <AddItemSheet visible product={scanned} scanned onSaveForLater={onSaveForLater} onAdd={() => {}} onClose={() => {}} />
+    )
+    fireEvent.press(getByTestId('edit-product-button'))
+    expect(onSaveForLater).toHaveBeenCalledWith(true)
+    expect(getByTestId('toggle-remember')).toBeTruthy()
+    expect(getByTestId('edit-name-input')).toBeTruthy()
+    expect(getByTestId('weight-input')).toBeTruthy()
+    expect(getByTestId('kcal-per-100g-input')).toBeTruthy()
+    expect(queryByTestId('edit-product-button')).toBeNull() // Edit hides once editing
+  })
+
+  it('not-found scan (manual entry): shows Remember + Keep-scanning, no Edit button', () => {
+    const { getByTestId, queryByTestId } = render(
+      <AddItemSheet visible product={null} scanned onAdd={() => {}} onClose={() => {}} />
     )
     expect(getByTestId('toggle-remember')).toBeTruthy()
     expect(getByTestId('toggle-keep-scanning')).toBeTruthy()
+    expect(queryByTestId('edit-product-button')).toBeNull()
   })
 
-  it('hides the toggles when not opened from a scan', () => {
+  it('hides all toggles + Edit on a manual + add (not scanned)', () => {
     const { queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={() => {}} onClose={() => {}} />
     )
     expect(queryByTestId('toggle-remember')).toBeNull()
     expect(queryByTestId('toggle-keep-scanning')).toBeNull()
+    expect(queryByTestId('edit-product-button')).toBeNull()
   })
 
-  it('reports toggle changes to the parent', () => {
+  it('reports Remember + Keep-scanning changes to the parent', () => {
     const onSaveForLater = jest.fn()
     const onKeepScanning = jest.fn()
     const { getByTestId } = render(
       <AddItemSheet
-        visible product={scanned} scanned
+        visible product={null} scanned
         saveForLater onSaveForLater={onSaveForLater}
         keepScanning={false} onKeepScanning={onKeepScanning}
         onAdd={() => {}} onClose={() => {}}
@@ -140,7 +181,7 @@ describe('AddItemSheet — scan toggles', () => {
     expect(onKeepScanning).toHaveBeenCalledWith(true)
   })
 
-  it('still emits the item on Add with toggles present', () => {
+  it('still emits the item on Add (found, from summary)', () => {
     const onAdd = jest.fn()
     const { getByTestId } = render(
       <AddItemSheet visible product={scanned} scanned onAdd={onAdd} onClose={() => {}} />

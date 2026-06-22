@@ -43,6 +43,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const [manualKcal100, setManualKcal100] = useState('')
   const [emoji, setEmoji] = useState('🛒')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  // Found scans open as a read-only summary; tapping Edit reveals the fields (and Remember).
+  const [editing, setEditing] = useState(false)
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
@@ -261,6 +263,16 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       fontFamily: fonts.display, color: colors.cream, fontSize: 16, fontWeight: '600',
     },
 
+    // ── Edit button (top-right of a found scan) ───────────────────────────────
+    editBtn: {
+      position: 'absolute', top: 12, right: 14, zIndex: 2,
+      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12,
+      backgroundColor: colors.sageBg2,
+    },
+    editBtnText: {
+      fontFamily: fonts.display, fontSize: 13, fontWeight: '700', color: colors.forest,
+    },
+
     // ── Cancel ────────────────────────────────────────────────────────────────
     cancelBtn: { paddingVertical: 12, marginTop: 4, alignItems: 'center' },
     cancelText: {
@@ -270,22 +282,39 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
 
   useEffect(() => {
     if (product) {
+      const unknownWeight = product.packageWeightG <= 0
       setName(product.name)
-      setWeight(product.packageWeightG > 0 ? String(product.packageWeightG) : '')
-      setKcalPer100g(product.kcalPer100g)
+      setWeight(unknownWeight ? '' : String(product.packageWeightG))
       setEmoji(product.emoji)
       setMacrosPer100g(product.macrosPer100g)
+      // Prefill the editable calories string from the DB value (shown once Edit is tapped).
+      setManualKcal100(String(product.kcalPer100g))
+      // Unknown pack weight can't be added as-is (needs weight > 0) → open straight into edit.
+      setEditing(unknownWeight)
+      // While not editing, the numeric kcal drives the read-only summary; in edit mode it's
+      // null so the editable `manualKcal100` string takes over (see effectivePer100g).
+      setKcalPer100g(unknownWeight ? null : product.kcalPer100g)
     } else {
       setName('')
       setWeight('')
       setKcalPer100g(null)
       setMacrosPer100g(undefined)
       setEmoji('🛒')
+      setManualKcal100('')
+      setEditing(false)
     }
     setQty(1)
-    setManualKcal100('')
     setDropdownOpen(false)
   }, [product, visible])
+
+  function enterEdit() {
+    if (kcalPer100g != null) {
+      setManualKcal100(String(kcalPer100g))
+      setKcalPer100g(null) // hand the value to the editable string field
+    }
+    setEditing(true)
+    onSaveForLater?.(true) // editing implies you want to remember the correction
+  }
 
   const { suggestions, loading } = useFoodSearch(isManual && dropdownOpen ? name : '', customFoods)
 
@@ -313,6 +342,11 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const showManualPer100 = isManual && kcalPer100g == null
   // Guard against silently adding an empty/garbage item.
   const canAdd = weightNum > 0 && name.trim().length > 0
+  // "Remember" only makes sense once you've changed the DB data: shown when typing a
+  // not-found item (isManual) or after tapping Edit on a found one. The Edit button is the
+  // entry point for the found case. "Keep scanning" shows on any scan-opened sheet.
+  const showRemember = scanned && (isManual || editing)
+  const showEditButton = scanned && !isManual && !editing
 
   function handleAdd() {
     if (!canAdd) return
@@ -348,6 +382,18 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
               <View style={styles.sheet} testID="add-item-sheet">
                 {/* Grab handle */}
                 <View style={styles.grab} />
+
+                {/* Edit affordance for a found scan (read-only summary by default) */}
+                {showEditButton && (
+                  <TouchableOpacity
+                    style={styles.editBtn}
+                    onPress={enterEdit}
+                    testID="edit-product-button"
+                    accessibilityLabel="Edit item"
+                  >
+                    <Text style={styles.editBtnText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Sheet header */}
                 <Text style={styles.sheetTitle}>
@@ -492,8 +538,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   </View>
                 )}
 
-                {/* ── 5. SCANNED PRODUCT SUMMARY ── */}
-                {!isManual && (
+                {/* ── 5. SCANNED PRODUCT SUMMARY (read-only default view) ── */}
+                {!isManual && !editing && (
                   <View style={styles.productSummary}>
                     <View style={styles.productAv}>
                       <Text style={styles.productEmoji}>{emoji}</Text>
@@ -513,8 +559,23 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   </View>
                 )}
 
-                {/* ── WEIGHT input (non-manual, or after a suggestion is picked) ── */}
-                {(!isManual || (isManual && kcalPer100g != null)) && (
+                {/* ── 5b. EDIT FORM — Name (found scan, after tapping Edit) ── */}
+                {!isManual && editing && (
+                  <>
+                    <Text style={styles.sectionLabel}>Name</Text>
+                    <TextInput
+                      testID="edit-name-input"
+                      style={styles.weightInput}
+                      value={name}
+                      onChangeText={setName}
+                      returnKeyType="done"
+                      placeholderTextColor={colors.mossFaint}
+                    />
+                  </>
+                )}
+
+                {/* ── WEIGHT input (manual after a pick, or a found scan in edit mode) ── */}
+                {((isManual && kcalPer100g != null) || (!isManual && editing)) && (
                   <>
                     <Text style={styles.sectionLabel}>Weight (g)</Text>
                     <TextInput
@@ -523,6 +584,22 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       keyboardType="numeric"
                       value={weight}
                       onChangeText={setWeight}
+                      returnKeyType="done"
+                      placeholderTextColor={colors.mossFaint}
+                    />
+                  </>
+                )}
+
+                {/* ── CALORIES input (found scan in edit mode) ── */}
+                {!isManual && editing && (
+                  <>
+                    <Text style={styles.sectionLabel}>Calories (per 100g)</Text>
+                    <TextInput
+                      testID="kcal-per-100g-input"
+                      style={styles.weightInput}
+                      keyboardType="numeric"
+                      value={manualKcal100}
+                      onChangeText={setManualKcal100}
                       returnKeyType="done"
                       placeholderTextColor={colors.mossFaint}
                     />
@@ -547,18 +624,22 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                 {/* ── SCAN TOGGLES (scan-opened sheets only) ── */}
                 {scanned && (
                   <View style={styles.toggleGroup}>
-                    <View style={styles.toggleRow}>
-                      <View style={styles.toggleLabelWrap}>
-                        <Text style={styles.toggleLabel}>Remember this item</Text>
-                        <Text style={styles.toggleHint}>Preload it next time you scan this barcode</Text>
-                      </View>
-                      <Toggle
-                        value={saveForLater}
-                        onValueChange={onSaveForLater ?? (() => {})}
-                        testID="toggle-remember"
-                      />
-                    </View>
-                    <View style={styles.toggleDivider} />
+                    {showRemember && (
+                      <>
+                        <View style={styles.toggleRow}>
+                          <View style={styles.toggleLabelWrap}>
+                            <Text style={styles.toggleLabel}>Remember this item</Text>
+                            <Text style={styles.toggleHint}>Preload it next time you scan this barcode</Text>
+                          </View>
+                          <Toggle
+                            value={saveForLater}
+                            onValueChange={onSaveForLater ?? (() => {})}
+                            testID="toggle-remember"
+                          />
+                        </View>
+                        <View style={styles.toggleDivider} />
+                      </>
+                    )}
                     <View style={styles.toggleRow}>
                       <View style={styles.toggleLabelWrap}>
                         <Text style={styles.toggleLabel}>Keep scanning</Text>
