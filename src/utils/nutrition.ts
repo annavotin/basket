@@ -1,5 +1,10 @@
 import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle, Macros } from '../types'
 
+/** Round to the nearest tenth — DB energy values like 2.84444 kcal/100g read nicer as 2.8. */
+export function roundTenth(n: number): number {
+  return Math.round(n * 10) / 10
+}
+
 export function kcalForWeight(kcalPer100g: number, weightG: number): number {
   return Math.round((kcalPer100g * weightG) / 100)
 }

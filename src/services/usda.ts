@@ -2,6 +2,7 @@ import { Product } from '../mockProducts'
 import { FoodSuggestion } from '../foods'
 import { Macros } from '../types'
 import { fetchWithRetry } from './http'
+import { roundTenth } from '../utils/nutrition'
 
 // USDA FoodData Central. A free api.data.gov key goes in EXPO_PUBLIC_USDA_API_KEY;
 // DEMO_KEY works for light testing but is heavily rate-limited (get a real one).
@@ -67,7 +68,7 @@ export async function usdaLookupByBarcode(
       typeof food.description === 'string' && food.description.trim()
         ? titleCase(food.description.trim())
         : `Product ${barcode}`
-    return { name, emoji: '🛒', packageWeightG: packageWeightG(food), kcalPer100g: kcal, macrosPer100g: macrosFrom(food) }
+    return { name, emoji: '🛒', packageWeightG: packageWeightG(food), kcalPer100g: roundTenth(kcal), macrosPer100g: macrosFrom(food) }
   } catch {
     return null
   }
@@ -93,7 +94,7 @@ export async function usdaSearchByName(
       out.push({
         name,
         emoji: '🛒',
-        kcalPer100g: kcal,
+        kcalPer100g: roundTenth(kcal),
         packageWeightG: packageWeightG(f) || undefined,
         source: 'usda',
         macrosPer100g: macrosFrom(f),

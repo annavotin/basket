@@ -116,6 +116,14 @@ describe('lookupProductByBarcode', () => {
     expect(await lookupProductByBarcode('1', { fetch: fetchMock })).toBeNull()
   })
 
+  it('rounds kcal/100g to the nearest tenth (2.84444 -> 2.8)', async () => {
+    const fetchMock = fakeFetch({
+      product: { product_name: 'Oat drink', product_quantity: '1000', nutriments: { 'energy-kcal_100g': 2.844444 } },
+    })
+    const product = await lookupProductByBarcode('1', { fetch: fetchMock })
+    expect(product?.kcalPer100g).toBe(2.8)
+  })
+
   // Regression for the Oat-ly barista miss (barcode 7394376616228): OFF's v2 API,
   // when you co-request bare `<nutrient>_100g` fields alongside `nutriments`,
   // flattens those nutrients to top-level keys and OMITS the `nutriments` object
@@ -161,6 +169,13 @@ describe('searchProductsByName', () => {
     expect(out).toEqual([
       { name: 'Hummus', emoji: '🛒', kcalPer100g: 166, packageWeightG: 200, source: 'off' },
     ])
+  })
+
+  it('rounds search-result kcal/100g to the nearest tenth', async () => {
+    const out = await searchProductsByName('x', {
+      fetch: fakeFetch({ products: [{ product_name: 'P', nutriments: { 'energy-kcal_100g': 166.64 } }] }),
+    })
+    expect(out[0].kcalPer100g).toBe(166.6)
   })
 
   it('returns [] when the response is not ok', async () => {

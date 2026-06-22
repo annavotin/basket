@@ -46,6 +46,12 @@ describe('usdaLookupByBarcode', () => {
   it('returns null on a non-ok response', async () => {
     expect(await usdaLookupByBarcode('1', { fetch: fakeFetch({}, false) })).toBeNull()
   })
+
+  it('rounds kcal/100g to the nearest tenth', async () => {
+    const food = { ...BRANDED, foodNutrients: [{ nutrientNumber: '208', nutrientName: 'Energy', unitName: 'KCAL', value: 61.04 }] }
+    const product = await usdaLookupByBarcode('012345678905', { fetch: fakeFetch({ foods: [food] }) })
+    expect(product?.kcalPer100g).toBe(61)
+  })
 })
 
 describe('usdaSearchByName', () => {

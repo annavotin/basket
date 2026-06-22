@@ -3,6 +3,7 @@ import { FoodSuggestion } from '../foods'
 import { Macros } from '../types'
 import { usdaLookupByBarcode } from './usda'
 import { fetchWithRetry } from './http'
+import { roundTenth } from '../utils/nutrition'
 
 export const OFF_USER_AGENT = 'basket-mealprep/1.0 (contact@example.com)'
 
@@ -76,7 +77,7 @@ export async function lookupProductByBarcode(
         ? p.product_name.trim()
         : `Product ${barcode}`
 
-    return { name, emoji: '🛒', packageWeightG, kcalPer100g, macrosPer100g: macrosFrom(p.nutriments) }
+    return { name, emoji: '🛒', packageWeightG, kcalPer100g: roundTenth(kcalPer100g), macrosPer100g: macrosFrom(p.nutriments) }
   } catch {
     return null
   }
@@ -112,7 +113,7 @@ export async function searchProductsByName(
       const kcalPer100g = p?.nutriments?.['energy-kcal_100g']
       const name = typeof p?.product_name === 'string' ? p.product_name.trim() : ''
       if (typeof kcalPer100g !== 'number' || kcalPer100g <= 0 || !name) continue
-      out.push({ name, emoji: '🛒', kcalPer100g, packageWeightG: packageWeightFrom(p), source: 'off', macrosPer100g: macrosFrom(p?.nutriments) })
+      out.push({ name, emoji: '🛒', kcalPer100g: roundTenth(kcalPer100g), packageWeightG: packageWeightFrom(p), source: 'off', macrosPer100g: macrosFrom(p?.nutriments) })
     }
     return out
   } catch {
