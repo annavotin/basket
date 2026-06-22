@@ -937,7 +937,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                     cycle={activeCycle}
                     pantry={livePantry}
                     cycleDays={activeDayCount}
-                    onSetPantryGrams={handleSetPantryGrams}
                     onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
                   />
                 )}
@@ -1025,7 +1024,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                     cycle={activeCycle}
                     pantry={livePantry}
                     cycleDays={activeDayCount}
-                    onSetPantryGrams={handleSetPantryGrams}
                     onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
                   />
                 )}

@@ -15,28 +15,28 @@ describe('PantryPeriodView', () => {
   })
 
   it('renders grams (40×5=200) and kcal (758) for a staple with no override', () => {
-    const { getAllByTestId, getByTestId, getByText } = render(
+    const { getAllByTestId, getByText } = render(
       <PantryPeriodView cycle={cycle} pantry={[oats]} cycleDays={5} />
     )
     expect(getAllByTestId('pantry-detail-row')).toHaveLength(1)
-    expect(getByTestId('pantry-grams').props.value).toBe('200')
-    expect(getByText('758 kcal')).toBeTruthy()
+    expect(getByText(/200 g/)).toBeTruthy()
+    expect(getByText(/758 kcal/)).toBeTruthy()
   })
 
   it('uses an override value from pantryOverrides', () => {
     const overridden: MealPrepCycle = { ...cycle, pantryOverrides: { 'pantry-oats': 120 } }
-    const { getByTestId } = render(
+    const { getByText } = render(
       <PantryPeriodView cycle={overridden} pantry={[oats]} cycleDays={5} />
     )
-    expect(getByTestId('pantry-grams').props.value).toBe('120')
+    expect(getByText(/120 g/)).toBeTruthy()
   })
 
-  it('fires onSetPantryGrams with the id and parsed grams on change', () => {
-    const onSetPantryGrams = jest.fn()
+  it('tapping a row fires onOpenPantry with the item id', () => {
+    const onOpenPantry = jest.fn()
     const { getByTestId } = render(
-      <PantryPeriodView cycle={cycle} pantry={[oats]} cycleDays={5} onSetPantryGrams={onSetPantryGrams} />
+      <PantryPeriodView cycle={cycle} pantry={[oats]} cycleDays={5} onOpenPantry={onOpenPantry} />
     )
-    fireEvent.changeText(getByTestId('pantry-grams'), '150')
-    expect(onSetPantryGrams).toHaveBeenCalledWith('pantry-oats', 150)
+    fireEvent.press(getByTestId('open-pantry-item'))
+    expect(onOpenPantry).toHaveBeenCalledWith('pantry-oats')
   })
 })

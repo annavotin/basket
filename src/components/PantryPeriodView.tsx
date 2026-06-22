@@ -1,20 +1,20 @@
 import React, { useMemo } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, StyleSheet } from 'react-native'
 import { MealPrepCycle, PantryItem } from '../types'
 import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
 import { useColors } from '../styles/ThemeProvider'
 import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
+import ItemRow from './ItemRow'
 
 type Props = {
   cycle: MealPrepCycle
   pantry: PantryItem[]
   cycleDays: number
-  onSetPantryGrams?: (id: string, grams: number) => void
   onOpenPantry?: (id: string) => void
 }
 
-export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantryGrams, onOpenPantry }: Props) {
+export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantry }: Props) {
   const colors = useColors()
   const units = useUnits()
 
@@ -26,19 +26,6 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantry
     },
     header: { fontSize: 15, fontWeight: '700', color: colors.kcalText, marginBottom: 12 },
     empty: { fontSize: 14, color: colors.monthText, marginTop: 8 },
-    card: {
-      flexDirection: 'row', alignItems: 'center',
-      backgroundColor: colors.itemCard, borderRadius: 14, padding: 14, marginBottom: 10,
-    },
-    emoji: { fontSize: 32, marginRight: 14 },
-    info: { flex: 1 },
-    name: { fontSize: 16, fontWeight: '600', color: colors.kcalText, marginBottom: 2 },
-    meta: { fontSize: 13, color: colors.monthText },
-    gramsInput: {
-      width: 56, fontSize: 13, color: colors.kcalText,
-      borderBottomWidth: 1, borderBottomColor: colors.monthText,
-      marginRight: 6, textAlign: 'center',
-    },
   }), [colors])
 
   return (
@@ -52,19 +39,15 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onSetPantry
             const grams = pantryGramsForCycle(item, cycle, cycleDays)
             const kcal = kcalForWeight(item.kcalPer100g, grams)
             return (
-              <View key={item.id} testID="pantry-detail-row" style={styles.card}>
-                <Text style={styles.emoji}>{item.emoji}</Text>
-                <TouchableOpacity testID="open-pantry-item" style={styles.info} onPress={() => onOpenPantry?.(item.id)}>
-                  <Text style={styles.name}>{item.name}</Text>
-                </TouchableOpacity>
-                <TextInput
-                  testID="pantry-grams"
-                  style={styles.gramsInput}
-                  value={String(grams)}
-                  keyboardType="numeric"
-                  onChangeText={(t) => onSetPantryGrams?.(item.id, parseInt(t, 10) || 0)}
+              <View key={item.id} testID="pantry-detail-row">
+                <ItemRow
+                  testID="open-pantry-item"
+                  emoji={item.emoji}
+                  name={item.name}
+                  subtitle={`${grams} g · ${formatEnergy(kcal, units)}`}
+                  kcal={kcal}
+                  onPress={() => onOpenPantry?.(item.id)}
                 />
-                <Text style={styles.meta}>{formatEnergy(kcal, units)}</Text>
               </View>
             )
           })}
