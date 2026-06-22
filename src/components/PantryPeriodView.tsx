@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { View, Text, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { MealPrepCycle, PantryItem } from '../types'
 import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
 import { useColors } from '../styles/ThemeProvider'
@@ -34,7 +34,7 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantr
       {pantry.length === 0 ? (
         <Text style={styles.empty}>No pantry staples yet — add them from the Pantry settings.</Text>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <View>
           {pantry.map((item) => {
             const grams = pantryGramsForCycle(item, cycle, cycleDays)
             const kcal = kcalForWeight(item.kcalPer100g, grams)
@@ -51,7 +51,7 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantr
               </View>
             )
           })}
-        </ScrollView>
+        </View>
       )}
     </View>
   )

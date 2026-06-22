@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { View, ScrollView, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { MealPrepCycle } from '../types'
 import { useColors } from '../styles/ThemeProvider'
 import { useUnits } from '../styles/UnitsProvider'
@@ -25,7 +25,7 @@ export default function MealPrepDetail({ activeCycle, onEditItem, headerContent 
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 4, paddingBottom: 96 }}>
+      <View style={{ paddingTop: 4 }}>
         {headerContent}
         {activeCycle.items.map((item, idx) => {
           const qty = item.quantity ?? 1
@@ -43,7 +43,7 @@ export default function MealPrepDetail({ activeCycle, onEditItem, headerContent 
             </View>
           )
         })}
-      </ScrollView>
+      </View>
     </View>
   )
 }

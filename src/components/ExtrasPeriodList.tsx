@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { View, Text, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { ExtraMeal } from '../types'
 import { formatDay } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
@@ -32,7 +32,7 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
       {extras.length === 0 ? (
         <Text style={styles.empty}>No extra meals in this period — tap ＋ to add one.</Text>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <View>
           {extras.map((e) => {
             const { day, month } = formatDay(e.date)
             return (
@@ -48,7 +48,7 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
               </View>
             )
           })}
-        </ScrollView>
+        </View>
       )}
     </View>
   )

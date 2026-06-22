@@ -14,7 +14,6 @@ import {
   StyleSheet,
   Share,
   ActivityIndicator,
-  Animated,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFonts } from 'expo-font'
@@ -220,6 +219,18 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       fontSize: 18,
       color: '#fff',
     },
+    // The nav + add button float over the bottom of the page scroll. The bar itself
+    // is the positioning context for the absolutely-placed SegmentedNav and AddFab,
+    // so it needs an explicit height for them to anchor against.
+    pinnedBar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: 68,
+      paddingHorizontal: 16,
+      paddingBottom: 10,
+    },
     navWrap: {
       position: 'absolute',
       left: 20,
@@ -263,21 +274,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   >(null)
   const [basketOptionsOpen, setBasketOptionsOpen] = useState(false)
   const [carryOver, setCarryOver] = useState<{ newCycleId: string; prevCycle: MealPrepCycle } | null>(null)
+  // Horizontal calendar auto-scroll target.
   const scrollRef = useRef<ScrollView>(null)
-
-  // Heights measured via onLayout so they can be animated to 0 (budget-bar collapse).
-  const [headerH, setHeaderH] = useState(0)
-  const [calH, setCalH] = useState(0)
-  const [budgetH, setBudgetH] = useState(0)
-  const expandAnim = useRef(new Animated.Value(0)).current
-  const collapseStyle = (h: number) =>
-    h
-      ? {
-          height: expandAnim.interpolate({ inputRange: [0, 1], outputRange: [h, 0] }),
-          opacity: expandAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-          overflow: 'hidden' as const,
-        }
-      : undefined
 
   // Live (non-tombstone) views drive the UI; the raw arrays keep tombstones so deletes
   // still propagate through sync and survive a relaunch.
@@ -813,12 +811,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Animated.View
-          onLayout={(e) => {
-            const h = e.nativeEvent.layout.height
-            if (h && !headerH) setHeaderH(h)
-          }}
-          style={collapseStyle(headerH)}
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 140 }}
+          keyboardShouldPersistTaps="handled"
         >
           <View testID="app-header" style={styles.header}>
             <View>
@@ -834,145 +829,129 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
               </TouchableOpacity>
             </View>
           </View>
-        </Animated.View>
-        <Animated.View
-          onLayout={(e) => {
-            const h = e.nativeEvent.layout.height
-            if (h && !calH) setCalH(h)
-          }}
-          style={collapseStyle(calH)}
-        >
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-          >
-            <View style={{ width: TOTAL_DAYS * DAY_WIDTH }}>
-              <CalendarStrip
-                windowStart={windowStart}
-                totalDays={TOTAL_DAYS}
-                today={today}
-                extraDates={extraDates}
-                dayWidth={DAY_WIDTH}
-                onExtraPress={handleExtraPress}
-                activeExtraDate={activeExtraDate}
-              />
-              <TimelineView
-                cycles={liveCycles}
-                windowStart={windowStart}
-                totalDays={TOTAL_DAYS}
-                activeCycleId={activeCycleId}
-                onCyclePress={handleCyclePress}
-                onCreatePeriod={handleCreatePeriod}
-                dayWidth={DAY_WIDTH}
+          <View>
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+            >
+              <View style={{ width: TOTAL_DAYS * DAY_WIDTH }}>
+                <CalendarStrip
+                  windowStart={windowStart}
+                  totalDays={TOTAL_DAYS}
+                  today={today}
+                  extraDates={extraDates}
+                  dayWidth={DAY_WIDTH}
+                  onExtraPress={handleExtraPress}
+                  activeExtraDate={activeExtraDate}
+                />
+                <TimelineView
+                  cycles={liveCycles}
+                  windowStart={windowStart}
+                  totalDays={TOTAL_DAYS}
+                  activeCycleId={activeCycleId}
+                  onCyclePress={handleCyclePress}
+                  onCreatePeriod={handleCreatePeriod}
+                  dayWidth={DAY_WIDTH}
+                />
+              </View>
+            </ScrollView>
+          </View>
+          {activeExtraDate ? (
+            <View style={styles.detailArea}>
+              <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
+              <ExtraMealDetail
+                date={activeExtraDate}
+                extras={extrasForActiveDate}
+                onRemoveExtra={handleRemoveExtra}
               />
             </View>
-          </ScrollView>
-        </Animated.View>
-        {activeExtraDate ? (
-          <View style={styles.detailArea}>
-            <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
-            <ExtraMealDetail
-              date={activeExtraDate}
-              extras={extrasForActiveDate}
-              onRemoveExtra={handleRemoveExtra}
-            />
-            <AddFab manualOnly onAddManual={handleAddExtra} />
-          </View>
-        ) : (
-          <>
-            {activeCycle && activeCycle.items.length === 0 && (
-              <View style={styles.newShopArea}>
-                <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
-                {weeklyTab === 'basket' && (
-                  <NewPeriodPanel
-                    dayCount={activeDayCount}
-                    startDate={activeCycle.startDate}
-                    dailyGoal={dailyGoal}
-                    onDaysChange={handleChangeDays}
-                    onScanBarcode={handleScanBarcode}
-                    onScanReceipt={handleScanReceipt}
-                  />
-                )}
-                {weeklyTab === 'extras' && (
-                  <ExtrasPeriodList
-                    extras={extrasForPeriod}
-                    onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
-                  />
-                )}
-                {weeklyTab === 'pantry' && (
-                  <PantryPeriodView
-                    cycle={activeCycle}
-                    pantry={livePantry}
-                    cycleDays={activeDayCount}
-                    onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
-                  />
-                )}
-                <View style={[styles.navWrap, weeklyTab === 'pantry' && styles.navWrapFull]}>
-                  <SegmentedNav active={weeklyTab} onChange={setWeeklyTab} />
-                </View>
-                {weeklyTab !== 'pantry' && (
-                  <AddFab
-                    manualOnly={weeklyTab === 'extras'}
-                    onScanBarcode={handleScanBarcode}
-                    onScanReceipt={handleScanReceipt}
-                    onAddManual={weeklyTab === 'extras' ? handleAddExtraForPeriod : handleAddManual}
-                  />
-                )}
-              </View>
-            )}
-            {activeCycle && activeCycle.items.length > 0 && (
-              <View style={styles.detailArea}>
-                <Animated.View
-                  onLayout={(e) => {
-                    const h = e.nativeEvent.layout.height
-                    if (h && !budgetH) setBudgetH(h)
-                  }}
-                  style={collapseStyle(budgetH)}
-                >
+          ) : (
+            <>
+              {activeCycle && activeCycle.items.length === 0 && (
+                <View style={styles.newShopArea}>
                   <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
-                </Animated.View>
-                {weeklyTab === 'basket' && (
-                  <View style={styles.basketSheet}>
-                    <View style={styles.expandedHead}>
-                      <Text style={styles.expandedTitle}>This basket</Text>
-                      <TouchableOpacity testID="basket-options-button" onPress={() => setBasketOptionsOpen(true)} accessibilityLabel="Basket options">
-                        <Text style={styles.expandedTitle}>⋮</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <MealPrepDetail activeCycle={activeCycle} onEditItem={handleEditItem} />
-                  </View>
-                )}
-                {weeklyTab === 'extras' && (
-                  <ExtrasPeriodList
-                    extras={extrasForPeriod}
-                    onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
-                  />
-                )}
-                {weeklyTab === 'pantry' && (
-                  <PantryPeriodView
-                    cycle={activeCycle}
-                    pantry={livePantry}
-                    cycleDays={activeDayCount}
-                    onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
-                  />
-                )}
-                <View style={[styles.navWrap, weeklyTab === 'pantry' && styles.navWrapFull]}>
-                  <SegmentedNav active={weeklyTab} onChange={setWeeklyTab} />
+                  {weeklyTab === 'basket' && (
+                    <NewPeriodPanel
+                      dayCount={activeDayCount}
+                      startDate={activeCycle.startDate}
+                      dailyGoal={dailyGoal}
+                      onDaysChange={handleChangeDays}
+                      onScanBarcode={handleScanBarcode}
+                      onScanReceipt={handleScanReceipt}
+                    />
+                  )}
+                  {weeklyTab === 'extras' && (
+                    <ExtrasPeriodList
+                      extras={extrasForPeriod}
+                      onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
+                    />
+                  )}
+                  {weeklyTab === 'pantry' && (
+                    <PantryPeriodView
+                      cycle={activeCycle}
+                      pantry={livePantry}
+                      cycleDays={activeDayCount}
+                      onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
+                    />
+                  )}
                 </View>
-                {weeklyTab !== 'pantry' && (
-                  <AddFab
-                    manualOnly={weeklyTab === 'extras'}
-                    onScanBarcode={handleScanBarcode}
-                    onScanReceipt={handleScanReceipt}
-                    onAddManual={weeklyTab === 'extras' ? handleAddExtraForPeriod : handleAddManual}
-                  />
-                )}
+              )}
+              {activeCycle && activeCycle.items.length > 0 && (
+                <View style={styles.detailArea}>
+                  <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
+                  {weeklyTab === 'basket' && (
+                    <View style={styles.basketSheet}>
+                      <View style={styles.expandedHead}>
+                        <Text style={styles.expandedTitle}>This basket</Text>
+                        <TouchableOpacity testID="basket-options-button" onPress={() => setBasketOptionsOpen(true)} accessibilityLabel="Basket options">
+                          <Text style={styles.expandedTitle}>⋮</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <MealPrepDetail activeCycle={activeCycle} onEditItem={handleEditItem} />
+                    </View>
+                  )}
+                  {weeklyTab === 'extras' && (
+                    <ExtrasPeriodList
+                      extras={extrasForPeriod}
+                      onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
+                    />
+                  )}
+                  {weeklyTab === 'pantry' && (
+                    <PantryPeriodView
+                      cycle={activeCycle}
+                      pantry={livePantry}
+                      cycleDays={activeDayCount}
+                      onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
+                    />
+                  )}
+                </View>
+              )}
+            </>
+          )}
+        </ScrollView>
+        {/* Pinned nav + add button: rendered once, floating over the bottom of the page
+            scroll. box-none lets touches fall through the empty bar to the scroll behind. */}
+        <View style={styles.pinnedBar} pointerEvents="box-none">
+          {activeExtraDate ? (
+            <AddFab manualOnly onAddManual={handleAddExtra} />
+          ) : activeCycle ? (
+            <>
+              <View style={[styles.navWrap, weeklyTab === 'pantry' && styles.navWrapFull]}>
+                <SegmentedNav active={weeklyTab} onChange={setWeeklyTab} />
               </View>
-            )}
-          </>
-        )}
+              {weeklyTab !== 'pantry' && (
+                <AddFab
+                  manualOnly={weeklyTab === 'extras'}
+                  onScanBarcode={handleScanBarcode}
+                  onScanReceipt={handleScanReceipt}
+                  onAddManual={weeklyTab === 'extras' ? handleAddExtraForPeriod : handleAddManual}
+                />
+              )}
+            </>
+          ) : null}
+        </View>
         <AddItemSheet
           visible={sheetVisible}
           product={sheetProduct}
