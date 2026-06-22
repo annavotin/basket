@@ -2,6 +2,18 @@
 
 **Date:** 2026-06-22
 
+> **Revision (2026-06-22, post-build):** after live testing, two refinements shipped on top of
+> the original design below:
+> 1. **Remember is now gated behind an explicit Edit.** A found scan opens as a *read-only
+>    summary + quantity + Add* (trust the DB, add fast). An **Edit** button (top-right of the
+>    sheet) reveals editable name / weight / calories **and** the "Remember this item" toggle —
+>    because remembering only matters once you've corrected the DB. Not-found scans (manual
+>    entry) still show Remember, default on. Implementation: a `editing` state in `AddItemSheet`;
+>    `App` defaults `saveForLater=false` for found scans (no save unless edited) and `true` for
+>    not-found; tapping Edit flips it on. "Keep scanning" still shows on any scan-opened sheet.
+> 2. **Looked-up kcal/100g rounds to the nearest tenth** (`roundTenth` in nutrition.ts, applied
+>    in the OFF + USDA lookups), so DB values like `2.84444` read as `2.8`.
+
 ## Goal
 Make barcode scanning fast enough to do *while you shop*, so it adds almost no time to the
 routine. Tap scan → confirm/edit the item in a layover → Save. Two new affordances:
