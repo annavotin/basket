@@ -24,42 +24,45 @@ export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetK
   const units = useUnits()
 
   const styles = useMemo(() => StyleSheet.create({
+    // One white rounded card
     container: {
-      backgroundColor: colors.cream,
-      borderRadius: 22,
+      backgroundColor: colors.white,
+      borderRadius: 20,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.line,
       marginHorizontal: 16,
       marginTop: 4,
-      paddingHorizontal: 18,
-      paddingTop: 14,
-      paddingBottom: 14,
-      shadowColor: '#2C3A1E',
-      shadowOpacity: 0.06,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 4 },
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 16,
     },
-    top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 },
+    // Headline row: big consumed + "/ budget" on left, "X left" on right
+    top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 },
     total: { fontFamily: fonts.head, fontSize: 14, fontWeight: '600', color: colors.moss },
-    totalBold: { fontSize: 19, fontWeight: '700', color: colors.forest },
-    left: { fontSize: 12, fontWeight: '700', color: colors.matchaDeep },
+    totalBold: { fontFamily: fonts.num, fontSize: 30, fontWeight: '600', color: colors.forest },
+    left: { fontFamily: fonts.num, fontSize: 13, fontWeight: '600', color: colors.matchaDeep },
+    // Stacked bar
     track: {
-      height: 12, borderRadius: 6, backgroundColor: '#FFFFFF',
+      height: 12, borderRadius: 6, backgroundColor: colors.sage100,
       overflow: 'hidden', flexDirection: 'row',
     },
     fill: { height: '100%' },
-    green: { backgroundColor: colors.cycleBar },
+    green: { backgroundColor: colors.matcha },
     amber: { backgroundColor: colors.pantry },
-    pink: { backgroundColor: colors.extraPill },
+    pink: { backgroundColor: colors.rose },
+    // Legend
     legend: { flexDirection: 'row', alignItems: 'center', marginTop: 9 },
     dot: { width: 9, height: 9, borderRadius: 3, marginRight: 5 },
     legendText: { fontSize: 11.5, fontWeight: '700', color: colors.moss, marginRight: 16 },
+    legendTextExtra: { fontSize: 11.5, fontWeight: '700', color: colors.roseDeep, marginRight: 16 },
+    // Divider
     divider: { height: 1, backgroundColor: colors.line, marginTop: 14, marginBottom: 12 },
+    // Macros row
     macrosRow: { flexDirection: 'row', gap: 14 },
     macroCol: { flex: 1 },
-    // Label over numbers (stacked) so wide values like "2483/220g" don't overflow the
-    // third-width column when sat beside the label.
     macroHead: { marginBottom: 5 },
     macroName: { fontSize: 10.5, fontWeight: '700', color: colors.moss, letterSpacing: 0.3 },
-    macroNums: { fontSize: 12.5, fontWeight: '700', color: colors.forest, marginTop: 2 },
+    macroNums: { fontFamily: fonts.num, fontSize: 13, fontWeight: '600', color: colors.forest, marginTop: 2 },
     macroTarget: { color: colors.mossFaint, fontWeight: '600' },
     macroBar: { height: 6, borderRadius: 3 },
     macroFill: { height: '100%', borderRadius: 3 },
@@ -81,7 +84,7 @@ export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetK
 
   const macroDefs = macros && macroTargets && days
     ? [
-        { label: 'PROTEIN', got: macros.protein, target: macroTargets.protein * days, color: colors.roseDeep, track: MACRO_TRACK.protein },
+        { label: 'PROTEIN', got: macros.protein, target: macroTargets.protein * days, color: colors.rose, track: MACRO_TRACK.protein },
         { label: 'CARBS', got: macros.carbs, target: macroTargets.carbs * days, color: colors.pantry, track: MACRO_TRACK.carbs },
         { label: 'FAT', got: macros.fat, target: macroTargets.fat * days, color: colors.matchaDeep, track: MACRO_TRACK.fat },
       ]
@@ -89,25 +92,29 @@ export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetK
 
   return (
     <View style={styles.container} testID="budget-bar">
+      {/* Kcal headline */}
       <View style={styles.top}>
         <Text style={styles.total}>
           <Text style={styles.totalBold}>{consumedVal}</Text> / {formatEnergy(budgetKcal, units)}
         </Text>
         <Text style={styles.left}>{leftVal} left</Text>
       </View>
+      {/* Stacked bar: meal-prep (matcha green) / pantry (amber) / extra (terracotta rose) */}
       <View style={styles.track}>
         <View style={[styles.fill, styles.green, { width: greenPct }]} testID="budget-bar-fill" />
         <View style={[styles.fill, styles.amber, { width: pantryPct }]} testID="budget-bar-pantry-fill" />
         <View style={[styles.fill, styles.pink, { width: pinkPct }]} testID="budget-bar-extra-fill" />
       </View>
+      {/* Legend */}
       <View style={styles.legend}>
         <View style={[styles.dot, styles.green]} />
         <Text style={styles.legendText}>Meal prep</Text>
         <View style={[styles.dot, styles.amber]} />
         <Text style={styles.legendText}>Pantry</Text>
         <View style={[styles.dot, styles.pink]} />
-        <Text style={styles.legendText}>Extra</Text>
+        <Text style={styles.legendTextExtra}>Extra</Text>
       </View>
+      {/* Macros: protein (terracotta) / carbs (amber) / fat (matchaDeep green) */}
       {macroDefs && (
         <>
           <View style={styles.divider} />
