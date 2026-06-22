@@ -49,7 +49,7 @@ import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences, M
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, scanReceipt } from './src/services/scan'
 import { lookupBarcode } from './src/services/foodApi'
-import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll, loadCustomFoods, saveCustomFoods } from './src/services/storage'
+import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll, loadCustomFoods, saveCustomFoods, loadKeepScanning, saveKeepScanning } from './src/services/storage'
 import { customFoodFromItem, upsertCustomFood, findCustomByBarcode, customFoodToProduct } from './src/services/customFoods'
 import CustomFoodsScreen from './src/components/CustomFoodsScreen'
 import { auth as authService, Account } from './src/services/auth'
@@ -258,6 +258,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [myFoodsVisible, setMyFoodsVisible] = useState(false)
   // Barcode of the product currently in the Add sheet (so it's stored when the item is added).
   const [scanBarcode, setScanBarcode] = useState<string | null>(null)
+  const [keepScanning, setKeepScanning] = useState(false)
+  const [saveForLater, setSaveForLater] = useState(true)
   const [hydrated, setHydrated] = useState(false)
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
   const [settingsVisible, setSettingsVisible] = useState(false)
@@ -426,6 +428,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     loadCustomFoods().then((cf) => {
       if (!cancelled && cf) setCustomFoods(cf)
     })
+    loadKeepScanning().then((v) => {
+      if (!cancelled) setKeepScanning(v)
+    })
     return () => {
       cancelled = true
     }
@@ -464,6 +469,10 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   useEffect(() => {
     if (hydrated) saveDailyGoal(dailyGoal)
   }, [dailyGoal, hydrated])
+
+  useEffect(() => {
+    if (hydrated) saveKeepScanning(keepScanning)
+  }, [keepScanning, hydrated])
 
   useEffect(() => {
     if (hydrated) savePantry(pantry)
@@ -590,6 +599,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     const barcode = await scanBarcodeWithCamera()
     if (!barcode) return
     setScanBarcode(barcode)
+    setSaveForLater(true)
     // Check the user's own saved foods first — instant, and covers store-brand / produce
     // items the public databases never had.
     const saved = findCustomByBarcode(customFoods, barcode)
@@ -635,12 +645,20 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function handleAddItem(item: FoodItem) {
+    const wasScanned = scanBarcode != null
     handleAddItems([item])
-    // Auto-save to "My Foods" so it's reusable and re-scans instantly (manual + scanned;
-    // receipts go through handleAddItems directly and are intentionally excluded).
-    const food = customFoodFromItem(item, scanBarcode ?? undefined)
-    if (food) setCustomFoods((prev) => upsertCustomFood(prev, food))
+    // Manual adds always save (today's behavior); scanned adds respect the "Remember" toggle.
+    if (!wasScanned || saveForLater) {
+      const food = customFoodFromItem(item, scanBarcode ?? undefined)
+      if (food) setCustomFoods((prev) => upsertCustomFood(prev, food))
+    }
     setScanBarcode(null)
+    // Keep-scanning: the sheet closes right after this; wait for the modal to finish
+    // dismissing before relaunching the native scanner, or iOS rejects the present
+    // ("presentation in progress") — same teardown discipline as scan.ts.
+    if (wasScanned && keepScanning) {
+      setTimeout(() => { handleScanBarcode() }, 450)
+    }
   }
 
   function handleEditItem(index: number) {
@@ -1028,6 +1046,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           visible={sheetVisible}
           product={sheetProduct}
           customFoods={customFoods}
+          scanned={scanBarcode != null}
+          saveForLater={saveForLater}
+          onSaveForLater={setSaveForLater}
+          keepScanning={keepScanning}
+          onKeepScanning={setKeepScanning}
           onAdd={handleAddItem}
           onScanBarcode={() => { setSheetVisible(false); handleScanBarcode() }}
           onScanReceipt={() => { setSheetVisible(false); handleScanReceipt() }}
