@@ -41,7 +41,7 @@ import BasketCharts from './src/components/BasketCharts'
 import CarryOverSheet from './src/components/CarryOverSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween, formatDay, formatLong } from './src/utils/dates'
-import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle, aggregateMacros } from './src/utils/nutrition'
+import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle, pantryGramsForCycle, aggregateMacros } from './src/utils/nutrition'
 import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
 import { UnitsProvider } from './src/styles/UnitsProvider'
 import { fonts, fontMap } from './src/styles/fonts'
@@ -683,7 +683,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     markDirty('extra_meals', id)
   }
 
-  function handleSavePantryPatch(id: string, patch: { kcalPer100g: number; dailyG: number }) {
+  function handleSavePantryPatch(id: string, patch: { name?: string; kcalPer100g: number; dailyG: number }) {
     setPantry((prev) => prev.map((p) => (p.id === id ? touch({ ...p, ...patch }) : p)))
     markDirty('pantry_items', id)
   }
@@ -1131,9 +1131,18 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   })()
                 : undefined
             }
+            pantryWeekG={
+              detailTarget.kind === 'pantry' && activeCycle
+                ? pantryGramsForCycle(livePantry.find((p) => p.id === detailTarget.id)!, activeCycle, activeDayCount)
+                : undefined
+            }
             onSaveItem={(patch) => { if (detailTarget.kind === 'item') handleSaveItemPatch(detailTarget.index, patch) }}
             onSaveExtra={(patch) => { if (detailTarget.kind === 'extra') handleSaveExtraPatch(detailTarget.id, patch) }}
-            onSavePantry={(patch) => { if (detailTarget.kind === 'pantry') handleSavePantryPatch(detailTarget.id, patch) }}
+            onSavePantry={(patch) => {
+              if (detailTarget.kind !== 'pantry') return
+              handleSavePantryPatch(detailTarget.id, { name: patch.name, kcalPer100g: patch.kcalPer100g, dailyG: patch.dailyG })
+              handleSetPantryGrams(detailTarget.id, patch.thisWeekG)
+            }}
             onRemove={() => handleDetailRemove(detailTarget)}
             onClose={() => setDetailTarget(null)}
           />

@@ -19,11 +19,12 @@ type Props = {
   item?: FoodItem
   extra?: ExtraMeal
   pantryItem?: PantryItem
+  pantryWeekG?: number
   days: number
   dateLabel?: string
   onSaveItem?: (patch: Partial<FoodItem>) => void
   onSaveExtra?: (patch: { name: string; kcal: number; macros: Macros }) => void
-  onSavePantry?: (patch: { name?: string; kcalPer100g: number; dailyG: number }) => void
+  onSavePantry?: (patch: { name?: string; kcalPer100g: number; dailyG: number; thisWeekG: number }) => void
   onRemove: () => void
   onClose: () => void
 }
@@ -31,7 +32,7 @@ type Props = {
 const num = (s: string) => (parseFloat(s) > 0 ? parseFloat(s) : 0)
 
 export default function ItemDetail(props: Props) {
-  const { visible, kind, item, extra, pantryItem, days, dateLabel, onClose, onRemove } = props
+  const { visible, kind, item, extra, pantryItem, pantryWeekG, days, dateLabel, onClose, onRemove } = props
   const colors = useColors()
   const [editing, setEditing] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
@@ -45,6 +46,7 @@ export default function ItemDetail(props: Props) {
   const [fStr, setFStr] = useState('0')
   const [per100Str, setPer100Str] = useState('0')
   const [dailyStr, setDailyStr] = useState('0')
+  const [weekStr, setWeekStr] = useState('0')
 
   function seed() {
     setConfirmDel(false)
@@ -68,6 +70,7 @@ export default function ItemDetail(props: Props) {
       setName(pantryItem.name)
       setPer100Str(String(pantryItem.kcalPer100g))
       setDailyStr(String(pantryItem.dailyG))
+      setWeekStr(String(pantryWeekG ?? pantryItem.dailyG * days))
     }
   }
   function startEdit() { seed(); setEditing(true) }
@@ -94,7 +97,15 @@ export default function ItemDetail(props: Props) {
     setEditing(false)
   }
   function saveExtra() { props.onSaveExtra?.({ name: name.trim() || extra?.name || 'Extra', kcal: Math.max(0, Math.round(num(kcalStr))), macros: { protein: num(pStr), carbs: num(cStr), fat: num(fStr) } }); setEditing(false) }
-  function savePantry() { props.onSavePantry?.({ name: name.trim() || pantryItem?.name || 'Staple', kcalPer100g: Math.max(0, Math.round(num(per100Str))), dailyG: Math.max(0, Math.round(num(dailyStr))) }); setEditing(false) }
+  function savePantry() {
+    props.onSavePantry?.({
+      name: name.trim() || pantryItem?.name || 'Staple',
+      kcalPer100g: Math.max(0, Math.round(num(per100Str))),
+      dailyG: Math.max(0, Math.round(num(dailyStr))),
+      thisWeekG: Math.max(0, Math.round(num(weekStr))),
+    })
+    setEditing(false)
+  }
 
   const emoji = kind === 'extra' ? '🍴' : kind === 'pantry' ? '🥫' : (item?.emoji ?? '🛒')
   const displayName = kind === 'extra' ? extra?.name : kind === 'pantry' ? pantryItem?.name : item?.name
@@ -251,6 +262,7 @@ export default function ItemDetail(props: Props) {
             <View style={{ marginTop: 16 }}>
               {renderField('Name', name, setName, 'id-pantry-name', 'default', true)}
               {renderField('Calories / 100g', per100Str, setPer100Str, 'id-pantry-per100')}
+              {renderField('This week (g)', weekStr, setWeekStr, 'id-pantry-week')}
               {renderField('Per day (g)', dailyStr, setDailyStr, 'id-pantry-daily')}
             </View>
           )}

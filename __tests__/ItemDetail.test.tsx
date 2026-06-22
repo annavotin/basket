@@ -72,3 +72,23 @@ describe('ItemDetail — pantry', () => {
     expect(onSavePantry).toHaveBeenCalledWith(expect.objectContaining({ kcalPer100g: 389, dailyG: 50 }))
   })
 })
+
+describe('ItemDetail — pantry this-week + default', () => {
+  const pantryItem = { id: 'p1', emoji: '🥫', name: 'Oats', kcalPer100g: 379, dailyG: 40 }
+
+  it('edits this-week grams and default per-day, saving both', () => {
+    const onSavePantry = jest.fn()
+    const { getByText, getByTestId } = wrap(
+      <ItemDetail visible kind="pantry" pantryItem={pantryItem} pantryWeekG={280} days={7}
+        onSavePantry={onSavePantry} onRemove={() => {}} onClose={() => {}} />
+    )
+    fireEvent.press(getByText('Edit'))
+    expect(getByTestId('id-pantry-week').props.value).toBe('280')
+    fireEvent.changeText(getByTestId('id-pantry-week'), '350')
+    fireEvent.changeText(getByTestId('id-pantry-daily'), '50')
+    fireEvent.press(getByText('Save'))
+    expect(onSavePantry).toHaveBeenCalledWith(
+      expect.objectContaining({ kcalPer100g: 379, dailyG: 50, thisWeekG: 350 })
+    )
+  })
+})
