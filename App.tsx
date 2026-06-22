@@ -15,7 +15,6 @@ import {
   Share,
   ActivityIndicator,
   Animated,
-  Easing,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFonts } from 'expo-font'
@@ -35,7 +34,6 @@ import ExtraMealSheet from './src/components/ExtraMealSheet'
 import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import ItemDetail from './src/components/ItemDetail'
-import DragHandleCard from './src/components/DragHandleCard'
 import BasketOptionsSheet from './src/components/BasketOptionsSheet'
 import CarryOverSheet from './src/components/CarryOverSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
@@ -196,6 +194,10 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       // physical screen edge; the matching paddingBottom keeps inner content above the inset.
       marginBottom: -48,
       paddingBottom: 48,
+      backgroundColor: colors.matcha,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingTop: 16,
     },
     basketSheetTitle: {
       fontFamily: fonts.head,
@@ -217,17 +219,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       fontWeight: '700',
       fontSize: 18,
       color: '#fff',
-    },
-    doneBtn: {
-      backgroundColor: '#fff',
-      borderRadius: 14,
-      paddingHorizontal: 16,
-      paddingVertical: 7,
-    },
-    doneTxt: {
-      fontFamily: fonts.display,
-      fontSize: 14,
-      color: colors.forest,
     },
     navWrap: {
       position: 'absolute',
@@ -274,24 +265,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [carryOver, setCarryOver] = useState<{ newCycleId: string; prevCycle: MealPrepCycle } | null>(null)
   const scrollRef = useRef<ScrollView>(null)
 
-  // In-place "full basket" expansion: collapse the calendar + budget bars and let the basket
-  // sheet (same MealPrepDetail list) grow to fill the screen. Heights are measured once via
-  // onLayout so they can be animated to 0.
-  const [basketExpanded, setBasketExpanded] = useState(false)
+  // Heights measured via onLayout so they can be animated to 0 (budget-bar collapse).
   const [headerH, setHeaderH] = useState(0)
   const [calH, setCalH] = useState(0)
   const [budgetH, setBudgetH] = useState(0)
   const expandAnim = useRef(new Animated.Value(0)).current
-  function toggleBasketExpanded(next: boolean) {
-    setBasketExpanded(next)
-    Animated.timing(expandAnim, {
-      toValue: next ? 1 : 0,
-      // Longer, decelerating glide on the way up; a slightly snappier ease-in on the way down.
-      duration: next ? 420 : 320,
-      easing: next ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
-      useNativeDriver: false,
-    }).start()
-  }
   const collapseStyle = (h: number) =>
     h
       ? {
@@ -793,13 +771,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     ? daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
     : prefs.defaultDays
 
-  // Collapse the expanded basket whenever its view is no longer on screen, so the
-  // collapsed calendar/budget don't get stuck hidden after navigating away.
-  const basketViewShown =
-    !activeExtraDate && !!activeCycle && activeCycle.items.length > 0 && weeklyTab === 'basket'
-  useEffect(() => {
-    if (!basketViewShown && basketExpanded) toggleBasketExpanded(false)
-  }, [basketViewShown, basketExpanded])
 
   let barMealPrep = 0
   let barPantry = 0
@@ -963,35 +934,15 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
                 </Animated.View>
                 {weeklyTab === 'basket' && (
-                  <DragHandleCard
-                    testID="open-basket-page"
-                    style={styles.basketSheet}
-                    backgroundColor={colors.matcha}
-                    handleColor="rgba(255,255,255,0.7)"
-                    expanded={basketExpanded}
-                    onExpand={() => toggleBasketExpanded(true)}
-                    onCollapse={() => toggleBasketExpanded(false)}
-                  >
-                    {basketExpanded ? (
-                      <Animated.View style={[styles.expandedHead, { opacity: expandAnim }]}>
-                        <Text style={styles.expandedTitle}>Full basket</Text>
-                        <TouchableOpacity testID="basket-done" onPress={() => toggleBasketExpanded(false)} style={styles.doneBtn}>
-                          <Text style={styles.doneTxt}>Done</Text>
-                        </TouchableOpacity>
-                      </Animated.View>
-                    ) : (
-                      <View style={styles.expandedHead}>
-                        <Text style={styles.expandedTitle}>This basket</Text>
-                        <TouchableOpacity testID="basket-options-button" onPress={() => setBasketOptionsOpen(true)} accessibilityLabel="Basket options">
-                          <Text style={styles.expandedTitle}>⋮</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    <MealPrepDetail
-                      activeCycle={activeCycle}
-                      onEditItem={handleEditItem}
-                    />
-                  </DragHandleCard>
+                  <View style={styles.basketSheet}>
+                    <View style={styles.expandedHead}>
+                      <Text style={styles.expandedTitle}>This basket</Text>
+                      <TouchableOpacity testID="basket-options-button" onPress={() => setBasketOptionsOpen(true)} accessibilityLabel="Basket options">
+                        <Text style={styles.expandedTitle}>⋮</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <MealPrepDetail activeCycle={activeCycle} onEditItem={handleEditItem} />
+                  </View>
                 )}
                 {weeklyTab === 'extras' && (
                   <ExtrasPeriodList
