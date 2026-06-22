@@ -34,7 +34,7 @@ export default function CalendarStrip({
     cell: {
       alignItems: 'center',
     },
-    // Round marker above each day: a faint "+" on empty days, a solid dot on days with extras.
+    // Round marker above each day: a faint circle with "+" on empty days, a solid rose circle on days with extras.
     marker: {
       width: 26,
       height: 26,
@@ -43,35 +43,35 @@ export default function CalendarStrip({
       justifyContent: 'center',
       marginBottom: 8,
     },
-    markerEmpty: { backgroundColor: colors.rose + '38' },
+    markerEmpty: { backgroundColor: colors.extraPillFaint },
     markerHas: { backgroundColor: colors.rose },
     markerActive: { borderWidth: 2, borderColor: colors.roseDeep },
-    plus: { fontSize: 15, fontWeight: '600', color: colors.roseDeep },
+    plus: { fontSize: 15, fontWeight: '600', color: colors.rose },
     innerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.roseDeep },
     dcell: {
       width: 46,
       paddingVertical: 8,
       borderRadius: 16,
       alignItems: 'center',
-      backgroundColor: 'rgba(255,255,255,0.5)',
+      backgroundColor: colors.sageBg2,
     },
     dcellToday: { backgroundColor: colors.forest },
     wd: {
       fontSize: 10.5,
       fontWeight: '700',
-      color: colors.moss,
+      color: colors.mossFaint,
       textTransform: 'uppercase',
       letterSpacing: 0.3,
     },
-    wdToday: { color: colors.matcha },
+    wdToday: { color: colors.cream },
     dn: {
-      fontFamily: fonts.head,
+      fontFamily: fonts.num,
       fontWeight: '600',
       fontSize: 18,
       color: colors.forest,
       marginTop: 1,
     },
-    dnToday: { color: '#FFFFFF' },
+    dnToday: { color: colors.cream },
   }), [colors])
 
   const days = Array.from({ length: totalDays }, (_, i) => addDays(windowStart, i))
