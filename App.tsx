@@ -35,9 +35,8 @@ import ExtraMealSheet from './src/components/ExtraMealSheet'
 import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import ItemDetail from './src/components/ItemDetail'
-import BasketPage from './src/components/BasketPage'
 import DragHandleCard from './src/components/DragHandleCard'
-import BasketCharts from './src/components/BasketCharts'
+import BasketOptionsSheet from './src/components/BasketOptionsSheet'
 import CarryOverSheet from './src/components/CarryOverSheet'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween, formatDay, formatLong } from './src/utils/dates'
@@ -271,7 +270,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [detailTarget, setDetailTarget] = useState<
     { kind: 'item'; index: number } | { kind: 'extra'; id: string } | { kind: 'pantry'; id: string } | null
   >(null)
-  const [basketPageOpen, setBasketPageOpen] = useState(false)
+  const [basketOptionsOpen, setBasketOptionsOpen] = useState(false)
   const [carryOver, setCarryOver] = useState<{ newCycleId: string; prevCycle: MealPrepCycle } | null>(null)
   const scrollRef = useRef<ScrollView>(null)
 
@@ -589,7 +588,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             markDirty('cycles', deletedId)
           }
           setActiveCycleId(null)
-          setBasketPageOpen(false)
         },
       },
     ])
@@ -982,34 +980,16 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                         </TouchableOpacity>
                       </Animated.View>
                     ) : (
-                      <Text style={styles.basketSheetTitle}>This basket · pull up for full view</Text>
+                      <View style={styles.expandedHead}>
+                        <Text style={styles.expandedTitle}>This basket</Text>
+                        <TouchableOpacity testID="basket-options-button" onPress={() => setBasketOptionsOpen(true)} accessibilityLabel="Basket options">
+                          <Text style={styles.expandedTitle}>⋮</Text>
+                        </TouchableOpacity>
+                      </View>
                     )}
                     <MealPrepDetail
                       activeCycle={activeCycle}
                       onEditItem={handleEditItem}
-                      headerContent={
-                        basketExpanded ? (
-                          <Animated.View
-                            style={{
-                              opacity: expandAnim,
-                              transform: [{ translateY: expandAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
-                            }}
-                          >
-                            <BasketCharts
-                              consumed={barMealPrep + barPantry + barExtra}
-                              budget={barBudget}
-                              mealPrep={barMealPrep}
-                              pantry={barPantry}
-                              extra={barExtra}
-                              macros={barMacros ?? { protein: 0, carbs: 0, fat: 0 }}
-                              macroTargets={prefs.macroTargets}
-                              days={barDays ?? activeDayCount}
-                              itemCount={activeCycle.items.length}
-                              totalWeightG={activeCycle.items.reduce((s, i) => s + (i.weightG || 0), 0)}
-                            />
-                          </Animated.View>
-                        ) : undefined
-                      }
                     />
                   </DragHandleCard>
                 )}
@@ -1163,19 +1143,14 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           />
         )}
         {activeCycle && (
-          <BasketPage
-            visible={basketPageOpen}
-            cycle={activeCycle}
-            pantry={livePantry}
-            extras={liveExtraMeals}
+          <BasketOptionsSheet
+            visible={basketOptionsOpen}
+            dayCount={activeDayCount}
+            startDate={activeCycle.startDate}
             dailyGoal={dailyGoal}
-            macroTargets={prefs.macroTargets}
-            onBack={() => setBasketPageOpen(false)}
-            onAddItem={() => { setBasketPageOpen(false); handleAddManual() }}
-            onScanReceipt={() => { setBasketPageOpen(false); handleScanReceipt() }}
-            onSetDays={handleChangeDays}
-            onDeleteCycle={handleDeleteCycle}
-            onItemPress={(index) => setDetailTarget({ kind: 'item', index })}
+            onDaysChange={handleChangeDays}
+            onDelete={() => { setBasketOptionsOpen(false); handleDeleteCycle() }}
+            onClose={() => setBasketOptionsOpen(false)}
           />
         )}
       </View>

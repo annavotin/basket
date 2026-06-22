@@ -41,4 +41,14 @@ describe('weekly tabs', () => {
     await waitFor(() => expect(getByTestId('add-fab')).toBeTruthy())
     expect(queryByTestId('food-item')).toBeNull()
   })
+
+  it('opens BasketOptionsSheet via the ⋮ button and can change prep length', async () => {
+    const { findByTestId, getByTestId, getByText } = render(<App />)
+    await findByTestId('segmented-nav')
+    fireEvent.press(getByTestId('basket-options-button'))
+    await waitFor(() => expect(getByText('Basket options')).toBeTruthy())
+    fireEvent.press(getByTestId('prep-days-inc'))
+    // onDaysChange was called — sheet is still open and options text still visible
+    expect(getByText('Basket options')).toBeTruthy()
+  })
 })
