@@ -7,6 +7,24 @@ type IconProps = { size?: number; color?: string; testID?: string }
 
 const DEFAULT = '#1C2417'
 
+// Stroked plus/minus — used for every +/− control so the glyph centers exactly (a text "+"
+// sits off-center on its baseline). strokeWidth is in the 24-unit viewBox.
+export function PlusIcon({ size = 20, color = DEFAULT, strokeWidth = 2.4, testID }: IconProps & { strokeWidth?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" testID={testID}>
+      <Path d="M12 5 L12 19 M5 12 L19 12" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" fill="none" />
+    </Svg>
+  )
+}
+
+export function MinusIcon({ size = 20, color = DEFAULT, strokeWidth = 2.4, testID }: IconProps & { strokeWidth?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" testID={testID}>
+      <Path d="M5 12 L19 12" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" fill="none" />
+    </Svg>
+  )
+}
+
 export function BarcodeIcon({ size = 20, color = DEFAULT, testID }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" testID={testID}>

@@ -7,6 +7,7 @@ import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { PantryItem, MealPrepCycle } from '../types'
 import { pantryGramsForCycle, kcalForWeight } from '../utils/nutrition'
+import { PlusIcon, MinusIcon } from './icons'
 
 type Mode = 'defaults' | 'thisprep'
 
@@ -26,7 +27,7 @@ type Props = {
 }
 
 function Stepper({
-  value, step, suffix, onChange, min = 0, testIDDec, testIDInc, testIDVal, stepperStyles,
+  value, step, suffix, onChange, min = 0, testIDDec, testIDInc, testIDVal, stepperStyles, iconColor,
 }: {
   value: number
   step: number
@@ -37,6 +38,7 @@ function Stepper({
   testIDInc?: string
   testIDVal?: string
   stepperStyles: ReturnType<typeof makeStepperStyles>
+  iconColor: string
 }) {
   return (
     <View style={stepperStyles.wrap}>
@@ -45,7 +47,7 @@ function Stepper({
         style={stepperStyles.btn}
         onPress={() => onChange(Math.max(min, value - step))}
       >
-        <Text style={stepperStyles.btnTxt}>−</Text>
+        <MinusIcon size={18} color={iconColor} strokeWidth={2.6} />
       </TouchableOpacity>
       <Text testID={testIDVal} style={stepperStyles.val}>
         {value}<Text style={stepperStyles.suffix}>{suffix}</Text>
@@ -55,7 +57,7 @@ function Stepper({
         style={stepperStyles.btn}
         onPress={() => onChange(value + step)}
       >
-        <Text style={stepperStyles.btnTxt}>+</Text>
+        <PlusIcon size={18} color={iconColor} strokeWidth={2.6} />
       </TouchableOpacity>
     </View>
   )
@@ -364,6 +366,7 @@ export default function PantryScreen({
                                 testIDInc={`inc-default-${item.id}`}
                                 testIDVal={`val-default-${item.id}`}
                                 stepperStyles={ss}
+                                iconColor={colors.forest}
                               />
                               <Text style={styles.ctrlK}>
                                 {kcalDay}{' '}
@@ -448,7 +451,7 @@ export default function PantryScreen({
                     onPress={() => setShowAddForm(true)}
                   >
                     <View style={styles.addBtnIc}>
-                      <Text style={styles.addBtnIcTxt}>+</Text>
+                      <PlusIcon size={16} color={colors.forest} strokeWidth={2.6} />
                     </View>
                     <Text style={styles.addBtnTxt}>Add a staple</Text>
                   </TouchableOpacity>
@@ -521,6 +524,7 @@ export default function PantryScreen({
                                     testIDInc={`inc-prep-${item.id}`}
                                     testIDVal={`val-prep-${item.id}`}
                                     stepperStyles={ss}
+                                    iconColor={colors.forest}
                                   />
                                   {isCustom && (
                                     <Text style={styles.ctrlK}>

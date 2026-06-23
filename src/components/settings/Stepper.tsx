@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useColors } from '../../styles/ThemeProvider'
 import { fonts } from '../../styles/fonts'
+import { PlusIcon, MinusIcon } from '../icons'
 
 interface StepperProps {
   value: number
@@ -77,7 +78,7 @@ export default function Stepper({
         onPress={() => onChange(Math.max(min, value - step))}
         testID={testID ? `${testID}-dec` : undefined}
       >
-        <Text style={styles.buttonText}>−</Text>
+        <MinusIcon size={18} color={colors.forest} strokeWidth={2.6} />
       </Pressable>
       <View style={styles.valueContainer}>
         <Text style={styles.value}>{value}</Text>
@@ -88,7 +89,7 @@ export default function Stepper({
         onPress={() => onChange(Math.min(max, value + step))}
         testID={testID ? `${testID}-inc` : undefined}
       >
-        <Text style={styles.buttonText}>+</Text>
+        <PlusIcon size={18} color={colors.forest} strokeWidth={2.6} />
       </Pressable>
     </View>
   )

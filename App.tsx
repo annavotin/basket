@@ -81,7 +81,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     // header (lightest) over the calendar zone (mid) over the detail panel (deepest).
     safe: {
       flex: 1,
-      backgroundColor: colors.sageBg2,
+      backgroundColor: colors.sageBg,
     },
     container: {
       flex: 1,
@@ -94,9 +94,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       paddingHorizontal: 20,
       paddingTop: 16,
       paddingBottom: 14,
-      backgroundColor: colors.sageBg2,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.line,
+      backgroundColor: colors.sageBg,
     },
     greeting: {
       fontSize: 26,

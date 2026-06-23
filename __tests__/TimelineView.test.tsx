@@ -82,7 +82,8 @@ describe('TimelineView create tile', () => {
     },
   ]
 
-  it('renders a single create-period tile', () => {
+  it('renders a create-period tile under every uncovered day', () => {
+    // window 2026-06-01..06-05 (5 days); the cycle covers 06-02 & 06-03, leaving 3 free days.
     const { getAllByTestId } = render(
       <TimelineView
         cycles={oneCycle}
@@ -94,12 +95,12 @@ describe('TimelineView create tile', () => {
         dayWidth={64}
       />
     )
-    expect(getAllByTestId('create-period')).toHaveLength(1)
+    expect(getAllByTestId('create-period')).toHaveLength(3)
   })
 
-  it('calls onCreatePeriod when the + tile is tapped', () => {
+  it('calls onCreatePeriod with the day when a + tile is tapped', () => {
     const onCreatePeriod = jest.fn()
-    const { getByTestId } = render(
+    const { getAllByTestId } = render(
       <TimelineView
         cycles={oneCycle}
         windowStart="2026-06-01"
@@ -110,10 +111,8 @@ describe('TimelineView create tile', () => {
         dayWidth={64}
       />
     )
-    fireEvent.press(getByTestId('create-period'))
-    expect(onCreatePeriod).toHaveBeenCalledTimes(1)
-    // start date is an ISO YYYY-MM-DD string
-    expect(onCreatePeriod.mock.calls[0][0]).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    fireEvent.press(getAllByTestId('create-period')[0]) // first free day = window start
+    expect(onCreatePeriod).toHaveBeenCalledWith('2026-06-01')
   })
 
   it('labels an empty cycle as New shop', () => {

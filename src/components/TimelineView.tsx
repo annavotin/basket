@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { MealPrepCycle } from '../types'
-import { addDays, daysBetween, todayISO } from '../utils/dates'
+import { addDays, daysBetween } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
+import { PlusIcon } from './icons'
 
 type Props = {
   cycles: MealPrepCycle[]
@@ -20,9 +21,10 @@ const ROW_HEIGHT = PILL_HEIGHT + 12
 
 /**
  * Prep-selector row. Each cycle is a filled matcha pill ("Meal Prep" stocked / "New shop"
- * empty) with a cluster of its item emojis, positioned by date span (gantt-style) so it
- * sits under its days — and rendered INSIDE the calendar's horizontal scroll so the pills
- * scroll together with the day strip. A dashed `＋` tile (at the next free day) creates a prep.
+ * empty) with a cluster of its item emojis, positioned by date span (gantt-style) so it sits
+ * under its days — rendered INSIDE the calendar's horizontal scroll so the pills scroll
+ * together with the day strip. Every day NOT covered by a cycle shows a dashed `＋` tile, so a
+ * new prep can be started on any free day.
  */
 export default function TimelineView({
   cycles,
@@ -42,7 +44,6 @@ export default function TimelineView({
       borderRadius: 13, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.matcha,
       alignItems: 'center', justifyContent: 'center',
     },
-    addPlus: { color: colors.matchaDeep, fontSize: 20, fontWeight: '600' },
     pill: {
       position: 'absolute', top: 6, height: PILL_HEIGHT,
       borderRadius: 13, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12,
@@ -61,28 +62,34 @@ export default function TimelineView({
 
   const totalWidth = totalDays * dayWidth
 
-  // First uncovered day at/after today (fall back to today, then window start) — where the
-  // dashed `＋` tile sits and the new prep starts.
-  const createStart = useMemo(() => {
+  // Days covered by an existing cycle get a pill; every other day gets a `＋` tile.
+  const uncoveredIdx = useMemo(() => {
     const covered = new Set<string>()
     cycles.forEach((cycle) => {
       const span = daysBetween(cycle.startDate, cycle.endDate)
       for (let d = 0; d <= span; d++) covered.add(addDays(cycle.startDate, d))
     })
-    const today = todayISO()
-    const start = today >= windowStart ? today : windowStart
-    const startIdx = Math.max(0, daysBetween(windowStart, start))
-    for (let i = startIdx; i < totalDays; i++) {
-      const date = addDays(windowStart, i)
-      if (!covered.has(date)) return date
+    const out: number[] = []
+    for (let i = 0; i < totalDays; i++) {
+      if (!covered.has(addDays(windowStart, i))) out.push(i)
     }
-    return start
+    return out
   }, [cycles, windowStart, totalDays])
-
-  const createIdx = Math.max(0, daysBetween(windowStart, createStart))
 
   return (
     <View style={[styles.container, { width: totalWidth, height: ROW_HEIGHT }]}>
+      {uncoveredIdx.map((i) => (
+        <TouchableOpacity
+          key={`slot-${i}`}
+          testID="create-period"
+          accessibilityLabel="New prep"
+          onPress={() => onCreatePeriod(addDays(windowStart, i))}
+          style={[styles.addTile, { left: i * dayWidth + 4, width: dayWidth - 8 }]}
+        >
+          <PlusIcon size={18} color={colors.matcha} strokeWidth={2.6} />
+        </TouchableOpacity>
+      ))}
+
       {cycles.map((cycle) => {
         const startIdx = Math.max(0, daysBetween(windowStart, cycle.startDate))
         const spanDays = daysBetween(cycle.startDate, cycle.endDate) + 1
@@ -113,15 +120,6 @@ export default function TimelineView({
           </TouchableOpacity>
         )
       })}
-
-      <TouchableOpacity
-        testID="create-period"
-        accessibilityLabel="New prep"
-        onPress={() => onCreatePeriod(createStart)}
-        style={[styles.addTile, { left: createIdx * dayWidth + 4, width: dayWidth - 8 }]}
-      >
-        <Text style={styles.addPlus}>+</Text>
-      </TouchableOpacity>
     </View>
   )
 }

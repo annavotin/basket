@@ -6,7 +6,7 @@ import {
 import DismissArea from './DismissArea'
 import Stepper from './settings/Stepper'
 import Toggle from './settings/Toggle'
-import { BarcodeIcon, ReceiptIcon, EditIcon } from './icons'
+import { BarcodeIcon, ReceiptIcon, EditIcon, PlusIcon } from './icons'
 import { Product } from '../mockProducts'
 import { FoodItem, Macros, CustomFood } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
@@ -498,7 +498,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                           </Text>
                         </View>
                         <View style={styles.suggestionAdd}>
-                          <Text style={styles.suggestionAddText}>+</Text>
+                          <PlusIcon size={18} color={colors.white} strokeWidth={2.6} />
                         </View>
                       </TouchableOpacity>
                     ))}

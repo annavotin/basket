@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { addDays, formatDay, weekdayShort } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
+import { PlusIcon } from './icons'
 
 type Props = {
   windowStart: string
@@ -100,7 +101,7 @@ export default function CalendarStrip({
                 style={[styles.marker, styles.markerEmpty]}
                 onPress={() => onExtraPress(date)}
               >
-                <Text style={styles.plus}>+</Text>
+                <PlusIcon size={12} color={colors.rose} strokeWidth={2.8} />
               </TouchableOpacity>
             )}
             <View style={[styles.dcell, isToday && styles.dcellToday]}>

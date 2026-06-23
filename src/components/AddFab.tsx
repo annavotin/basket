@@ -1,6 +1,7 @@
 import React, { useRef, useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
+import { PlusIcon } from './icons'
 
 type Props = {
   onScanBarcode?: () => void
@@ -78,7 +79,9 @@ export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manu
         </View>
       )}
       <TouchableOpacity testID="add-fab" style={styles.fab} onPress={() => (manualOnly ? onAddManual() : toggle(!open))} activeOpacity={0.85}>
-        <Animated.Text style={[styles.plus, { transform: [{ rotate: spin }] }]}>+</Animated.Text>
+        <Animated.View style={{ transform: [{ rotate: spin }] }}>
+          <PlusIcon size={28} color={colors.selectedDayText} strokeWidth={2.6} />
+        </Animated.View>
       </TouchableOpacity>
     </View>
   )

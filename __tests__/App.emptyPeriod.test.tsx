@@ -17,11 +17,11 @@ afterEach(() => jest.useRealTimers())
 
 describe('empty period lifecycle', () => {
   it('creates a new period from the + tile and discards it when deselected', async () => {
-    const { getAllByTestId, getByTestId, queryByTestId, findAllByTestId } = render(<App />)
+    const { getAllByTestId, queryByTestId, findAllByTestId } = render(<App />)
     const baseBars = (await findAllByTestId('cycle-bar')).length
 
-    // create a period by tapping the prep-selector + tile
-    fireEvent.press(getByTestId('create-period'))
+    // create a period by tapping a prep-selector + tile (one under each free day)
+    fireEvent.press(getAllByTestId('create-period')[0])
     await waitFor(() => expect(queryByTestId('new-period-panel')).toBeTruthy())
     expect(getAllByTestId('cycle-bar').length).toBe(baseBars + 1)
 
@@ -33,12 +33,12 @@ describe('empty period lifecycle', () => {
   })
 
   it('keeps only one empty new period when tapping the + tile again', async () => {
-    const { getAllByTestId, getByTestId, findAllByTestId } = render(<App />)
+    const { getAllByTestId, findAllByTestId } = render(<App />)
     const baseBars = (await findAllByTestId('cycle-bar')).length
-    fireEvent.press(getByTestId('create-period'))
+    fireEvent.press(getAllByTestId('create-period')[0])
     await waitFor(() => expect(getAllByTestId('cycle-bar').length).toBe(baseBars + 1))
-    // tapping the + tile again discards the first empty period and makes a new one
-    fireEvent.press(getByTestId('create-period'))
+    // tapping a + tile again discards the first empty period and makes a new one
+    fireEvent.press(getAllByTestId('create-period')[0])
     await waitFor(() => expect(getAllByTestId('cycle-bar').length).toBe(baseBars + 1))
   })
 })
