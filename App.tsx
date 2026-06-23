@@ -191,9 +191,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     basketSheet: {
       marginTop: 10,
       paddingBottom: 14,
-      backgroundColor: colors.matcha,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      backgroundColor: colors.sageBg,
       paddingTop: 16,
     },
     basketSheetTitle: {
@@ -215,7 +213,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       fontFamily: fonts.head,
       fontWeight: '700',
       fontSize: 18,
-      color: '#fff',
+      color: colors.forest,
     },
     // The nav + add button float over the bottom of the page scroll. The bar itself
     // is the positioning context for the absolutely-placed SegmentedNav and AddFab,
@@ -844,18 +842,18 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   onExtraPress={handleExtraPress}
                   activeExtraDate={activeExtraDate}
                 />
+                <TimelineView
+                  cycles={liveCycles}
+                  windowStart={windowStart}
+                  totalDays={TOTAL_DAYS}
+                  activeCycleId={activeCycleId}
+                  onCyclePress={handleCyclePress}
+                  onCreatePeriod={handleCreatePeriod}
+                  dayWidth={DAY_WIDTH}
+                />
               </View>
             </ScrollView>
           </View>
-          <TimelineView
-            cycles={liveCycles}
-            windowStart={windowStart}
-            totalDays={TOTAL_DAYS}
-            activeCycleId={activeCycleId}
-            onCyclePress={handleCyclePress}
-            onCreatePeriod={handleCreatePeriod}
-            dayWidth={DAY_WIDTH}
-          />
           {activeExtraDate ? (
             <View style={styles.detailArea}>
               <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />

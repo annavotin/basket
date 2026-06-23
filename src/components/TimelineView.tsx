@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { MealPrepCycle } from '../types'
 import { addDays, daysBetween, todayISO } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
@@ -16,13 +16,13 @@ type Props = {
 }
 
 const PILL_HEIGHT = 40
+const ROW_HEIGHT = PILL_HEIGHT + 12
 
 /**
- * Horizontal prep-selector pill row (replaces the old date-positioned timeline bars).
- * Each cycle is a pill — filled matcha→matcha600 with its label ("Meal Prep" for a
- * stocked cycle, "New shop" for an empty one) and a small cluster of the cycle's item
- * emojis on the right. A dashed `＋` tile fires the create-period handler. The whole row
- * scrolls horizontally if the pills overflow.
+ * Prep-selector row. Each cycle is a filled matcha pill ("Meal Prep" stocked / "New shop"
+ * empty) with a cluster of its item emojis, positioned by date span (gantt-style) so it
+ * sits under its days — and rendered INSIDE the calendar's horizontal scroll so the pills
+ * scroll together with the day strip. A dashed `＋` tile (at the next free day) creates a prep.
  */
 export default function TimelineView({
   cycles,
@@ -31,79 +31,38 @@ export default function TimelineView({
   activeCycleId,
   onCreatePeriod,
   onCyclePress,
-  dayWidth: _dayWidth,
+  dayWidth,
 }: Props) {
   const colors = useColors()
 
   const styles = useMemo(() => StyleSheet.create({
-    scroll: {
-      flexGrow: 0,
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 4,
-      gap: 9,
-    },
+    container: { position: 'relative', marginTop: 4 },
     addTile: {
-      height: PILL_HEIGHT,
-      minWidth: 52,
-      paddingHorizontal: 14,
-      borderRadius: 13,
-      borderWidth: 1.5,
-      borderStyle: 'dashed',
-      borderColor: colors.matcha,
-      alignItems: 'center',
-      justifyContent: 'center',
+      position: 'absolute', top: 6, height: PILL_HEIGHT,
+      borderRadius: 13, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.matcha,
+      alignItems: 'center', justifyContent: 'center',
     },
-    addPlus: {
-      color: colors.matchaDeep,
-      fontSize: 20,
-      fontWeight: '600',
-    },
+    addPlus: { color: colors.matchaDeep, fontSize: 20, fontWeight: '600' },
     pill: {
-      height: PILL_HEIGHT,
-      borderRadius: 13,
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-      backgroundColor: colors.matcha,
-      shadowColor: colors.forest,
-      shadowOpacity: 0.22,
-      shadowRadius: 11,
-      shadowOffset: { width: 0, height: 4 },
+      position: 'absolute', top: 6, height: PILL_HEIGHT,
+      borderRadius: 13, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12,
+      backgroundColor: colors.matcha, overflow: 'hidden',
+      shadowColor: colors.forest, shadowOpacity: 0.22, shadowRadius: 11, shadowOffset: { width: 0, height: 4 },
     },
-    pillActive: {
-      borderWidth: 2.5,
-      borderColor: colors.forest,
-    },
-    pillLabel: {
-      color: '#fff',
-      fontFamily: fonts.display,
-      fontWeight: '600',
-      fontSize: 14,
-    },
-    chips: {
-      flexDirection: 'row',
-      marginLeft: 10,
-    },
+    pillActive: { borderWidth: 2.5, borderColor: colors.forest },
+    pillLabel: { color: '#fff', fontFamily: fonts.display, fontWeight: '600', fontSize: 14, flexShrink: 1 },
+    chips: { flexDirection: 'row', marginLeft: 10 },
     chip: {
-      width: 25,
-      height: 25,
-      borderRadius: 13,
-      backgroundColor: 'rgba(255,255,255,0.92)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginLeft: -8,
+      width: 25, height: 25, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.92)',
+      alignItems: 'center', justifyContent: 'center', marginLeft: -8,
     },
-    chipText: {
-      fontSize: 13,
-    },
+    chipText: { fontSize: 13 },
   }), [colors])
 
-  // The `＋` tile creates a new prep. Pick the first uncovered day at/after today (falling
-  // back to today, then the window start) so a fresh prep lands on a sensible empty slot.
+  const totalWidth = totalDays * dayWidth
+
+  // First uncovered day at/after today (fall back to today, then window start) — where the
+  // dashed `＋` tile sits and the new prep starts.
   const createStart = useMemo(() => {
     const covered = new Set<string>()
     cycles.forEach((cycle) => {
@@ -120,23 +79,15 @@ export default function TimelineView({
     return start
   }, [cycles, windowStart, totalDays])
 
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.scroll}
-      contentContainerStyle={styles.row}
-    >
-      <TouchableOpacity
-        testID="create-period"
-        accessibilityLabel="New prep"
-        onPress={() => onCreatePeriod(createStart)}
-        style={styles.addTile}
-      >
-        <Text style={styles.addPlus}>+</Text>
-      </TouchableOpacity>
+  const createIdx = Math.max(0, daysBetween(windowStart, createStart))
 
+  return (
+    <View style={[styles.container, { width: totalWidth, height: ROW_HEIGHT }]}>
       {cycles.map((cycle) => {
+        const startIdx = Math.max(0, daysBetween(windowStart, cycle.startDate))
+        const spanDays = daysBetween(cycle.startDate, cycle.endDate) + 1
+        const left = startIdx * dayWidth + 4
+        const width = spanDays * dayWidth - 8
         const isActive = cycle.id === activeCycleId
         const isEmpty = cycle.items.length === 0
         const emojis = cycle.items.slice(0, 3).map((it) => it.emoji)
@@ -145,7 +96,7 @@ export default function TimelineView({
             key={cycle.id}
             testID="cycle-bar"
             onPress={() => onCyclePress(cycle.id)}
-            style={[styles.pill, isActive && styles.pillActive]}
+            style={[styles.pill, { left, width }, isActive && styles.pillActive]}
           >
             <Text style={styles.pillLabel} numberOfLines={1}>
               {isEmpty ? 'New shop' : 'Meal Prep'}
@@ -162,6 +113,15 @@ export default function TimelineView({
           </TouchableOpacity>
         )
       })}
-    </ScrollView>
+
+      <TouchableOpacity
+        testID="create-period"
+        accessibilityLabel="New prep"
+        onPress={() => onCreatePeriod(createStart)}
+        style={[styles.addTile, { left: createIdx * dayWidth + 4, width: dayWidth - 8 }]}
+      >
+        <Text style={styles.addPlus}>+</Text>
+      </TouchableOpacity>
+    </View>
   )
 }
