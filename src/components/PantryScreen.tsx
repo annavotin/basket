@@ -235,7 +235,6 @@ export default function PantryScreen({
       width: 24, height: 24, borderRadius: 12,
       backgroundColor: colors.matcha, alignItems: 'center', justifyContent: 'center',
     },
-    addBtnIcTxt: { fontFamily: fonts.display, fontSize: 17, color: '#fff', lineHeight: 20 },
     addBtnTxt: { fontFamily: fonts.display, fontSize: 15, color: colors.forest },
 
     // Empty state
@@ -451,7 +450,7 @@ export default function PantryScreen({
                     onPress={() => setShowAddForm(true)}
                   >
                     <View style={styles.addBtnIc}>
-                      <PlusIcon size={16} color={colors.forest} strokeWidth={2.6} />
+                      <PlusIcon size={16} color={colors.white} strokeWidth={2.6} />
                     </View>
                     <Text style={styles.addBtnTxt}>Add a staple</Text>
                   </TouchableOpacity>

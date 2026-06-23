@@ -121,6 +121,8 @@ describe('SettingsScreen', () => {
           setPrefs={setPrefs}
           dailyGoal={2000}
           onDailyGoal={() => {}}
+          onExport={() => {}}
+          onClearAll={() => {}}
         />
       )
     }

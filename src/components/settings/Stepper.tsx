@@ -46,11 +46,6 @@ export default function Stepper({
       shadowRadius: 2,
       elevation: 1,
     },
-    buttonText: {
-      fontSize: 17,
-      fontWeight: '600',
-      color: colors.forest,
-    },
     valueContainer: {
       minWidth: 62,
       alignItems: 'center',

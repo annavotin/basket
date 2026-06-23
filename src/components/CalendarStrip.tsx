@@ -47,7 +47,6 @@ export default function CalendarStrip({
     markerEmpty: { backgroundColor: colors.extraPillFaint },
     markerHas: { backgroundColor: colors.rose },
     markerActive: { borderWidth: 2, borderColor: colors.roseDeep },
-    plus: { fontSize: 15, fontWeight: '600', color: colors.rose },
     innerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.roseDeep },
     dcell: {
       width: 46,

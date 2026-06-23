@@ -145,7 +145,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       backgroundColor: colors.matcha,
       alignItems: 'center', justifyContent: 'center',
     },
-    suggestionAddText: { fontSize: 18, color: colors.white, lineHeight: 20 },
     searching: { padding: 12, fontSize: 14, fontFamily: fonts.body, color: colors.moss },
 
     // ── Custom-add card (.cnew/.qnew) ─────────────────────────────────────────

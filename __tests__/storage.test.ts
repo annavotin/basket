@@ -55,6 +55,7 @@ describe('storage', () => {
       setItem: jest.fn(async () => {
         throw new Error('disk full')
       }),
+      removeItem: jest.fn(),
     }
     await expect(saveCycles(sampleCycles, { storage })).resolves.toBeUndefined()
   })
@@ -82,7 +83,7 @@ describe('extras storage', () => {
     expect(await loadExtras({ storage })).toBeNull()
   })
   it('saveExtras swallows setItem errors', async () => {
-    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }), removeItem: jest.fn() }
     await expect(saveExtras(extras, { storage })).resolves.toBeUndefined()
   })
 })
@@ -114,7 +115,7 @@ describe('pantry storage', () => {
   })
 
   it('savePantry swallows setItem errors', async () => {
-    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }), removeItem: jest.fn() }
     await expect(savePantry(pantryItems, { storage })).resolves.toBeUndefined()
   })
 })
@@ -158,7 +159,7 @@ describe('preferences storage', () => {
   })
 
   it('savePrefs swallows setItem errors', async () => {
-    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }), removeItem: jest.fn() }
     await expect(savePrefs(fullPrefs, { storage })).resolves.toBeUndefined()
   })
 })
@@ -240,7 +241,7 @@ describe('daily goal storage', () => {
   })
 
   it('saveDailyGoal swallows setItem errors', async () => {
-    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }) }
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }), removeItem: jest.fn() }
     await expect(saveDailyGoal(2000, { storage })).resolves.toBeUndefined()
   })
 })

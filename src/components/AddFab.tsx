@@ -30,7 +30,6 @@ export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manu
       shadowOffset: { width: 0, height: 3 },
       elevation: 5,
     },
-    plus: { color: colors.selectedDayText, fontSize: 34, lineHeight: 38, fontWeight: '300' },
     menu: { marginBottom: 12, alignItems: 'flex-end' },
     option: {
       backgroundColor: colors.surface,
