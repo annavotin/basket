@@ -153,7 +153,7 @@ export default function CustomFoodsScreen({ visible, foods, onClose, onSave, onD
           </ScrollView>
         )}
 
-        <Modal visible={editing != null} transparent animationType="slide" onRequestClose={() => setEditing(null)}>
+        <Modal visible={editing != null} transparent animationType="fade" onRequestClose={() => setEditing(null)}>
           <KeyboardAvoidingView style={styles.scrim} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <TouchableOpacity style={styles.scrimFill} activeOpacity={1} onPress={() => setEditing(null)} />
             <View style={styles.sheet}>

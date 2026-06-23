@@ -66,7 +66,7 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
   }), [colors])
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.scrim} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} style={styles.sheet} onPress={() => {}}>
           <View style={styles.grab} />

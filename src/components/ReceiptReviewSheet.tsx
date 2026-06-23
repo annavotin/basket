@@ -125,7 +125,7 @@ export default function ReceiptReviewSheet({ visible, lines, onConfirm, onClose 
   const includedCount = rows.filter((r) => r.included).length
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet} testID="receipt-review-sheet">
           <Text style={styles.title}>Review receipt</Text>

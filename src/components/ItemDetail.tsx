@@ -190,7 +190,7 @@ export default function ItemDetail(props: Props) {
   )
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.scrim} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableOpacity style={styles.scrimFill} activeOpacity={1} onPress={onClose} />
         <View style={styles.sheet}>

@@ -372,7 +372,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const showScanRow = isManual && (onScanBarcode != null || onScanReceipt != null)
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

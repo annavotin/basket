@@ -33,7 +33,7 @@ export default function BasketOptionsSheet({ visible, dayCount, startDate, daily
 
   const end = addDays(startDate, Math.max(0, dayCount - 1))
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.scrim}>
         <TouchableOpacity style={styles.scrimFill} activeOpacity={1} onPress={onClose} />
         <View style={styles.sheet}>
