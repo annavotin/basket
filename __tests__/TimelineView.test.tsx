@@ -160,14 +160,18 @@ describe('TimelineView — edit mode', () => {
     onSetCycleDates: jest.fn(), onDeleteCycle: jest.fn(), onEditingChange: jest.fn(),
   }
 
-  it('long-press enters edit mode (reports editing + shows Delete) and Delete fires onDeleteCycle(id)', () => {
-    const onEditingChange = jest.fn(); const onDeleteCycle = jest.fn()
+  it('long-press enters edit mode (shows Delete + resize handles) and Delete fires onDeleteCycle(id)', () => {
+    const onDeleteCycle = jest.fn()
     const { getAllByTestId, getByTestId, queryByTestId } = render(
-      <TimelineView {...base} cycles={oneCycle} onEditingChange={onEditingChange} onDeleteCycle={onDeleteCycle} />
+      <TimelineView {...base} cycles={oneCycle} onDeleteCycle={onDeleteCycle} />
     )
     expect(queryByTestId('delete-period')).toBeNull()
     fireEvent(getAllByTestId('cycle-bar')[0], 'longPress')
-    expect(onEditingChange).toHaveBeenCalledWith(true)
+    // edit mode entered: Delete button + resize handles now rendered. (The scroll lock fires on
+    // drag grant, not on entering edit mode, so onEditingChange is not asserted here.)
+    expect(getByTestId('delete-period')).toBeTruthy()
+    expect(getByTestId('resize-start')).toBeTruthy()
+    expect(getByTestId('resize-end')).toBeTruthy()
     fireEvent.press(getByTestId('delete-period'))
     expect(onDeleteCycle).toHaveBeenCalledWith('c1')
   })

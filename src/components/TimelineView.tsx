@@ -22,7 +22,10 @@ type Props = {
 
 const PILL_HEIGHT = 40
 const ROW_HEIGHT = PILL_HEIGHT + 12
-const HANDLE_W = 16
+const HANDLE_W = 30
+// Extends the resize handles' touch target well beyond their visual width so the sides are
+// easy to grab without the body's move gesture stealing the drag.
+const HANDLE_HITSLOP = { top: 16, bottom: 16, left: 18, right: 18 }
 
 /**
  * Prep-selector row. Each cycle is a filled matcha pill ("Meal Prep" stocked / "New shop"
@@ -53,7 +56,10 @@ export default function TimelineView({
   const colors = useColors()
   const [editingId, setEditingId] = useState<string | null>(null)
 
-  const enterEdit = (id: string) => { setEditingId(id); onEditingChange(true) }
+  // Entering edit mode only reveals the handles/Delete — it does NOT lock the calendar scroll, so
+  // you can still scroll by grabbing the dates or another pill. The scroll lock fires only while
+  // a drag on THIS pill is in flight (PanResponder grant → onEditingChange(true), release → false).
+  const enterEdit = (id: string) => { setEditingId(id) }
   const exitEdit = () => { setEditingId(null); onEditingChange(false) }
   const idx = (date: string) => daysBetween(windowStart, date)
   const occupiedExcept = (id: string): Range[] =>
@@ -91,10 +97,11 @@ export default function TimelineView({
     handle: {
       position: 'absolute', top: 0, bottom: 0, width: HANDLE_W,
       alignItems: 'center', justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.18)',
     },
-    handleStart: { left: 0 },
-    handleEnd: { right: 0 },
-    handleGrip: { width: 4, height: 18, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.95)' },
+    handleStart: { left: 0, borderTopLeftRadius: 13, borderBottomLeftRadius: 13 },
+    handleEnd: { right: 0, borderTopRightRadius: 13, borderBottomRightRadius: 13 },
+    handleGrip: { width: 6, height: 24, borderRadius: 3, backgroundColor: '#fff' },
     deleteBtn: {
       position: 'absolute', top: -12, right: -10, width: 26, height: 26, borderRadius: 13,
       backgroundColor: colors.forest, alignItems: 'center', justifyContent: 'center',
@@ -151,6 +158,7 @@ export default function TimelineView({
           onPress={() => onCyclePress(cycle.id)}
           onLongPress={() => enterEdit(cycle.id)}
           onDelete={() => { onDeleteCycle(cycle.id); exitEdit() }}
+          onEditingChange={onEditingChange}
           idx={idx}
           occupiedExcept={occupiedExcept}
           commitDates={commitDates}
@@ -171,6 +179,7 @@ type PillProps = {
   onPress: () => void
   onLongPress: () => void
   onDelete: () => void
+  onEditingChange: (editing: boolean) => void
   idx: (date: string) => number
   occupiedExcept: (id: string) => Range[]
   commitDates: (id: string, start: number, end: number) => void
@@ -184,7 +193,7 @@ type PillProps = {
  */
 function CyclePill({
   cycle, editing, isActive, windowStart, totalDays, dayWidth, styles,
-  onPress, onLongPress, onDelete, idx, occupiedExcept, commitDates,
+  onPress, onLongPress, onDelete, onEditingChange, idx, occupiedExcept, commitDates,
 }: PillProps) {
   const startIdx = Math.max(0, daysBetween(windowStart, cycle.startDate))
   const spanDays = daysBetween(cycle.startDate, cycle.endDate) + 1
@@ -200,20 +209,29 @@ function CyclePill({
   const reset = () => { translateX.setValue(0); extraLeft.setValue(0); extraWidth.setValue(0) }
 
   const move = useMemo(() => PanResponder.create({
+    // Capture the move so the pill drag wins over the parent calendar ScrollView; only while
+    // editing this pill (otherwise plain touches fall through to the scroll).
     onMoveShouldSetPanResponder: () => editing,
+    onMoveShouldSetPanResponderCapture: (_e, g) => editing && Math.abs(g.dx) > Math.abs(g.dy),
+    onPanResponderGrant: () => onEditingChange(true),
     onPanResponderMove: (_e, g) => translateX.setValue(g.dx),
     onPanResponderRelease: (_e, g) => {
       const d = Math.round(g.dx / dayWidth)
       const r = clampMove(idx(cycle.startDate), idx(cycle.endDate), d, totalDays, occupiedExcept(cycle.id))
       reset()
       commitDates(cycle.id, r.start, r.end)
+      onEditingChange(false)
     },
-    onPanResponderTerminate: reset,
-  }), [editing, dayWidth, totalDays, cycle.id, cycle.startDate, cycle.endDate])
+    onPanResponderTerminate: () => { reset(); onEditingChange(false) },
+  }), [editing, dayWidth, totalDays, cycle.id, cycle.startDate, cycle.endDate, onEditingChange])
 
   const resizeStart = useMemo(() => PanResponder.create({
+    // Start-capture so a touch on the handle resizes instead of triggering the body move.
+    onStartShouldSetPanResponderCapture: () => editing,
+    onMoveShouldSetPanResponderCapture: () => editing,
     onStartShouldSetPanResponder: () => editing,
     onMoveShouldSetPanResponder: () => editing,
+    onPanResponderGrant: () => onEditingChange(true),
     onPanResponderMove: (_e, g) => {
       // Grow/shrink from the left edge; clamp px so the pill never inverts.
       const dx = Math.max(-left, Math.min(g.dx, width - dayWidth))
@@ -225,13 +243,17 @@ function CyclePill({
       const s = clampResizeStart(idx(cycle.startDate), idx(cycle.endDate), d, occupiedExcept(cycle.id))
       reset()
       commitDates(cycle.id, s, idx(cycle.endDate))
+      onEditingChange(false)
     },
-    onPanResponderTerminate: reset,
-  }), [editing, dayWidth, left, width, cycle.id, cycle.startDate, cycle.endDate])
+    onPanResponderTerminate: () => { reset(); onEditingChange(false) },
+  }), [editing, dayWidth, left, width, cycle.id, cycle.startDate, cycle.endDate, onEditingChange])
 
   const resizeEnd = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponderCapture: () => editing,
+    onMoveShouldSetPanResponderCapture: () => editing,
     onStartShouldSetPanResponder: () => editing,
     onMoveShouldSetPanResponder: () => editing,
+    onPanResponderGrant: () => onEditingChange(true),
     onPanResponderMove: (_e, g) => {
       const dx = Math.max(-(width - dayWidth), g.dx)
       extraWidth.setValue(dx)
@@ -241,9 +263,10 @@ function CyclePill({
       const e = clampResizeEnd(idx(cycle.startDate), idx(cycle.endDate), d, totalDays, occupiedExcept(cycle.id))
       reset()
       commitDates(cycle.id, idx(cycle.startDate), e)
+      onEditingChange(false)
     },
-    onPanResponderTerminate: reset,
-  }), [editing, dayWidth, width, totalDays, cycle.id, cycle.startDate, cycle.endDate])
+    onPanResponderTerminate: () => { reset(); onEditingChange(false) },
+  }), [editing, dayWidth, width, totalDays, cycle.id, cycle.startDate, cycle.endDate, onEditingChange])
 
   const animatedLeft = Animated.add(new Animated.Value(left), extraLeft)
   const animatedWidth = Animated.add(new Animated.Value(width), extraWidth)
@@ -281,10 +304,10 @@ function CyclePill({
 
       {editing && (
         <>
-          <View style={[styles.handle, styles.handleStart]} testID="resize-start" {...resizeStart.panHandlers}>
+          <View style={[styles.handle, styles.handleStart]} testID="resize-start" hitSlop={HANDLE_HITSLOP} {...resizeStart.panHandlers}>
             <View style={styles.handleGrip} />
           </View>
-          <View style={[styles.handle, styles.handleEnd]} testID="resize-end" {...resizeEnd.panHandlers}>
+          <View style={[styles.handle, styles.handleEnd]} testID="resize-end" hitSlop={HANDLE_HITSLOP} {...resizeEnd.panHandlers}>
             <View style={styles.handleGrip} />
           </View>
           <TouchableOpacity testID="delete-period" accessibilityLabel="Delete prep" style={styles.deleteBtn} onPress={onDelete}>
