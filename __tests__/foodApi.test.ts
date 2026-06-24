@@ -154,9 +154,9 @@ describe('lookupProductByBarcode', () => {
 })
 
 describe('searchProductsByName', () => {
-  it('hits the OFF search endpoint with search_terms + User-Agent and maps hits', async () => {
+  it('hits Search-a-licious with q= + User-Agent and maps hits', async () => {
     const fetchMock = fakeFetch({
-      products: [
+      hits: [
         { product_name: 'Hummus', quantity: '200 g', nutriments: { 'energy-kcal_100g': 166 } },
         { product_name: 'No Energy', nutriments: {} },
         { product_name: '', nutriments: { 'energy-kcal_100g': 100 } },
@@ -164,7 +164,8 @@ describe('searchProductsByName', () => {
     })
     const out = await searchProductsByName('hummus', { fetch: fetchMock })
     const [url, opts] = (fetchMock as jest.Mock).mock.calls[0]
-    expect(url).toContain('search_terms=hummus')
+    expect(url).toContain('search.openfoodfacts.org/search')
+    expect(url).toContain('q=hummus')
     expect(opts.headers['User-Agent']).toBe(OFF_USER_AGENT)
     expect(out).toEqual([
       { name: 'Hummus', emoji: '🛒', kcalPer100g: 166, packageWeightG: 200, source: 'off' },
@@ -173,7 +174,7 @@ describe('searchProductsByName', () => {
 
   it('rounds search-result kcal/100g to the nearest tenth', async () => {
     const out = await searchProductsByName('x', {
-      fetch: fakeFetch({ products: [{ product_name: 'P', nutriments: { 'energy-kcal_100g': 166.64 } }] }),
+      fetch: fakeFetch({ hits: [{ product_name: 'P', nutriments: { 'energy-kcal_100g': 166.64 } }] }),
     })
     expect(out[0].kcalPer100g).toBe(166.6)
   })

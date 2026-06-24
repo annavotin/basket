@@ -13,8 +13,6 @@ export const OFF_USER_AGENT = 'basket-mealprep/1.0 (contact@example.com)'
 // object entirely — which drops `energy-kcal_100g` and makes every lookup miss.
 const FIELDS = 'product_name,brands,product_quantity,quantity,nutriments'
 const BASE = 'https://world.openfoodfacts.org/api/v2/product'
-const SEARCH_BASE = 'https://world.openfoodfacts.org/cgi/search.pl'
-const SEARCH_FIELDS = 'product_name,product_quantity,quantity,nutriments'
 
 const offHeaders: Record<string, string> = { 'User-Agent': OFF_USER_AGENT }
 
@@ -102,14 +100,14 @@ export async function searchProductsByName(
 ): Promise<FoodSuggestion[]> {
   try {
     const url =
-      `${SEARCH_BASE}?search_terms=${encodeURIComponent(query)}` +
-      `&json=1&page_size=20&fields=${SEARCH_FIELDS}`
+      `https://search.openfoodfacts.org/search?q=${encodeURIComponent(query)}` +
+      `&fields=product_name,nutriments,product_quantity&page_size=15`
     const res = await deps.fetch(url, { headers: offHeaders })
-    if (!res.ok) return []
+    if (!res || !res.ok) return []
     const json: any = await res.json()
-    const products: any[] = Array.isArray(json?.products) ? json.products : []
+    const hits: any[] = Array.isArray(json?.hits) ? json.hits : []
     const out: FoodSuggestion[] = []
-    for (const p of products) {
+    for (const p of hits) {
       const kcalPer100g = p?.nutriments?.['energy-kcal_100g']
       const name = typeof p?.product_name === 'string' ? p.product_name.trim() : ''
       if (typeof kcalPer100g !== 'number' || kcalPer100g <= 0 || !name) continue
