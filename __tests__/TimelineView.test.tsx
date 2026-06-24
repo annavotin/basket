@@ -151,3 +151,34 @@ describe('TimelineView create tile', () => {
     expect(getByText('New shop')).toBeTruthy()
   })
 })
+
+describe('TimelineView — edit mode', () => {
+  const oneCycle = [{ id: 'c1', startDate: '2026-06-02', endDate: '2026-06-04', items: [{ name: 'X', weightG: 1, kcal: 1, emoji: '🥦' }] }]
+  const base = {
+    windowStart: '2026-06-01', totalDays: 10, activeCycleId: null, dayWidth: 64,
+    onCyclePress: jest.fn(), onCreatePeriod: jest.fn(),
+    onSetCycleDates: jest.fn(), onDeleteCycle: jest.fn(), onEditingChange: jest.fn(),
+  }
+
+  it('long-press enters edit mode (reports editing + shows Delete) and Delete fires onDeleteCycle(id)', () => {
+    const onEditingChange = jest.fn(); const onDeleteCycle = jest.fn()
+    const { getAllByTestId, getByTestId, queryByTestId } = render(
+      <TimelineView {...base} cycles={oneCycle} onEditingChange={onEditingChange} onDeleteCycle={onDeleteCycle} />
+    )
+    expect(queryByTestId('delete-period')).toBeNull()
+    fireEvent(getAllByTestId('cycle-bar')[0], 'longPress')
+    expect(onEditingChange).toHaveBeenCalledWith(true)
+    fireEvent.press(getByTestId('delete-period'))
+    expect(onDeleteCycle).toHaveBeenCalledWith('c1')
+  })
+
+  it('a short tap still fires onCyclePress (not edit mode)', () => {
+    const onCyclePress = jest.fn(); const onEditingChange = jest.fn()
+    const { getAllByTestId } = render(
+      <TimelineView {...base} cycles={oneCycle} onCyclePress={onCyclePress} onEditingChange={onEditingChange} />
+    )
+    fireEvent.press(getAllByTestId('cycle-bar')[0])
+    expect(onCyclePress).toHaveBeenCalledWith('c1')
+    expect(onEditingChange).not.toHaveBeenCalled()
+  })
+})
