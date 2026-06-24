@@ -268,6 +268,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   >(null)
   const [basketOptionsOpen, setBasketOptionsOpen] = useState(false)
   const [carryOver, setCarryOver] = useState<{ newCycleId: string; prevCycle: MealPrepCycle } | null>(null)
+  const [timelineEditing, setTimelineEditing] = useState(false)
   // Horizontal calendar auto-scroll target.
   const scrollRef = useRef<ScrollView>(null)
 
@@ -547,17 +548,19 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     if (activeCycleId) markDirty('cycles', activeCycleId)
   }
 
-  function handleDeleteCycle() {
+  function handleSetCycleDates(id: string, startDate: string, endDate: string) {
+    setCycles((prev) => prev.map((c) => (c.id === id ? touch({ ...c, startDate, endDate }) : c)))
+    markDirty('cycles', id)
+  }
+
+  function handleDeleteCycle(id: string) {
     Alert.alert('Delete this basket?', "This can't be undone.", [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: () => {
-          if (activeCycleId) {
-            const deletedId = activeCycleId
-            setCycles((prev) => prev.map((c) => (c.id === deletedId ? tombstone(c) : c)))
-            markDirty('cycles', deletedId)
-          }
-          setActiveCycleId(null)
+          setCycles((prev) => prev.map((c) => (c.id === id ? tombstone(c) : c)))
+          markDirty('cycles', id)
+          if (activeCycleId === id) setActiveCycleId(null)
         },
       },
     ])
@@ -829,6 +832,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.horizontalScroll}
+              scrollEnabled={!timelineEditing}
             >
               <View style={{ width: TOTAL_DAYS * DAY_WIDTH }}>
                 <CalendarStrip
@@ -848,6 +852,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   onCyclePress={handleCyclePress}
                   onCreatePeriod={handleCreatePeriod}
                   dayWidth={DAY_WIDTH}
+                  onSetCycleDates={handleSetCycleDates}
+                  onDeleteCycle={handleDeleteCycle}
+                  onEditingChange={setTimelineEditing}
                 />
               </View>
             </ScrollView>
@@ -1073,7 +1080,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             startDate={activeCycle.startDate}
             dailyGoal={dailyGoal}
             onDaysChange={handleChangeDays}
-            onDelete={() => { setBasketOptionsOpen(false); handleDeleteCycle() }}
+            onDelete={() => { setBasketOptionsOpen(false); handleDeleteCycle(activeCycleId!) }}
             onClose={() => setBasketOptionsOpen(false)}
           />
         )}

@@ -16,6 +16,9 @@ describe('TimelineView', () => {
         onCyclePress={jest.fn()}
         onCreatePeriod={jest.fn()}
         dayWidth={64}
+        onSetCycleDates={jest.fn()}
+        onDeleteCycle={jest.fn()}
+        onEditingChange={jest.fn()}
       />
     )
     expect(getAllByTestId('cycle-bar')).toHaveLength(cycles.length)
@@ -32,6 +35,9 @@ describe('TimelineView', () => {
         onCyclePress={onCyclePress}
         onCreatePeriod={jest.fn()}
         dayWidth={64}
+        onSetCycleDates={jest.fn()}
+        onDeleteCycle={jest.fn()}
+        onEditingChange={jest.fn()}
       />
     )
     fireEvent.press(getAllByTestId('cycle-bar')[0])
@@ -61,6 +67,9 @@ describe('TimelineView', () => {
         onCyclePress={jest.fn()}
         onCreatePeriod={jest.fn()}
         dayWidth={64}
+        onSetCycleDates={jest.fn()}
+        onDeleteCycle={jest.fn()}
+        onEditingChange={jest.fn()}
       />
     )
     expect(getByText('Meal Prep')).toBeTruthy()
@@ -93,6 +102,9 @@ describe('TimelineView create tile', () => {
         onCyclePress={jest.fn()}
         onCreatePeriod={jest.fn()}
         dayWidth={64}
+        onSetCycleDates={jest.fn()}
+        onDeleteCycle={jest.fn()}
+        onEditingChange={jest.fn()}
       />
     )
     expect(getAllByTestId('create-period')).toHaveLength(3)
@@ -109,6 +121,9 @@ describe('TimelineView create tile', () => {
         onCyclePress={jest.fn()}
         onCreatePeriod={onCreatePeriod}
         dayWidth={64}
+        onSetCycleDates={jest.fn()}
+        onDeleteCycle={jest.fn()}
+        onEditingChange={jest.fn()}
       />
     )
     fireEvent.press(getAllByTestId('create-period')[0]) // first free day = window start
@@ -128,6 +143,9 @@ describe('TimelineView create tile', () => {
         onCyclePress={jest.fn()}
         onCreatePeriod={jest.fn()}
         dayWidth={64}
+        onSetCycleDates={jest.fn()}
+        onDeleteCycle={jest.fn()}
+        onEditingChange={jest.fn()}
       />
     )
     expect(getByText('New shop')).toBeTruthy()

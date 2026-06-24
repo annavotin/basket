@@ -14,6 +14,9 @@ type Props = {
   onCyclePress: (id: string) => void
   onCreatePeriod: (startDate: string) => void
   dayWidth: number
+  onSetCycleDates: (id: string, startDate: string, endDate: string) => void
+  onDeleteCycle: (id: string) => void
+  onEditingChange: (editing: boolean) => void
 }
 
 const PILL_HEIGHT = 40
@@ -34,6 +37,9 @@ export default function TimelineView({
   onCreatePeriod,
   onCyclePress,
   dayWidth,
+  onSetCycleDates,
+  onDeleteCycle,
+  onEditingChange,
 }: Props) {
   const colors = useColors()
 
