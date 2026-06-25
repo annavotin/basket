@@ -23,9 +23,6 @@ type Props = {
 const PILL_HEIGHT = 40
 const ROW_HEIGHT = PILL_HEIGHT + 12
 const HANDLE_W = 30
-// Extends the resize handles' touch target well beyond their visual width so the sides are
-// easy to grab without the body's move gesture stealing the drag.
-const HANDLE_HITSLOP = { top: 16, bottom: 16, left: 18, right: 18 }
 
 /**
  * Prep-selector row. Each cycle is a filled matcha pill ("Meal Prep" stocked / "New shop"
@@ -208,65 +205,58 @@ function CyclePill({
   const extraWidth = useRef(new Animated.Value(0)).current
   const reset = () => { translateX.setValue(0); extraLeft.setValue(0); extraWidth.setValue(0) }
 
-  const move = useMemo(() => PanResponder.create({
-    // Capture the move so the pill drag wins over the parent calendar ScrollView; only while
-    // editing this pill (otherwise plain touches fall through to the scroll).
-    onMoveShouldSetPanResponder: () => editing,
+  // One gesture for the whole pill: WHERE you grab decides the action. Grabbing within `edge` px of
+  // a side resizes that side only (the opposite end stays put); grabbing the middle moves the whole
+  // pill. A single responder (instead of separate body/handle responders) is what makes edge-resize
+  // reliable — previously the body's move gesture captured every horizontal drag and stole edge
+  // grabs, so dragging an end moved the whole period instead of resizing it.
+  const grabX = useRef(0)
+  const mode = useRef<'move' | 'start' | 'end'>('move')
+  const edge = Math.min(44, width * 0.34) // generous side grab-zone; shrinks for short pills
+
+  const pan = useMemo(() => PanResponder.create({
+    // Fires on every touch-start (capture phase): record where on the pill they grabbed, but don't
+    // capture yet — so a tap still reaches the Delete button and the tap / long-press handler.
+    onStartShouldSetPanResponderCapture: (e) => { grabX.current = e.nativeEvent.locationX; return false },
+    // Take horizontal drags (while editing this pill) before the parent calendar ScrollView scrolls.
     onMoveShouldSetPanResponderCapture: (_e, g) => editing && Math.abs(g.dx) > Math.abs(g.dy),
-    onPanResponderGrant: () => onEditingChange(true),
-    onPanResponderMove: (_e, g) => translateX.setValue(g.dx),
-    onPanResponderRelease: (_e, g) => {
-      const d = Math.round(g.dx / dayWidth)
-      const r = clampMove(idx(cycle.startDate), idx(cycle.endDate), d, totalDays, occupiedExcept(cycle.id))
-      reset()
-      commitDates(cycle.id, r.start, r.end)
-      onEditingChange(false)
+    onMoveShouldSetPanResponder: (_e, g) => editing && Math.abs(g.dx) > Math.abs(g.dy),
+    onPanResponderGrant: () => {
+      const x = grabX.current
+      mode.current = x <= edge ? 'start' : x >= width - edge ? 'end' : 'move'
+      onEditingChange(true)
     },
-    onPanResponderTerminate: () => { reset(); onEditingChange(false) },
-  }), [editing, dayWidth, totalDays, cycle.id, cycle.startDate, cycle.endDate, onEditingChange])
-
-  const resizeStart = useMemo(() => PanResponder.create({
-    // Start-capture so a touch on the handle resizes instead of triggering the body move.
-    onStartShouldSetPanResponderCapture: () => editing,
-    onMoveShouldSetPanResponderCapture: () => editing,
-    onStartShouldSetPanResponder: () => editing,
-    onMoveShouldSetPanResponder: () => editing,
-    onPanResponderGrant: () => onEditingChange(true),
     onPanResponderMove: (_e, g) => {
-      // Grow/shrink from the left edge; clamp px so the pill never inverts.
-      const dx = Math.max(-left, Math.min(g.dx, width - dayWidth))
-      extraLeft.setValue(dx)
-      extraWidth.setValue(-dx)
+      if (mode.current === 'move') {
+        translateX.setValue(g.dx)
+      } else if (mode.current === 'start') {
+        // Move only the left edge; clamp px so the pill keeps ≥1 day and never inverts.
+        const dx = Math.max(-left, Math.min(g.dx, width - dayWidth))
+        extraLeft.setValue(dx)
+        extraWidth.setValue(-dx)
+      } else {
+        // Move only the right edge.
+        extraWidth.setValue(Math.max(-(width - dayWidth), g.dx))
+      }
     },
     onPanResponderRelease: (_e, g) => {
       const d = Math.round(g.dx / dayWidth)
-      const s = clampResizeStart(idx(cycle.startDate), idx(cycle.endDate), d, occupiedExcept(cycle.id))
+      const s0 = idx(cycle.startDate)
+      const e0 = idx(cycle.endDate)
+      const occ = occupiedExcept(cycle.id)
       reset()
-      commitDates(cycle.id, s, idx(cycle.endDate))
+      if (mode.current === 'move') {
+        const r = clampMove(s0, e0, d, totalDays, occ)
+        commitDates(cycle.id, r.start, r.end)
+      } else if (mode.current === 'start') {
+        commitDates(cycle.id, clampResizeStart(s0, e0, d, occ), e0)
+      } else {
+        commitDates(cycle.id, s0, clampResizeEnd(s0, e0, d, totalDays, occ))
+      }
       onEditingChange(false)
     },
     onPanResponderTerminate: () => { reset(); onEditingChange(false) },
-  }), [editing, dayWidth, left, width, cycle.id, cycle.startDate, cycle.endDate, onEditingChange])
-
-  const resizeEnd = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponderCapture: () => editing,
-    onMoveShouldSetPanResponderCapture: () => editing,
-    onStartShouldSetPanResponder: () => editing,
-    onMoveShouldSetPanResponder: () => editing,
-    onPanResponderGrant: () => onEditingChange(true),
-    onPanResponderMove: (_e, g) => {
-      const dx = Math.max(-(width - dayWidth), g.dx)
-      extraWidth.setValue(dx)
-    },
-    onPanResponderRelease: (_e, g) => {
-      const d = Math.round(g.dx / dayWidth)
-      const e = clampResizeEnd(idx(cycle.startDate), idx(cycle.endDate), d, totalDays, occupiedExcept(cycle.id))
-      reset()
-      commitDates(cycle.id, idx(cycle.startDate), e)
-      onEditingChange(false)
-    },
-    onPanResponderTerminate: () => { reset(); onEditingChange(false) },
-  }), [editing, dayWidth, width, totalDays, cycle.id, cycle.startDate, cycle.endDate, onEditingChange])
+  }), [editing, dayWidth, left, width, edge, totalDays, cycle.id, cycle.startDate, cycle.endDate, onEditingChange])
 
   const animatedLeft = Animated.add(new Animated.Value(left), extraLeft)
   const animatedWidth = Animated.add(new Animated.Value(width), extraWidth)
@@ -280,13 +270,13 @@ function CyclePill({
         editing && styles.pillLifted,
         editing && { transform: [{ translateX }, { scale: 1.04 }] },
       ]}
-      {...(editing ? move.panHandlers : {})}
+      {...pan.panHandlers}
     >
       <TouchableOpacity
         testID="cycle-bar"
         activeOpacity={0.85}
-        onPress={onPress}
-        onLongPress={onLongPress}
+        onPress={() => { if (!editing) onPress() }}
+        onLongPress={() => { if (!editing) onLongPress() }}
         style={StyleSheet.absoluteFill}
       />
       <Text style={styles.pillLabel} numberOfLines={1} pointerEvents="none">
@@ -304,10 +294,10 @@ function CyclePill({
 
       {editing && (
         <>
-          <View style={[styles.handle, styles.handleStart]} testID="resize-start" hitSlop={HANDLE_HITSLOP} {...resizeStart.panHandlers}>
+          <View style={[styles.handle, styles.handleStart]} testID="resize-start" pointerEvents="none">
             <View style={styles.handleGrip} />
           </View>
-          <View style={[styles.handle, styles.handleEnd]} testID="resize-end" hitSlop={HANDLE_HITSLOP} {...resizeEnd.panHandlers}>
+          <View style={[styles.handle, styles.handleEnd]} testID="resize-end" pointerEvents="none">
             <View style={styles.handleGrip} />
           </View>
           <TouchableOpacity testID="delete-period" accessibilityLabel="Delete prep" style={styles.deleteBtn} onPress={onDelete}>
