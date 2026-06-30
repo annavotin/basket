@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import Slider from '@react-native-community/slider'
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { addDays, formatDay } from '../utils/dates'
 import { BarcodeIcon, ReceiptIcon } from './icons'
+import RadialDrumPicker from './RadialDrumPicker'
 
 export const MIN_DAYS = 1
 export const MAX_DAYS = 14
@@ -14,6 +14,7 @@ type Props = {
   startDate: string
   dailyGoal: number
   onDaysChange: (days: number) => void
+  onDaysPreview?: (days: number) => void
   onScanBarcode: () => void
   onScanReceipt: () => void
 }
@@ -23,18 +24,26 @@ export default function NewPeriodPanel({
   startDate,
   dailyGoal,
   onDaysChange,
+  onDaysPreview,
   onScanBarcode,
   onScanReceipt,
 }: Props) {
   const colors = useColors()
+  const { height: winH } = useWindowDimensions()
+
+  // Reserve space for: safe area (~47) + header (~72) + calendar strip (~120) +
+  // BudgetBar (~90) + detailArea paddingTop (20) + panel's own fixed chrome (~200).
+  // Clamp so the disc has enough room on small screens and doesn't over-expand on large ones.
+  const drumH = Math.max(120, Math.min(220, winH - 549))
 
   const styles = useMemo(() => StyleSheet.create({
-    container: { flex: 1, paddingHorizontal: 16, paddingTop: 8 },
+    container: { paddingHorizontal: 16, paddingTop: 18 },
 
-    // Scan cards
+    // Scan cards — side by side
+    scanRow: { flexDirection: 'row', gap: 10 },
     card: {
-      flexDirection: 'row', alignItems: 'center', gap: 14,
-      borderRadius: 22, padding: 16, marginBottom: 11,
+      flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
+      borderRadius: 18, paddingHorizontal: 14, paddingVertical: 14,
     },
     cardReceipt: { backgroundColor: colors.forest },
     cardBarcode: {
@@ -42,35 +51,29 @@ export default function NewPeriodPanel({
       shadowColor: '#2C3A1E', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
     },
     icon: {
-      width: 52, height: 52, borderRadius: 15,
+      width: 36, height: 36, borderRadius: 10,
       alignItems: 'center', justifyContent: 'center',
     },
     iconOnDark: { backgroundColor: 'rgba(255,255,255,0.12)' },
     iconOnLight: { backgroundColor: colors.sageBg2 },
-    iconEmoji: { fontSize: 26 },
-    cardText: { flex: 1 },
-    cardTitle: { fontFamily: fonts.display, fontSize: 17, fontWeight: '600' },
+    cardTitle: { fontFamily: fonts.display, fontSize: 14, fontWeight: '600', flexShrink: 1 },
     cardTitleDark: { color: colors.white },
     cardTitleLight: { color: colors.forest },
-    cardSub: { fontFamily: fonts.body, fontSize: 13, fontWeight: '600', marginTop: 2 },
-    cardSubDark: { color: 'rgba(255,255,255,0.7)' },
-    cardSubLight: { color: colors.moss },
 
     // Prep-length card
     prep: {
-      backgroundColor: colors.white, borderRadius: 22, padding: 18, marginTop: 4,
+      backgroundColor: colors.white, borderRadius: 22, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 14,
+      marginTop: 14,
       shadowColor: '#2C3A1E', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
     },
     prepTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
     prepLabel: { fontFamily: fonts.display, fontSize: 16, fontWeight: '600', color: colors.forest },
     prepValue: { fontFamily: fonts.num, fontSize: 22, color: colors.matchaDeep },
     prepUnit: { fontSize: 14, fontWeight: '600', color: colors.moss },
-    slider: { width: '100%', height: 40, marginTop: 6 },
-    scale: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: -4 },
-    scaleText: { fontSize: 12, fontWeight: '700', color: colors.mossFaint },
+    drumWrap: { marginHorizontal: -18, marginTop: 12 },
     foot: {
       fontFamily: fonts.body, fontSize: 13, fontWeight: '600', color: colors.moss,
-      textAlign: 'center', marginTop: 13, paddingTop: 13,
+      textAlign: 'center', marginTop: 12, paddingTop: 12,
       borderTopWidth: 1.5, borderTopColor: colors.line,
     },
   }), [colors])
@@ -82,21 +85,17 @@ export default function NewPeriodPanel({
 
   return (
     <View style={styles.container} testID="new-period-panel">
-      <TouchableOpacity testID="scan-receipt" style={[styles.card, styles.cardReceipt]} onPress={onScanReceipt} activeOpacity={0.85}>
-        <View style={[styles.icon, styles.iconOnDark]}><ReceiptIcon size={24} color={colors.white} /></View>
-        <View style={styles.cardText}>
-          <Text style={[styles.cardTitle, styles.cardTitleDark]}>Scan a receipt</Text>
-          <Text style={[styles.cardSub, styles.cardSubDark]}>Add a whole shop in one tap</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.scanRow}>
+        <TouchableOpacity testID="scan-receipt" style={[styles.card, styles.cardReceipt]} onPress={onScanReceipt} activeOpacity={0.85}>
+          <View style={[styles.icon, styles.iconOnDark]}><ReceiptIcon size={18} color={colors.white} /></View>
+          <Text style={[styles.cardTitle, styles.cardTitleDark]} numberOfLines={2}>Scan a receipt</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity testID="scan-barcode" style={[styles.card, styles.cardBarcode]} onPress={onScanBarcode} activeOpacity={0.85}>
-        <View style={[styles.icon, styles.iconOnLight]}><BarcodeIcon size={24} color={colors.forest} /></View>
-        <View style={styles.cardText}>
-          <Text style={[styles.cardTitle, styles.cardTitleLight]}>Scan a barcode</Text>
-          <Text style={[styles.cardSub, styles.cardSubLight]}>Add items one at a time</Text>
-        </View>
-      </TouchableOpacity>
+        <TouchableOpacity testID="scan-barcode" style={[styles.card, styles.cardBarcode]} onPress={onScanBarcode} activeOpacity={0.85}>
+          <View style={[styles.icon, styles.iconOnLight]}><BarcodeIcon size={18} color={colors.forest} /></View>
+          <Text style={[styles.cardTitle, styles.cardTitleLight]} numberOfLines={2}>Scan a barcode</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.prep}>
         <View style={styles.prepTop}>
@@ -105,22 +104,8 @@ export default function NewPeriodPanel({
             {dayCount} <Text style={styles.prepUnit}>{dayCount === 1 ? 'day' : 'days'}</Text>
           </Text>
         </View>
-        <Slider
-          testID="day-slider"
-          style={styles.slider}
-          minimumValue={MIN_DAYS}
-          maximumValue={MAX_DAYS}
-          step={1}
-          value={dayCount}
-          onValueChange={(v) => onDaysChange(Math.round(v))}
-          minimumTrackTintColor={colors.matcha}
-          maximumTrackTintColor={colors.sage100}
-          thumbTintColor={colors.matcha}
-        />
-        <View style={styles.scale}>
-          <Text style={styles.scaleText}>1</Text>
-          <Text style={styles.scaleText}>7</Text>
-          <Text style={styles.scaleText}>14</Text>
+        <View style={styles.drumWrap}>
+          <RadialDrumPicker value={dayCount} min={MIN_DAYS} max={MAX_DAYS} onChange={onDaysChange} onPreviewChange={onDaysPreview} height={drumH} />
         </View>
         <Text style={styles.foot}>
           {a.day} {a.month} → {b.day} {b.month} · {budget} kcal budget

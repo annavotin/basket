@@ -10,6 +10,7 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Share,
@@ -17,6 +18,10 @@ import {
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFonts } from 'expo-font'
+import * as SplashScreen from 'expo-splash-screen'
+
+SplashScreen.preventAutoHideAsync()
+import FadeBackground from './src/components/FadeBackground'
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
 import MealPrepDetail from './src/components/MealPrepDetail'
@@ -28,12 +33,10 @@ import BudgetBar from './src/components/BudgetBar'
 import AddFab from './src/components/AddFab'
 import AddItemSheet from './src/components/AddItemSheet'
 import ReceiptReviewSheet from './src/components/ReceiptReviewSheet'
-import ExtraMealDetail from './src/components/ExtraMealDetail'
 import ExtraMealSheet from './src/components/ExtraMealSheet'
 import SettingsScreen from './src/components/SettingsScreen'
 import PantryScreen from './src/components/PantryScreen'
 import ItemDetail from './src/components/ItemDetail'
-import BasketOptionsSheet from './src/components/BasketOptionsSheet'
 import CarryOverSheet from './src/components/CarryOverSheet'
 import { CanIcon, SettingsIcon } from './src/components/icons'
 import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
@@ -49,6 +52,7 @@ import { lookupBarcode } from './src/services/foodApi'
 import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll, loadCustomFoods, saveCustomFoods, loadKeepScanning, saveKeepScanning } from './src/services/storage'
 import { customFoodFromItem, upsertCustomFood, findCustomByBarcode, customFoodToProduct } from './src/services/customFoods'
 import CustomFoodsScreen from './src/components/CustomFoodsScreen'
+import OnboardingScreen, { OnboardingResult } from './src/components/OnboardingScreen'
 import { auth as authService, Account } from './src/services/auth'
 import { supabase, isSupabaseConfigured } from './src/services/supabase'
 import { createSupabaseRemote } from './src/services/supabase-remote'
@@ -86,6 +90,17 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     container: {
       flex: 1,
       backgroundColor: colors.sageBg,
+    },
+    calendarSection: {
+      backgroundColor: colors.sageBg,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(44,58,30,0.08)',
+      shadowColor: '#2C3A1E',
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 5 },
+      elevation: 4,
+      zIndex: 1,
     },
     header: {
       flexDirection: 'row',
@@ -138,9 +153,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     horizontalScroll: {
       flexGrow: 0,
     },
-    // Cards (cream budget card + green basket sheet) float on the page background — no panel.
+    // Content below the calendar. A sage→white FadeBackground sits absolutely behind this
+    // (top of detailArea); the white BudgetBar card floats on top of the tinted area.
     detailArea: {
-      paddingTop: 4,
+      paddingTop: 20,
+      position: 'relative',
     },
     grab: {
       width: 38,
@@ -150,9 +167,29 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       alignSelf: 'center',
       marginBottom: 10,
     },
-    // New-shop (empty cycle) sits on the page background — cards float on green, no panel.
-    newShopArea: {
-      paddingTop: 4,
+    emptyState: {
+      alignItems: 'center',
+      paddingTop: 56,
+      paddingHorizontal: 40,
+    },
+    emptyEmoji: {
+      fontSize: 48,
+      marginBottom: 16,
+    },
+    emptyHead: {
+      fontFamily: fonts.head,
+      fontWeight: '700',
+      fontSize: 20,
+      color: colors.forest,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    emptySub: {
+      fontFamily: fonts.bodySemi,
+      fontSize: 14,
+      color: colors.mossFaint,
+      textAlign: 'center',
+      lineHeight: 20,
     },
     // In-tree overlay (not a native Modal): showing it via <Modal> meant it had to
     // *dismiss* in the same frame the AddItemSheet/ReceiptReviewSheet Modal *presented*,
@@ -189,7 +226,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     basketSheet: {
       marginTop: 10,
       paddingBottom: 14,
-      backgroundColor: colors.sageBg,
       paddingTop: 16,
     },
     basketSheetTitle: {
@@ -212,6 +248,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       fontWeight: '700',
       fontSize: 18,
       color: colors.forest,
+    },
+    expandedMeta: {
+      fontFamily: fonts.bodySemi,
+      fontSize: 13,
+      color: colors.mossFaint,
     },
     // The nav + add button float over the bottom of the page scroll. The bar itself
     // is the positioning context for the absolutely-placed SegmentedNav and AddFab,
@@ -250,7 +291,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [receiptScanning, setReceiptScanning] = useState(false)
   const [barcodeLooking, setBarcodeLooking] = useState(false)
   const [customFoods, setCustomFoods] = useState<CustomFood[]>([])
-  const [myFoodsVisible, setMyFoodsVisible] = useState(false)
   // Barcode of the product currently in the Add sheet (so it's stored when the item is added).
   const [scanBarcode, setScanBarcode] = useState<string | null>(null)
   const [keepScanning, setKeepScanning] = useState(false)
@@ -266,9 +306,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [detailTarget, setDetailTarget] = useState<
     { kind: 'item'; index: number } | { kind: 'extra'; id: string } | { kind: 'pantry'; id: string } | null
   >(null)
-  const [basketOptionsOpen, setBasketOptionsOpen] = useState(false)
   const [carryOver, setCarryOver] = useState<{ newCycleId: string; prevCycle: MealPrepCycle } | null>(null)
   const [timelineEditing, setTimelineEditing] = useState(false)
+  const exitTimelineEditRef = useRef<(() => void) | null>(null)
   // Horizontal calendar auto-scroll target.
   const scrollRef = useRef<ScrollView>(null)
 
@@ -415,7 +455,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     autoSelectedRef.current = true
     if (activeExtraDate) return
     const todays = liveCycles.find((c) => today >= c.startDate && today <= c.endDate)
-    if (todays) setActiveCycleId(todays.id)
+    if (todays) {
+      setActiveCycleId(todays.id)
+      const startIdx = daysBetween(windowStart, todays.startDate)
+      scrollRef.current?.scrollTo({ x: Math.max(0, startIdx * DAY_WIDTH), animated: false })
+    }
   }, [hydrated, liveCycles, activeExtraDate, today])
 
   useEffect(() => {
@@ -459,17 +503,15 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function changeSelection(nextCycleId: string | null, nextExtraDate: string | null) {
-    // GC an abandoned empty draft cycle when switching away.
-    const stale = cycles.find(
-      (c) => c.id === activeCycleId && c.id !== nextCycleId && c.items.length === 0 && isLive(c)
-    )
-    if (stale) {
-      setCycles((prev) => prev.map((c) => (c.id === stale.id ? tombstone(c) : c)))
-      markDirty('cycles', stale.id)
-    }
+    // An empty meal prep is a deliberate creation — keep it when switching away
+    // (it stays in the timeline as a "New shop" pill) instead of GC-ing it.
     setActiveCycleId(nextCycleId)
     setActiveExtraDate(nextExtraDate)
-    setWeeklyTab('basket')
+    // A standalone extra-day has no basket/pantry, so land on the Extras tab.
+    setWeeklyTab(nextExtraDate ? 'extras' : 'basket')
+    // Clear any stale drum-picker preview so the newly-selected pill renders
+    // at its real length, not the last previewed length from another cycle.
+    setPreviewDays(null)
   }
 
   function handleCyclePress(id: string) {
@@ -507,23 +549,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     setPendingExtraDate(null)
   }
 
-  function handleRemoveExtra(id: string) {
-    Alert.alert('Remove extra meal', 'Remove this extra meal?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          setExtraMeals((prev) => prev.map((e) => (e.id === id ? tombstone(e) : e)))
-          markDirty('extra_meals', id)
-        },
-      },
-    ])
-  }
-
   function handleCreatePeriod(startDate: string) {
     const id = newId()
     const newCycle = touch({ id, startDate, endDate: addDays(startDate, prefs.defaultDays - 1), items: [] })
     const prevCycle = liveCycles
-      .filter((c) => c.items.length > 0 && c.id !== activeCycleId)
+      .filter((c) => c.items.length > 0)
       .sort((a, b) => (a.endDate < b.endDate ? 1 : -1))[0]
     const stale = cycles.find((c) => c.id === activeCycleId && c.items.length === 0 && isLive(c))
     setCycles((prev) => [
@@ -537,7 +567,10 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     if (prevCycle) setCarryOver({ newCycleId: id, prevCycle })
   }
 
+  const [previewDays, setPreviewDays] = React.useState<number | null>(null)
+
   function handleChangeDays(days: number) {
+    setPreviewDays(null)
     setCycles((prev) =>
       prev.map((c) =>
         c.id === activeCycleId
@@ -553,16 +586,18 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     markDirty('cycles', id)
   }
 
+  // Deletes directly — call when the user has already confirmed (e.g. via ConfirmDialog).
+  function deleteCycle(id: string) {
+    setCycles((prev) => prev.map((c) => (c.id === id ? tombstone(c) : c)))
+    markDirty('cycles', id)
+    if (activeCycleId === id) setActiveCycleId(null)
+  }
+
+  // Shows native Alert first — use when there's no prior in-app confirmation.
   function handleDeleteCycle(id: string) {
-    Alert.alert('Delete this basket?', "This can't be undone.", [
+    Alert.alert('Delete this batch?', "This can't be undone.", [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          setCycles((prev) => prev.map((c) => (c.id === id ? tombstone(c) : c)))
-          markDirty('cycles', id)
-          if (activeCycleId === id) setActiveCycleId(null)
-        },
-      },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteCycle(id) },
     ])
   }
 
@@ -586,7 +621,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     if (!product) {
       Alert.alert(
         'Product not found',
-        `No match for barcode ${barcode}.\n\nCheck this is the code on the pack — scanners sometimes grab a nearby barcode. If your connection is patchy, try again. Otherwise add it manually below and it'll be saved so the next scan finds it instantly.`,
+        `No match for barcode ${barcode}.\n\nCheck this is the code on the pack, as scanners sometimes grab a nearby barcode. If your connection is patchy, try again. Otherwise add it manually below and it'll be saved so the next scan finds it instantly.`,
       )
     }
     // Found items are trusted from the DB — only "remember" them once the user taps Edit
@@ -762,10 +797,22 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
 
   const extraDates = liveExtraMeals.map((e) => e.date)
   const activeCycle = liveCycles.find((c) => c.id === activeCycleId) ?? null
-  const activeDayCount = activeCycle
-    ? daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
+
+  // When a day is tapped that falls inside a batch, show that batch's content.
+  const containingCycle = activeExtraDate
+    ? liveCycles.find((c) => activeExtraDate >= c.startDate && activeExtraDate <= c.endDate) ?? null
+    : null
+
+  // The cycle driving the Batch/Pantry/Extras view: directly-selected takes priority.
+  const viewedCycle = activeCycle ?? containingCycle
+
+  const activeDayCount = viewedCycle
+    ? daysBetween(viewedCycle.startDate, viewedCycle.endDate) + 1
     : prefs.defaultDays
 
+  // When the new-period panel is visible the drum picker needs exclusive horizontal
+  // gesture control — disable the outer vertical scroll to prevent conflict.
+  const showingNewPeriod = !activeExtraDate && !!activeCycle && activeCycle.items.length === 0 && weeklyTab === 'basket'
 
   let barMealPrep = 0
   let barPantry = 0
@@ -773,182 +820,182 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   let barBudget = dailyGoal
   let barMacros: Macros | undefined
   let barDays: number | undefined
-  if (activeExtraDate) {
-    const containing = liveCycles.find(
-      (c) => activeExtraDate >= c.startDate && activeExtraDate <= c.endDate
-    )
-    if (containing) {
-      const days = daysBetween(containing.startDate, containing.endDate) + 1
-      barMealPrep = totalKcal(containing.items)
-      barPantry = pantryKcalForCycle(livePantry, containing, days)
-      barExtra = extrasKcalInRange(liveExtraMeals, containing.startDate, containing.endDate)
-      barBudget = cycleBudget(days, dailyGoal)
-      barMacros = aggregateMacros(containing.items, barPantry + barExtra)
-      barDays = days
-    } else {
-      barExtra = extrasKcalOnDate(liveExtraMeals, activeExtraDate)
-      barBudget = dailyGoal
-    }
-  } else if (activeCycle) {
-    const days = daysBetween(activeCycle.startDate, activeCycle.endDate) + 1
-    barMealPrep = totalKcal(activeCycle.items)
-    barPantry = pantryKcalForCycle(livePantry, activeCycle, days)
-    barExtra = extrasKcalInRange(liveExtraMeals, activeCycle.startDate, activeCycle.endDate)
+  if (viewedCycle) {
+    const days = daysBetween(viewedCycle.startDate, viewedCycle.endDate) + 1
+    barMealPrep = totalKcal(viewedCycle.items)
+    barPantry = pantryKcalForCycle(livePantry, viewedCycle, days)
+    barExtra = extrasKcalInRange(liveExtraMeals, viewedCycle.startDate, viewedCycle.endDate)
     barBudget = cycleBudget(days, dailyGoal)
-    barMacros = aggregateMacros(activeCycle.items, barPantry + barExtra)
+    barMacros = aggregateMacros(viewedCycle.items, barPantry + barExtra)
     barDays = days
+  } else if (activeExtraDate) {
+    barExtra = extrasKcalOnDate(liveExtraMeals, activeExtraDate)
+    barBudget = dailyGoal
   }
-  const extrasForActiveDate = activeExtraDate
-    ? liveExtraMeals.filter((e) => e.date === activeExtraDate)
-    : []
-  const extrasForPeriod = activeCycle
-    ? liveExtraMeals.filter((e) => e.date >= activeCycle.startDate && e.date <= activeCycle.endDate)
-    : []
+
+  // Extras for the Extras tab: whole period's extras, selected day floated to top.
+  const extrasForPeriod: ExtraMeal[] = viewedCycle
+    ? (() => {
+        const pivotDate = activeExtraDate ?? today
+        const all = liveExtraMeals.filter(
+          (e) => e.date >= viewedCycle.startDate && e.date <= viewedCycle.endDate
+        )
+        return [
+          ...all.filter((e) => e.date === pivotDate),
+          ...all.filter((e) => e.date !== pivotDate).sort((a, b) => a.date.localeCompare(b.date)),
+        ]
+      })()
+    : activeExtraDate
+      ? liveExtraMeals.filter((e) => e.date === activeExtraDate)
+      : []
 
   return (
+    <View style={{ flex: 1 }}>
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 140 }}
+          contentContainerStyle={{ paddingBottom: showingNewPeriod ? 0 : 140 }}
+          scrollEnabled={!showingNewPeriod}
           keyboardShouldPersistTaps="handled"
         >
-          <View testID="app-header" style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>{prefs.name ? `Hi, ${prefs.name}` : 'Hi there'} 👋</Text>
-              <Text style={styles.subtitle}>{formatLong(today)}</Text>
-            </View>
-            <View style={styles.headerButtons}>
-              <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={[styles.iconBtn, styles.headerBtnSpacer]}>
-                <CanIcon size={20} color={colors.forest} />
-              </TouchableOpacity>
-              <TouchableOpacity testID="open-settings" onPress={() => setSettingsVisible(true)} style={styles.iconBtn}>
-                <SettingsIcon size={20} color={colors.forest} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View>
-            <ScrollView
-              ref={scrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.horizontalScroll}
-              scrollEnabled={!timelineEditing}
-            >
-              <View style={{ width: TOTAL_DAYS * DAY_WIDTH }}>
-                <CalendarStrip
-                  windowStart={windowStart}
-                  totalDays={TOTAL_DAYS}
-                  today={today}
-                  extraDates={extraDates}
-                  dayWidth={DAY_WIDTH}
-                  onExtraPress={handleExtraPress}
-                  activeExtraDate={activeExtraDate}
-                />
-                <TimelineView
-                  cycles={liveCycles}
-                  windowStart={windowStart}
-                  totalDays={TOTAL_DAYS}
-                  activeCycleId={activeCycleId}
-                  onCyclePress={handleCyclePress}
-                  onCreatePeriod={handleCreatePeriod}
-                  dayWidth={DAY_WIDTH}
-                  onSetCycleDates={handleSetCycleDates}
-                  onDeleteCycle={handleDeleteCycle}
-                  onEditingChange={setTimelineEditing}
-                />
+          <View style={styles.calendarSection}>
+            <View testID="app-header" style={styles.header}>
+              <View>
+                <Text style={styles.greeting}>{`Hi, ${prefs.name || 'friend'}`} 👋</Text>
+                <Text style={styles.subtitle}>{formatLong(today)}</Text>
               </View>
-            </ScrollView>
+              <View style={styles.headerButtons}>
+                <TouchableOpacity testID="open-pantry" onPress={() => setPantryVisible(true)} style={[styles.iconBtn, styles.headerBtnSpacer]}>
+                  <CanIcon size={20} color={colors.forest} />
+                </TouchableOpacity>
+                <TouchableOpacity testID="open-settings" onPress={() => setSettingsVisible(true)} style={styles.iconBtn}>
+                  <SettingsIcon size={20} color={colors.forest} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View>
+              <ScrollView
+                ref={scrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.horizontalScroll}
+                scrollEnabled={!timelineEditing}
+              >
+                <View style={{ width: TOTAL_DAYS * DAY_WIDTH }}>
+                  <CalendarStrip
+                    windowStart={windowStart}
+                    totalDays={TOTAL_DAYS}
+                    today={today}
+                    extraDates={extraDates}
+                    dayWidth={DAY_WIDTH}
+                    onExtraPress={handleExtraPress}
+                    activeExtraDate={activeExtraDate}
+                    dimmed={timelineEditing}
+                  />
+                  <TimelineView
+                    cycles={liveCycles}
+                    windowStart={windowStart}
+                    totalDays={TOTAL_DAYS}
+                    activeCycleId={activeCycleId}
+                    onCyclePress={handleCyclePress}
+                    onCreatePeriod={handleCreatePeriod}
+                    dayWidth={DAY_WIDTH}
+                    onSetCycleDates={handleSetCycleDates}
+                    onDeleteCycle={deleteCycle}
+                    onEditingChange={setTimelineEditing}
+                    onEditModeChange={(active, fn) => { exitTimelineEditRef.current = active ? (fn ?? null) : null }}
+                    previewEndDate={previewDays && activeCycle ? addDays(activeCycle.startDate, previewDays - 1) : undefined}
+                  />
+                </View>
+              </ScrollView>
+            </View>
           </View>
-          {activeExtraDate ? (
+          <Pressable onPress={() => exitTimelineEditRef.current?.()}>
+          {!viewedCycle && !activeExtraDate ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🥗</Text>
+              <Text style={styles.emptyHead}>Nothing prepped yet</Text>
+              <Text style={styles.emptySub}>Tap + on the timeline to start a new batch, or tap an existing one to view it</Text>
+            </View>
+          ) : !viewedCycle ? (
+            // Standalone extra day not inside any batch — only Extras tab is meaningful.
             <View style={styles.detailArea}>
+              <FadeBackground color={colors.sageBg2} height={480} curve={0.6} />
               <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
-              <ExtraMealDetail
-                date={activeExtraDate}
-                extras={extrasForActiveDate}
-                onRemoveExtra={handleRemoveExtra}
+              <ExtrasPeriodList
+                extras={extrasForPeriod}
+                onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
               />
             </View>
           ) : (
-            <>
-              {activeCycle && activeCycle.items.length === 0 && (
-                <View style={styles.newShopArea}>
-                  <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
-                  {weeklyTab === 'basket' && (
-                    <NewPeriodPanel
-                      dayCount={activeDayCount}
-                      startDate={activeCycle.startDate}
-                      dailyGoal={dailyGoal}
-                      onDaysChange={handleChangeDays}
-                      onScanBarcode={handleScanBarcode}
-                      onScanReceipt={handleScanReceipt}
-                    />
-                  )}
-                  {weeklyTab === 'extras' && (
-                    <ExtrasPeriodList
-                      extras={extrasForPeriod}
-                      onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
-                    />
-                  )}
-                  {weeklyTab === 'pantry' && (
-                    <PantryPeriodView
-                      cycle={activeCycle}
-                      pantry={livePantry}
-                      cycleDays={activeDayCount}
-                      onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
-                    />
-                  )}
-                </View>
-              )}
-              {activeCycle && activeCycle.items.length > 0 && (
-                <View style={styles.detailArea}>
-                  <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
-                  {weeklyTab === 'basket' && (
-                    <View style={styles.basketSheet}>
-                      <View style={styles.expandedHead}>
-                        <Text style={styles.expandedTitle}>This basket</Text>
-                        <TouchableOpacity testID="basket-options-button" onPress={() => setBasketOptionsOpen(true)} accessibilityLabel="Basket options">
-                          <Text style={styles.expandedTitle}>⋮</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <MealPrepDetail activeCycle={activeCycle} onEditItem={handleEditItem} />
+            // Has a viewed cycle — either directly selected or inferred from the tapped day.
+            <View style={styles.detailArea}>
+              <FadeBackground color={colors.sageBg2} height={480} curve={0.6} />
+              <BudgetBar mealPrepKcal={barMealPrep} pantryKcal={barPantry} extraKcal={barExtra} budgetKcal={barBudget} macros={barMacros} macroTargets={prefs.macroTargets} days={barDays} />
+              {weeklyTab === 'basket' && (
+                activeCycle && activeCycle.items.length === 0 ? (
+                  <NewPeriodPanel
+                    dayCount={activeDayCount}
+                    startDate={activeCycle.startDate}
+                    dailyGoal={dailyGoal}
+                    onDaysChange={handleChangeDays}
+                    onDaysPreview={setPreviewDays}
+                    onScanBarcode={handleScanBarcode}
+                    onScanReceipt={handleScanReceipt}
+                  />
+                ) : (
+                  <View style={styles.basketSheet}>
+                    <View style={styles.expandedHead}>
+                      <Text style={styles.expandedTitle}>This batch</Text>
+                      <Text style={styles.expandedMeta}>
+                        {viewedCycle.items.length} item{viewedCycle.items.length !== 1 ? 's' : ''}{barMealPrep > 0 ? ` · ${barMealPrep.toLocaleString()} kcal` : ''}
+                      </Text>
                     </View>
-                  )}
-                  {weeklyTab === 'extras' && (
-                    <ExtrasPeriodList
-                      extras={extrasForPeriod}
-                      onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
-                    />
-                  )}
-                  {weeklyTab === 'pantry' && (
-                    <PantryPeriodView
-                      cycle={activeCycle}
-                      pantry={livePantry}
-                      cycleDays={activeDayCount}
-                      onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
-                    />
-                  )}
-                </View>
+                    <MealPrepDetail activeCycle={viewedCycle} onEditItem={activeCycle ? handleEditItem : undefined} />
+                  </View>
+                )
               )}
-            </>
+              {weeklyTab === 'extras' && (
+                <ExtrasPeriodList
+                  extras={extrasForPeriod}
+                  onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
+                />
+              )}
+              {weeklyTab === 'pantry' && (
+                <PantryPeriodView
+                  cycle={viewedCycle}
+                  pantry={livePantry}
+                  cycleDays={activeDayCount}
+                  onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
+                />
+              )}
+            </View>
           )}
+          </Pressable>
         </ScrollView>
         {/* Pinned nav + add button: rendered once, floating over the bottom of the page
             scroll. box-none lets touches fall through the empty bar to the scroll behind. */}
         <View style={styles.pinnedBar} pointerEvents="box-none">
-          {activeExtraDate ? (
-            <AddFab manualOnly onAddManual={handleAddExtra} />
-          ) : activeCycle ? (
+          {(viewedCycle || activeExtraDate) ? (
             <>
               <View style={[styles.navWrap, weeklyTab === 'pantry' && styles.navWrapFull]}>
                 <SegmentedNav active={weeklyTab} onChange={setWeeklyTab} />
               </View>
-              {weeklyTab !== 'pantry' && (
-                <AddFab
-                  manualOnly={weeklyTab === 'extras'}
-                  onScanBarcode={handleScanBarcode}
-                  onScanReceipt={handleScanReceipt}
-                  onAddManual={weeklyTab === 'extras' ? handleAddExtraForPeriod : handleAddManual}
-                />
+              {activeCycle ? (
+                // Directly-selected batch: full add options on Batch + Extras tabs.
+                weeklyTab !== 'pantry' && (
+                  <AddFab
+                    manualOnly={weeklyTab === 'extras'}
+                    onScanBarcode={handleScanBarcode}
+                    onScanReceipt={handleScanReceipt}
+                    onAddManual={weeklyTab === 'extras' ? handleAddExtraForPeriod : handleAddManual}
+                  />
+                )
+              ) : (
+                // Day tapped (inside a batch or standalone): only Extras tab can add.
+                weeklyTab === 'extras' && (
+                  <AddFab manualOnly onAddManual={handleAddExtra} />
+                )
               )}
             </>
           ) : null}
@@ -973,14 +1020,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onConfirm={handleConfirmReceipt}
           onClose={() => setReviewVisible(false)}
         />
-        {(receiptScanning || barcodeLooking) && (
-          <View style={styles.loadingScrim} pointerEvents="auto">
-            <View style={styles.loadingCard}>
-              <ActivityIndicator size="large" color={colors.matcha} />
-              <Text style={styles.loadingText}>{receiptScanning ? 'Reading your receipt…' : 'Looking up barcode…'}</Text>
-            </View>
-          </View>
-        )}
         <ExtraMealSheet
           visible={extraSheetVisible}
           onSave={handleSaveExtra}
@@ -1002,14 +1041,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           authService={authService}
           sync={account ? 'synced' : 'offline'}
           version={APP_VERSION}
-          onOpenMyFoods={() => setMyFoodsVisible(true)}
-        />
-        <CustomFoodsScreen
-          visible={myFoodsVisible}
-          foods={customFoods}
-          onClose={() => setMyFoodsVisible(false)}
-          onSave={(food) => setCustomFoods((prev) => prev.map((x) => (x.id === food.id ? food : x)))}
-          onDelete={(id) => setCustomFoods((prev) => prev.filter((x) => x.id !== id))}
+          customFoods={customFoods}
+          onSaveFood={(food) => setCustomFoods((prev) => prev.map((x) => (x.id === food.id ? food : x)))}
+          onDeleteFood={(id) => setCustomFoods((prev) => prev.filter((x) => x.id !== id))}
         />
         <PantryScreen
           visible={pantryVisible}
@@ -1073,33 +1107,73 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             onClose={() => setCarryOver(null)}
           />
         )}
-        {activeCycle && (
-          <BasketOptionsSheet
-            visible={basketOptionsOpen}
-            dayCount={activeDayCount}
-            startDate={activeCycle.startDate}
-            dailyGoal={dailyGoal}
-            onDaysChange={handleChangeDays}
-            onDelete={() => { setBasketOptionsOpen(false); handleDeleteCycle(activeCycleId!) }}
-            onClose={() => setBasketOptionsOpen(false)}
-          />
-        )}
       </View>
     </SafeAreaView>
+    {(receiptScanning || barcodeLooking) && (
+      <View style={styles.loadingScrim} pointerEvents="auto">
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color={colors.matcha} />
+          <Text style={styles.loadingText}>{receiptScanning ? 'Reading your receipt…' : 'Looking up barcode…'}</Text>
+        </View>
+      </View>
+    )}
+    </View>
   )
 }
+
+const ONBOARDED_KEY = 'basket:v1:onboarded'
 
 export default function App() {
   const [fontsLoaded] = useFonts(fontMap)
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES)
   const [prefsHydrated, setPrefsHydrated] = useState(false)
-  useEffect(() => { loadPrefs().then((p) => { setPrefs(p); setPrefsHydrated(true) }) }, [])
+  const [onboarded, setOnboarded] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    loadPrefs().then((p) => { setPrefs(p); setPrefsHydrated(true) })
+    AsyncStorage.getItem(ONBOARDED_KEY).then((v) => setOnboarded(v === '1'))
+  }, [])
+
+  useEffect(() => {
+    if (fontsLoaded && onboarded !== null) {
+      SplashScreen.hideAsync()
+    }
+  }, [fontsLoaded, onboarded])
+
   useEffect(() => { if (prefsHydrated) savePrefs(prefs) }, [prefs, prefsHydrated])
-  if (!fontsLoaded) return null
+
+  function handleOnboardingComplete(result: OnboardingResult) {
+    setPrefs((p) => ({
+      ...p,
+      ...(result.name != null ? { name: result.name } : {}),
+      ...(result.defaultDays != null ? { defaultDays: result.defaultDays } : {}),
+      ...(result.weightUnit != null ? { units: { ...p.units, weight: result.weightUnit } } : {}),
+    }))
+    if (result.dailyGoal != null) {
+      // dailyGoal lives outside prefs — persisted by AppInner; pre-write so it's ready on mount.
+      void saveDailyGoal(result.dailyGoal)
+    }
+    void AsyncStorage.setItem(ONBOARDED_KEY, '1')
+    setOnboarded(true)
+  }
+
+  if (!fontsLoaded || onboarded === null) return null
+
   return (
     <ThemeProvider theme={prefs.theme} accent={prefs.accent}>
       <UnitsProvider units={prefs.units}>
-        <AppInner prefs={prefs} setPrefs={setPrefs} />
+        {!onboarded ? (
+          <OnboardingScreen
+            onComplete={handleOnboardingComplete}
+            onSignIn={() => {
+              // Mark onboarded and drop into the main app; AuthSheet opens from Settings.
+              void AsyncStorage.setItem(ONBOARDED_KEY, '1')
+              setOnboarded(true)
+            }}
+          />
+        ) : (
+          <AppInner prefs={prefs} setPrefs={setPrefs} />
+        )}
       </UnitsProvider>
     </ThemeProvider>
   )

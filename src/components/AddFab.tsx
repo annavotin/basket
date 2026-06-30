@@ -1,7 +1,7 @@
 import React, { useRef, useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
-import { PlusIcon } from './icons'
+import { PlusIcon, EditIcon, BarcodeIcon, ReceiptIcon } from './icons'
 
 type Props = {
   onScanBarcode?: () => void
@@ -37,6 +37,9 @@ export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manu
       paddingVertical: 12,
       paddingHorizontal: 18,
       marginBottom: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
       shadowColor: '#000',
       shadowOpacity: 0.15,
       shadowRadius: 4,
@@ -67,12 +70,15 @@ export default function AddFab({ onScanBarcode, onScanReceipt, onAddManual, manu
       {open && !manualOnly && (
         <View style={styles.menu}>
           <TouchableOpacity testID="fab-manual" style={styles.option} onPress={() => choose(onAddManual)}>
+            <EditIcon size={18} color={colors.kcalText} />
             <Text style={styles.optionText}>Add Manually</Text>
           </TouchableOpacity>
           <TouchableOpacity testID="fab-barcode" style={styles.option} onPress={() => choose(() => onScanBarcode?.())}>
+            <BarcodeIcon size={18} color={colors.kcalText} />
             <Text style={styles.optionText}>Scan Barcode</Text>
           </TouchableOpacity>
           <TouchableOpacity testID="fab-receipt" style={styles.option} onPress={() => choose(() => onScanReceipt?.())}>
+            <ReceiptIcon size={18} color={colors.kcalText} />
             <Text style={styles.optionText}>Scan Receipt</Text>
           </TouchableOpacity>
         </View>

@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "basket",
-    "slug": "basket",
+    "name": "Batch",
+    "slug": "batch",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.annavotin.basket"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.annavotin.batchapp",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,13 +24,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Basket to use the camera to scan product barcodes."
+          "cameraPermission": "Allow Batch to use the camera to scan product barcodes."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Basket to access your photos to add a receipt."
+          "photosPermission": "Allow Batch to access your photos to add a receipt."
         }
       ],
       "expo-font",
@@ -37,10 +38,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/icon.png",
-          "imageWidth": 288,
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 260,
           "resizeMode": "contain",
-          "backgroundColor": "#2F4A22"
+          "backgroundColor": "#2C3A1E"
         }
       ]
     ]

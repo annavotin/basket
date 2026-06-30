@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
-  ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, StyleSheet,
+  ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, StyleSheet, Animated,
 } from 'react-native'
+import { useSlideIn } from '../hooks/useSlideIn'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { PantryItem, MealPrepCycle } from '../types'
@@ -80,6 +81,7 @@ export default function PantryScreen({
   cycle, cycleDays = 7, onSetDefaultGrams, onSetPantryGrams, onResetPantryOverride, onOpenPantry,
 }: Props) {
   const colors = useColors()
+  const slideX = useSlideIn(visible)
   const [mode, setMode] = useState<Mode>('defaults')
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
@@ -272,7 +274,8 @@ export default function PantryScreen({
   // pill: left = 4 for defaults, left = 50% + 2 for thisprep (we handle via marginLeft trick)
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="none" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <Animated.View style={[{ flex: 1 }, { transform: [{ translateX: slideX }] }]}>
       <SafeAreaView style={styles.screen} testID="pantry-screen">
         {/* Top bar */}
         <View style={styles.top}>
@@ -320,13 +323,6 @@ export default function PantryScreen({
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             {mode === 'defaults' ? (
               <>
-                {/* Note banner */}
-                <View style={styles.note}>
-                  <View style={styles.noteIcon}><Text style={styles.noteIconTxt}>♻️</Text></View>
-                  <Text style={styles.noteTxt}>
-                    Set a daily amount once — it's spread automatically across every prep, however long.
-                  </Text>
-                </View>
 
                 {pantry.length > 0 ? (
                   <>
@@ -387,7 +383,7 @@ export default function PantryScreen({
                   <View style={styles.empty}>
                     <Text style={styles.emptyE}>🫙</Text>
                     <Text style={styles.emptyH}>No staples yet</Text>
-                    <Text style={styles.emptyP}>Add the basics you always cook with — oils, grains, sauces.</Text>
+                    <Text style={styles.emptyP}>Add the basics you always cook with: oils, grains, sauces.</Text>
                   </View>
                 )}
 
@@ -466,12 +462,6 @@ export default function PantryScreen({
                       <Text style={styles.prepDays}>{cycleDays} days</Text>
                     </View>
 
-                    <View style={styles.note}>
-                      <View style={styles.noteIcon}><Text style={styles.noteIconTxt}>✎</Text></View>
-                      <Text style={styles.noteTxt}>
-                        Tweak how much of each staple this specific prep uses. Defaults stay untouched.
-                      </Text>
-                    </View>
 
                     {pantry.length > 0 ? (
                       <>
@@ -563,6 +553,7 @@ export default function PantryScreen({
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      </Animated.View>
     </Modal>
   )
 }

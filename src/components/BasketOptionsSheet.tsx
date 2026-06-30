@@ -38,7 +38,7 @@ export default function BasketOptionsSheet({ visible, dayCount, startDate, daily
         <TouchableOpacity style={styles.scrimFill} activeOpacity={1} onPress={onClose} />
         <View style={styles.sheet}>
           <View style={styles.grab} />
-          <Text style={styles.title}>Basket options</Text>
+          <Text style={styles.title}>Batch options</Text>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Prep length</Text>
             <Stepper value={dayCount} min={1} max={14} onChange={onDaysChange} testID="prep-days" />
@@ -47,7 +47,7 @@ export default function BasketOptionsSheet({ visible, dayCount, startDate, daily
             {formatLong(startDate)} → {formatLong(end)} · {cycleBudget(dayCount, dailyGoal).toLocaleString()} kcal budget
           </Text>
           <TouchableOpacity style={styles.del} onPress={onDelete} testID="delete-basket">
-            <Text style={styles.delTxt}>Delete basket</Text>
+            <Text style={styles.delTxt}>Delete batch</Text>
           </TouchableOpacity>
         </View>
       </View>

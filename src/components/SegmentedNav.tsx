@@ -10,7 +10,7 @@ type Props = {
 }
 
 const TABS: { key: WeeklyTab; label: string }[] = [
-  { key: 'basket', label: 'Basket' },
+  { key: 'basket', label: 'Batch' },
   { key: 'extras', label: 'Extras' },
   { key: 'pantry', label: 'Pantry' },
 ]
@@ -24,27 +24,29 @@ export default function SegmentedNav({ active, onChange }: Props) {
   const styles = useMemo(() => StyleSheet.create({
     pill: {
       flexDirection: 'row',
-      borderRadius: 26,
+      borderRadius: 28,
       padding: 4,
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.5)',
-      backgroundColor: isDark ? 'rgba(40,48,33,0.45)' : 'rgba(255,255,255,0.4)',
+      borderColor: 'rgba(255,255,255,0.13)',
+      backgroundColor: 'rgba(28,36,23,0.88)',
+      height: 56,
+      alignItems: 'center',
     },
     segment: {
       flex: 1,
-      paddingVertical: 12,
-      borderRadius: 22,
+      height: 48,
+      borderRadius: 24,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    segmentActive: { backgroundColor: colors.navSegmentActive },
-    label: { fontSize: 15, fontWeight: '600', color: colors.forest, opacity: 0.65 },
-    labelActive: { color: colors.selectedDayText, opacity: 1 },
-  }), [colors, isDark])
+    segmentActive: { backgroundColor: 'rgba(255,255,255,0.16)' },
+    label: { fontSize: 15, fontWeight: '600', color: 'rgba(255,255,255,0.55)' },
+    labelActive: { color: '#FFFFFF' },
+  }), [colors])
 
   return (
-    <BlurView intensity={isDark ? 40 : 28} tint={isDark ? 'dark' : 'light'} style={styles.pill} testID="segmented-nav">
+    <BlurView intensity={48} tint="dark" style={styles.pill} testID="segmented-nav">
       {TABS.map((t) => {
         const isActive = t.key === active
         return (

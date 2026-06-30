@@ -47,11 +47,11 @@ export function createSupabaseAuth(client: any): AuthService {
     },
 
     async signInWithApple(): Promise<AuthResult> {
-      return { ok: false, error: 'Use email sign-in for now — Apple/Google coming soon.' }
+      return { ok: false, error: 'Use email sign-in for now. Apple/Google coming soon.' }
     },
 
     async signInWithGoogle(): Promise<AuthResult> {
-      return { ok: false, error: 'Use email sign-in for now — Apple/Google coming soon.' }
+      return { ok: false, error: 'Use email sign-in for now. Apple/Google coming soon.' }
     },
 
     async resetPassword(email: string): Promise<{ ok: boolean; error?: string }> {

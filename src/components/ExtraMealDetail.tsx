@@ -64,7 +64,7 @@ export default function ExtraMealDetail({ date, extras, onRemoveExtra }: Props) 
         )}
       </View>
       {extras.length === 0 ? (
-        <Text style={styles.empty}>No extra meals yet — tap ＋ to add one.</Text>
+        <Text style={styles.empty}>No extra meals yet. Tap ＋ to add one.</Text>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
           {extras.map((e) => (

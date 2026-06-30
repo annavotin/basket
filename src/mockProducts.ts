@@ -1,4 +1,5 @@
 import { Macros } from './types'
+import { Serving } from './foods'
 
 export type Product = {
   name: string
@@ -6,6 +7,7 @@ export type Product = {
   packageWeightG: number
   kcalPer100g: number
   macrosPer100g?: Macros
+  servings?: Serving[]
 }
 
 export const MOCK_PRODUCTS: Product[] = [
@@ -15,7 +17,7 @@ export const MOCK_PRODUCTS: Product[] = [
   { name: 'Greek Yogurt', emoji: '🥛', packageWeightG: 500, kcalPer100g: 59 },
   { name: 'Salmon Fillet', emoji: '🐟', packageWeightG: 600, kcalPer100g: 208 },
   { name: 'Sweet Potato', emoji: '🍠', packageWeightG: 500, kcalPer100g: 86 },
-  { name: 'Eggs (dozen)', emoji: '🥚', packageWeightG: 600, kcalPer100g: 143 },
+  { name: 'Eggs (dozen)', emoji: '🥚', packageWeightG: 600, kcalPer100g: 143, servings: [{ label: 'per egg', weightG: 50 }] },
   { name: 'Oats', emoji: '🌾', packageWeightG: 1000, kcalPer100g: 379 },
 ]
 

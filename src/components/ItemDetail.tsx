@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react'
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import type { Palette } from '../styles/palette'
@@ -38,6 +38,14 @@ export default function ItemDetail(props: Props) {
   const colors = useColors()
   const [editing, setEditing] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
+
+  const sheetSlide = useRef(new Animated.Value(400)).current
+  useEffect(() => {
+    if (visible) {
+      sheetSlide.setValue(400)
+      Animated.spring(sheetSlide, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start()
+    }
+  }, [visible])
 
   const [name, setName] = useState('')
   const [weightStr, setWeightStr] = useState('')
@@ -136,7 +144,7 @@ export default function ItemDetail(props: Props) {
     scrim: { flex: 1, backgroundColor: 'rgba(28,36,23,0.5)', justifyContent: 'flex-end' },
     scrimFill: { flex: 1 },
     sheet: { backgroundColor: colors.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 22, maxHeight: '90%' },
-    sheetBody: { paddingHorizontal: 22, paddingBottom: 34 },
+    sheetBody: { paddingHorizontal: 22, paddingBottom: 50 },
     grab: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.sage100, alignSelf: 'center', marginBottom: 16 },
     head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     av: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.sageBg2, alignItems: 'center', justifyContent: 'center' },
@@ -193,7 +201,7 @@ export default function ItemDetail(props: Props) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.scrim} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableOpacity style={styles.scrimFill} activeOpacity={1} onPress={onClose} />
-        <View style={styles.sheet}>
+        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetSlide }] }]}>
           <View style={styles.grab} />
           <ScrollView
             keyboardShouldPersistTaps="handled"
@@ -293,7 +301,7 @@ export default function ItemDetail(props: Props) {
             </>
           )}
           </ScrollView>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   )

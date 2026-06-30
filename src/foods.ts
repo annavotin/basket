@@ -1,5 +1,7 @@
 import { Macros } from './types'
 
+export type Serving = { label: string; weightG: number }
+
 export type FoodSuggestion = {
   name: string
   emoji: string
@@ -7,15 +9,16 @@ export type FoodSuggestion = {
   packageWeightG?: number
   source: 'local' | 'off' | 'usda'
   macrosPer100g?: Macros
+  servings?: Serving[]
 }
 
-type LocalFood = { name: string; emoji: string; kcalPer100g: number; macrosPer100g: Macros }
+type LocalFood = { name: string; emoji: string; kcalPer100g: number; macrosPer100g: Macros; servings?: Serving[] }
 
 // Curated, produce-heavy list of common foods (kcal per 100g).
 export const LOCAL_FOODS: LocalFood[] = [
-  { name: 'Apple', emoji: '🍎', kcalPer100g: 52, macrosPer100g: { protein: 0.3, carbs: 14, fat: 0.2 } },
-  { name: 'Banana', emoji: '🍌', kcalPer100g: 89, macrosPer100g: { protein: 1.1, carbs: 23, fat: 0.3 } },
-  { name: 'Orange', emoji: '🍊', kcalPer100g: 47, macrosPer100g: { protein: 0.9, carbs: 12, fat: 0.1 } },
+  { name: 'Apple', emoji: '🍎', kcalPer100g: 52, macrosPer100g: { protein: 0.3, carbs: 14, fat: 0.2 }, servings: [{ label: 'per apple (med.)', weightG: 182 }] },
+  { name: 'Banana', emoji: '🍌', kcalPer100g: 89, macrosPer100g: { protein: 1.1, carbs: 23, fat: 0.3 }, servings: [{ label: 'per banana', weightG: 118 }] },
+  { name: 'Orange', emoji: '🍊', kcalPer100g: 47, macrosPer100g: { protein: 0.9, carbs: 12, fat: 0.1 }, servings: [{ label: 'per orange', weightG: 131 }] },
   { name: 'Strawberries', emoji: '🍓', kcalPer100g: 32, macrosPer100g: { protein: 0.7, carbs: 8, fat: 0.3 } },
   { name: 'Blueberries', emoji: '🫐', kcalPer100g: 57, macrosPer100g: { protein: 0.7, carbs: 14, fat: 0.3 } },
   { name: 'Grapes', emoji: '🍇', kcalPer100g: 69, macrosPer100g: { protein: 0.7, carbs: 18, fat: 0.2 } },
@@ -54,27 +57,27 @@ export const LOCAL_FOODS: LocalFood[] = [
   { name: 'Salmon', emoji: '🐟', kcalPer100g: 208, macrosPer100g: { protein: 20, carbs: 0, fat: 13 } },
   { name: 'Tuna', emoji: '🐟', kcalPer100g: 132, macrosPer100g: { protein: 29, carbs: 0, fat: 1.3 } },
   { name: 'Shrimp', emoji: '🦐', kcalPer100g: 99, macrosPer100g: { protein: 20, carbs: 0.9, fat: 1.7 } },
-  { name: 'Eggs', emoji: '🥚', kcalPer100g: 143, macrosPer100g: { protein: 13, carbs: 1.1, fat: 10 } },
+  { name: 'Eggs', emoji: '🥚', kcalPer100g: 143, macrosPer100g: { protein: 13, carbs: 1.1, fat: 10 }, servings: [{ label: 'per egg', weightG: 50 }] },
   { name: 'Milk', emoji: '🥛', kcalPer100g: 42, macrosPer100g: { protein: 3.4, carbs: 5, fat: 1 } },
   { name: 'Greek Yogurt', emoji: '🥛', kcalPer100g: 59, macrosPer100g: { protein: 10, carbs: 3.6, fat: 0.4 } },
   { name: 'Cheddar Cheese', emoji: '🧀', kcalPer100g: 402, macrosPer100g: { protein: 25, carbs: 1.3, fat: 33 } },
-  { name: 'Butter', emoji: '🧈', kcalPer100g: 717, macrosPer100g: { protein: 0.9, carbs: 0.1, fat: 81 } },
+  { name: 'Butter', emoji: '🧈', kcalPer100g: 717, macrosPer100g: { protein: 0.9, carbs: 0.1, fat: 81 }, servings: [{ label: 'per tbsp', weightG: 14 }] },
   { name: 'White Rice', emoji: '🍚', kcalPer100g: 130, macrosPer100g: { protein: 2.7, carbs: 28, fat: 0.3 } },
   { name: 'Brown Rice', emoji: '🍚', kcalPer100g: 123, macrosPer100g: { protein: 2.7, carbs: 26, fat: 1 } },
   { name: 'Pasta', emoji: '🍝', kcalPer100g: 131, macrosPer100g: { protein: 5, carbs: 25, fat: 1.1 } },
-  { name: 'Bread', emoji: '🍞', kcalPer100g: 265, macrosPer100g: { protein: 9, carbs: 49, fat: 3.2 } },
+  { name: 'Bread', emoji: '🍞', kcalPer100g: 265, macrosPer100g: { protein: 9, carbs: 49, fat: 3.2 }, servings: [{ label: 'per slice', weightG: 30 }] },
   { name: 'Oats', emoji: '🌾', kcalPer100g: 379, macrosPer100g: { protein: 13, carbs: 68, fat: 6.9 } },
   { name: 'Quinoa', emoji: '🌾', kcalPer100g: 120, macrosPer100g: { protein: 4.4, carbs: 22, fat: 1.9 } },
   { name: 'Flour', emoji: '🌾', kcalPer100g: 364, macrosPer100g: { protein: 10, carbs: 76, fat: 1 } },
   { name: 'Sugar', emoji: '🍬', kcalPer100g: 387, macrosPer100g: { protein: 0, carbs: 100, fat: 0 } },
-  { name: 'Olive Oil', emoji: '🫒', kcalPer100g: 884, macrosPer100g: { protein: 0, carbs: 0, fat: 100 } },
+  { name: 'Olive Oil', emoji: '🫒', kcalPer100g: 884, macrosPer100g: { protein: 0, carbs: 0, fat: 100 }, servings: [{ label: 'per tbsp', weightG: 14 }] },
   { name: 'Almonds', emoji: '🌰', kcalPer100g: 579, macrosPer100g: { protein: 21, carbs: 22, fat: 50 } },
-  { name: 'Peanut Butter', emoji: '🥜', kcalPer100g: 588, macrosPer100g: { protein: 25, carbs: 20, fat: 50 } },
+  { name: 'Peanut Butter', emoji: '🥜', kcalPer100g: 588, macrosPer100g: { protein: 25, carbs: 20, fat: 50 }, servings: [{ label: 'per tbsp', weightG: 16 }] },
   { name: 'Black Beans', emoji: '🫘', kcalPer100g: 132, macrosPer100g: { protein: 8.9, carbs: 24, fat: 0.5 } },
   { name: 'Chickpeas', emoji: '🫘', kcalPer100g: 164, macrosPer100g: { protein: 8.9, carbs: 27, fat: 2.6 } },
   { name: 'Lentils', emoji: '🫘', kcalPer100g: 116, macrosPer100g: { protein: 9, carbs: 20, fat: 0.4 } },
   { name: 'Tofu', emoji: '⬜', kcalPer100g: 76, macrosPer100g: { protein: 8, carbs: 1.9, fat: 4.8 } },
-  { name: 'Honey', emoji: '🍯', kcalPer100g: 304, macrosPer100g: { protein: 0.3, carbs: 82, fat: 0 } },
+  { name: 'Honey', emoji: '🍯', kcalPer100g: 304, macrosPer100g: { protein: 0.3, carbs: 82, fat: 0 }, servings: [{ label: 'per tbsp', weightG: 21 }] },
   { name: 'Dark Chocolate', emoji: '🍫', kcalPer100g: 546, macrosPer100g: { protein: 5, carbs: 60, fat: 31 } },
 ]
 

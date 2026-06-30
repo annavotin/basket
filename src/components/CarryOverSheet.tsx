@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
-import Slider from '@react-native-community/slider'
+import TrackSlider from './TrackSlider'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { MealPrepCycle, FoodItem } from '../types'
@@ -36,7 +36,7 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
 
   const styles = useMemo(() => StyleSheet.create({
     scrim: { flex: 1, backgroundColor: 'rgba(28,36,23,0.5)', justifyContent: 'flex-end' },
-    sheet: { backgroundColor: colors.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 34 },
+    sheet: { backgroundColor: colors.white, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 50 },
     grab: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.sage100, alignSelf: 'center', marginBottom: 14 },
     h: { fontFamily: fonts.head, fontSize: 20, color: colors.forest },
     desc: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.mossFaint, marginTop: 4, marginBottom: 14, lineHeight: 19 },
@@ -63,6 +63,7 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
     btnTxt: { fontFamily: fonts.display, fontSize: 15, color: '#fff' },
     ghost: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.line },
     ghostTxt: { fontFamily: fonts.display, fontSize: 14, color: colors.moss },
+    cancelTxt: { fontFamily: fonts.display, fontSize: 14, color: colors.mossFaint },
   }), [colors])
 
   return (
@@ -93,9 +94,8 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
                       <Text style={styles.slidL}>Amount left to carry</Text>
                       <Text style={styles.slidV}>{Math.round(picks[i].left)} g · {leftKcal(it, picks[i].left).toLocaleString()} kcal</Text>
                     </View>
-                    <Slider testID={`carry-slider-${i}`} minimumValue={0} maximumValue={it.weightG || 0} step={5}
-                      value={picks[i].left} onValueChange={(v: number) => setLeft(i, v)}
-                      minimumTrackTintColor={colors.matcha} maximumTrackTintColor={colors.sage100} thumbTintColor={colors.matcha} />
+                    <TrackSlider testID={`carry-slider-${i}`} minimumValue={0} maximumValue={it.weightG || 0} step={5}
+                      value={picks[i].left} onValueChange={(v) => setLeft(i, v)} />
                   </View>
                 )}
               </View>
@@ -106,7 +106,8 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
             <Text style={styles.sumV}>{chosen.length ? `${chosen.length} item${chosen.length === 1 ? '' : 's'} · ${carriedKcal.toLocaleString()} kcal` : 'Nothing yet'}</Text>
           </View>
           <TouchableOpacity style={styles.btn} onPress={confirm}><Text style={styles.btnTxt}>{chosen.length ? 'Start prep with leftovers' : 'Start fresh prep'}</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.btn, styles.ghost]} onPress={onSkip}><Text style={styles.ghostTxt}>Start empty — don't carry anything</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.btn, styles.ghost]} onPress={onSkip}><Text style={styles.ghostTxt}>Start empty, don't carry anything</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: 'transparent' }]} onPress={onClose}><Text style={styles.cancelTxt}>Cancel</Text></TouchableOpacity>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>

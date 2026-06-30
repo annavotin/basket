@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { addDays, formatDay, weekdayShort } from '../utils/dates'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
-import { PlusIcon } from './icons'
 
 type Props = {
   windowStart: string
@@ -13,6 +12,7 @@ type Props = {
   dayWidth: number
   onExtraPress: (date: string) => void
   activeExtraDate?: string | null
+  dimmed?: boolean
 }
 
 export default function CalendarStrip({
@@ -23,39 +23,31 @@ export default function CalendarStrip({
   dayWidth,
   onExtraPress,
   activeExtraDate,
+  dimmed = false,
 }: Props) {
   const colors = useColors()
 
   const styles = useMemo(() => StyleSheet.create({
     row: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
-      paddingVertical: 8,
+      alignItems: 'center',
+      paddingVertical: 10,
     },
     cell: {
       alignItems: 'center',
     },
-    // Round marker above each day: a faint circle with "+" on empty days, a solid rose circle on days with extras.
-    marker: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 8,
-    },
-    markerEmpty: { backgroundColor: colors.extraPillFaint },
-    markerHas: { backgroundColor: colors.rose },
-    markerActive: { borderWidth: 2, borderColor: colors.roseDeep },
-    innerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.roseDeep },
     dcell: {
       width: 46,
-      paddingVertical: 8,
+      paddingTop: 8,
+      // A touch more bottom room so the absolutely-positioned extra dot tucks in
+      // without crowding the number — keeps the flat shape, dot or no dot.
+      paddingBottom: 11,
       borderRadius: 16,
       alignItems: 'center',
       backgroundColor: colors.sageBg2,
     },
     dcellToday: { backgroundColor: colors.forest },
+    dcellActive: { borderWidth: 2, borderColor: colors.rose },
     wd: {
       fontSize: 10.5,
       fontWeight: '700',
@@ -64,6 +56,7 @@ export default function CalendarStrip({
       letterSpacing: 0.3,
     },
     wdToday: { color: colors.cream },
+    wdActive: { color: colors.rose },
     dn: {
       fontFamily: fonts.num,
       fontWeight: '600',
@@ -72,42 +65,44 @@ export default function CalendarStrip({
       marginTop: 1,
     },
     dnToday: { color: colors.cream },
+    dnActive: { color: colors.rose },
+    extraDot: {
+      position: 'absolute',
+      bottom: 3,
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.rose,
+    },
+    extraDotAlt: { backgroundColor: colors.cream },
   }), [colors])
 
   const days = Array.from({ length: totalDays }, (_, i) => addDays(windowStart, i))
   const extraSet = new Set(extraDates)
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, dimmed && { opacity: 0.5 }]} pointerEvents={dimmed ? 'none' : 'auto'}>
       {days.map((date) => {
         const { day } = formatDay(date)
         const wd = weekdayShort(date)
         const isToday = date === today
         const hasExtra = extraSet.has(date)
+        const isActive = date === activeExtraDate
+        const alt = isToday || isActive
         return (
-          <View key={date} testID="day-cell" style={[styles.cell, { width: dayWidth }]}>
-            {hasExtra ? (
-              <TouchableOpacity
-                testID="extra-pill"
-                style={[styles.marker, styles.markerHas, date === activeExtraDate && styles.markerActive]}
-                onPress={() => onExtraPress(date)}
-              >
-                <View style={styles.innerDot} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                testID="add-extra"
-                style={[styles.marker, styles.markerEmpty]}
-                onPress={() => onExtraPress(date)}
-              >
-                <PlusIcon size={12} color={colors.rose} strokeWidth={2.8} />
-              </TouchableOpacity>
-            )}
-            <View style={[styles.dcell, isToday && styles.dcellToday]}>
-              <Text style={[styles.wd, isToday && styles.wdToday]}>{wd}</Text>
-              <Text style={[styles.dn, isToday && styles.dnToday]}>{day}</Text>
+          <TouchableOpacity
+            key={date}
+            testID="day-cell"
+            style={[styles.cell, { width: dayWidth }]}
+            onPress={() => onExtraPress(date)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.dcell, isToday && styles.dcellToday, isActive && !isToday && styles.dcellActive]}>
+              <Text style={[styles.wd, isToday && styles.wdToday, isActive && !isToday && styles.wdActive]}>{wd}</Text>
+              <Text style={[styles.dn, isToday && styles.dnToday, isActive && !isToday && styles.dnActive]}>{day}</Text>
+              {hasExtra && <View style={[styles.extraDot, alt && styles.extraDotAlt]} />}
             </View>
-          </View>
+          </TouchableOpacity>
         )
       })}
     </View>

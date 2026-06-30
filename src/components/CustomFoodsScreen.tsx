@@ -169,13 +169,13 @@ export default function CustomFoodsScreen({ visible, foods, onClose, onSave, onD
               </View>
               <View style={styles.field}>
                 <Text style={styles.fieldL}>Package weight (g)</Text>
-                <TextInput testID="cf-weight" style={styles.input} value={weight} onChangeText={setWeight} keyboardType="numeric" placeholder="—" placeholderTextColor={colors.mossFaint} selectTextOnFocus />
+                <TextInput testID="cf-weight" style={styles.input} value={weight} onChangeText={setWeight} keyboardType="numeric" placeholder="" placeholderTextColor={colors.mossFaint} selectTextOnFocus />
               </View>
               <View style={styles.macrosRow}>
                 {([['Protein', p, setP], ['Carbs', c, setC], ['Fat', f, setF]] as const).map(([label, val, set]) => (
                   <View style={styles.macroField} key={label}>
                     <Text style={styles.macroL}>{label}</Text>
-                    <TextInput style={styles.macroInput} value={val} onChangeText={set} keyboardType="numeric" placeholder="—" placeholderTextColor={colors.mossFaint} selectTextOnFocus />
+                    <TextInput style={styles.macroInput} value={val} onChangeText={set} keyboardType="numeric" placeholder="" placeholderTextColor={colors.mossFaint} selectTextOnFocus />
                   </View>
                 ))}
               </View>

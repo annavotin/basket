@@ -105,14 +105,22 @@ export default function BudgetBar({ mealPrepKcal, pantryKcal, extraKcal, budgetK
         <View style={[styles.fill, styles.amber, { width: pantryPct }]} testID="budget-bar-pantry-fill" />
         <View style={[styles.fill, styles.pink, { width: pinkPct }]} testID="budget-bar-extra-fill" />
       </View>
-      {/* Legend */}
+      {/* Legend — each source shows its kcal contribution so the total is traceable */}
       <View style={styles.legend}>
         <View style={[styles.dot, styles.green]} />
         <Text style={styles.legendText}>Meal prep</Text>
-        <View style={[styles.dot, styles.amber]} />
-        <Text style={styles.legendText}>Pantry</Text>
-        <View style={[styles.dot, styles.pink]} />
-        <Text style={styles.legendTextExtra}>Extra</Text>
+        {pantryKcal > 0 && (
+          <>
+            <View style={[styles.dot, styles.amber]} />
+            <Text style={styles.legendText}>Pantry</Text>
+          </>
+        )}
+        {extraKcal > 0 && (
+          <>
+            <View style={[styles.dot, styles.pink]} />
+            <Text style={styles.legendTextExtra}>Extra</Text>
+          </>
+        )}
       </View>
       {/* Macros: protein (terracotta) / carbs (amber) / fat (matchaDeep green) */}
       {macroDefs && (

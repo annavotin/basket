@@ -11,7 +11,7 @@ import { Product } from '../mockProducts'
 import { FoodItem, Macros, CustomFood } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
 import { useFoodSearch } from '../hooks/useFoodSearch'
-import { FoodSuggestion } from '../foods'
+import { FoodSuggestion, Serving } from '../foods'
 import { useColors } from '../styles/ThemeProvider'
 import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
@@ -44,6 +44,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const [manualKcal100, setManualKcal100] = useState('')
   const [emoji, setEmoji] = useState('🛒')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [servings, setServings] = useState<Serving[]>([])
+  const [servingIdx, setServingIdx] = useState<number | null>(null) // null = custom g input
   // Found scans open as a read-only summary; tapping Edit reveals the fields (and Remember).
   const [editing, setEditing] = useState(false)
 
@@ -283,6 +285,19 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     cancelText: {
       fontFamily: fonts.display, color: colors.moss, fontSize: 15,
     },
+
+    // ── Unit picker ───────────────────────────────────────────────────────────
+    unitRow: {
+      flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+      marginBottom: 10, marginTop: 6,
+    },
+    unitPill: {
+      paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+      borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white,
+    },
+    unitPillActive: { borderColor: colors.matcha, backgroundColor: colors.sageBg2 },
+    unitPillText: { fontFamily: fonts.display, fontSize: 13, color: colors.moss },
+    unitPillTextActive: { color: colors.matchaDeep, fontWeight: '700' as const },
   }), [colors])
 
   useEffect(() => {
@@ -299,6 +314,14 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       // While not editing, the numeric kcal drives the read-only summary; in edit mode it's
       // null so the editable `manualKcal100` string takes over (see effectivePer100g).
       setKcalPer100g(unknownWeight ? null : product.kcalPer100g)
+      const srvs = product.servings ?? []
+      setServings(srvs)
+      if (srvs.length > 0) {
+        setServingIdx(0)
+        setWeight(String(srvs[0].weightG))  // override the weight set above
+      } else {
+        setServingIdx(null)
+      }
     } else {
       setName('')
       setWeight('')
@@ -307,6 +330,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setEmoji('🛒')
       setManualKcal100('')
       setEditing(false)
+      setServings([])
+      setServingIdx(null)
     }
     setQty(1)
     setDropdownOpen(false)
@@ -335,9 +360,36 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setKcalPer100g(s.kcalPer100g)
     setEmoji(s.emoji)
     setMacrosPer100g(s.macrosPer100g)
-    if (s.packageWeightG) setWeight(String(s.packageWeightG))
+    const srvs = s.servings ?? []
+    setServings(srvs)
+    if (srvs.length > 0) {
+      setServingIdx(0)
+      setWeight(String(srvs[0].weightG))
+    } else {
+      setServingIdx(null)
+      if (s.packageWeightG) setWeight(String(s.packageWeightG))
+    }
     setDropdownOpen(false)
     Keyboard.dismiss()
+  }
+
+  // Weight is always stored in grams internally; display/input convert to the user's preferred unit.
+  const isOz = units.weight === 'oz'
+  const weightLabel = isOz ? 'Weight (oz)' : 'Weight (g)'
+  const weightPlaceholder = isOz ? '17.6' : '500'
+
+  function weightToDisplay(gStr: string): string {
+    if (!gStr) return ''
+    const g = parseFloat(gStr)
+    if (!Number.isFinite(g) || g === 0) return gStr
+    return isOz ? (g / 28.3495).toFixed(1) : gStr
+  }
+
+  function displayToGrams(displayStr: string): string {
+    if (!displayStr) return ''
+    const v = parseFloat(displayStr)
+    if (!Number.isFinite(v)) return ''
+    return isOz ? String(Math.round(v * 28.3495)) : displayStr
   }
 
   const effectivePer100g =
@@ -378,243 +430,263 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <DismissArea>
-          <View style={styles.backdrop}>
-            <ScrollView
-              style={styles.flex}
-              contentContainerStyle={{ justifyContent: 'flex-end', flexGrow: 1 }}
-              keyboardShouldPersistTaps="handled"
-            >
+          <View style={[styles.backdrop, { justifyContent: 'flex-end' }]}>
               <View style={styles.sheet} testID="add-item-sheet">
                 {/* Grab handle */}
                 <View style={styles.grab} />
 
-                {/* Edit affordance for a found scan (read-only summary by default) */}
-                {showEditButton && (
-                  <TouchableOpacity
-                    style={styles.editBtn}
-                    onPress={enterEdit}
-                    testID="edit-product-button"
-                    accessibilityLabel="Edit item"
-                  >
-                    <EditIcon size={13} color={colors.forest} />
-                    <Text style={styles.editBtnText}>Edit</Text>
-                  </TouchableOpacity>
-                )}
-
-                {/* Sheet header */}
-                <Text style={styles.sheetTitle}>
-                  {isManual ? 'Add to basket' : name}
-                </Text>
-                <Text style={styles.sheetDesc}>
-                  {isManual
-                    ? 'Scan, search a staple, or enter it yourself.'
-                    : `${emoji}  ·  ${kcalPer100g != null ? `${kcalPer100g} kcal/100g` : 'Scanned item'}`}
-                </Text>
-
-                {/* ── 1. SCAN ROW (manual mode only, when callbacks provided) ── */}
-                {showScanRow && (
-                  <View style={styles.scanRow}>
+                <View>
+                  {/* Edit affordance for a found scan (read-only summary by default) */}
+                  {showEditButton && (
                     <TouchableOpacity
-                      style={styles.scanBtn}
-                      onPress={() => { onClose(); onScanBarcode?.() }}
-                      accessibilityLabel="Scan barcode"
+                      style={styles.editBtn}
+                      onPress={enterEdit}
+                      testID="edit-product-button"
+                      accessibilityLabel="Edit item"
                     >
-                      <BarcodeIcon size={17} color={colors.white} />
-                      <Text style={styles.scanBtnText}>Scan barcode</Text>
+                      <EditIcon size={13} color={colors.forest} />
+                      <Text style={styles.editBtnText}>Edit</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.scanBtn, styles.scanBtnReceipt]}
-                      onPress={() => { onClose(); onScanReceipt?.() }}
-                      accessibilityLabel="Scan receipt"
-                    >
-                      <ReceiptIcon size={17} color={colors.white} />
-                      <Text style={styles.scanBtnText}>Scan receipt</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+                  )}
 
-                {/* ── 2. SEARCH BAR (manual mode) ── */}
-                {isManual && (
-                  <View style={styles.searchBar}>
-                    <Text style={styles.searchIcon}>🔍</Text>
-                    <TextInput
-                      testID="manual-name-input"
-                      style={styles.searchInput}
-                      placeholder="Search food or add your own…"
-                      placeholderTextColor={colors.mossFaint}
-                      value={name}
-                      onChangeText={handleNameChange}
-                      returnKeyType="done"
-                      autoCorrect={false}
-                    />
-                    {name.length > 0 && (
-                      <TouchableOpacity
-                        style={styles.searchClear}
-                        onPress={() => {
-                          setName('')
-                          setKcalPer100g(null)
-                          setEmoji('🛒')
-                          setDropdownOpen(false)
-                        }}
-                      >
-                        <Text style={styles.searchClearText}>✕</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                  {/* Sheet header */}
+                  <Text style={styles.sheetTitle}>
+                    {isManual ? 'Add to batch' : name}
+                  </Text>
+                  <Text style={styles.sheetDesc}>
+                    {isManual
+                      ? 'Scan, search a staple, or enter it yourself.'
+                      : `${emoji}  ·  ${kcalPer100g != null ? `${kcalPer100g} kcal/100g` : 'Scanned item'}`}
+                  </Text>
 
-                {/* ── 3. SUGGESTION LIST ── */}
-                {isManual && dropdownOpen && (suggestions.length > 0 || loading) && (
-                  <ScrollView
-                    style={styles.suggestionList}
-                    keyboardShouldPersistTaps="handled"
-                    nestedScrollEnabled
-                  >
-                    {suggestions.length === 0 && loading && (
-                      <Text style={styles.searching} testID="suggestions-loading">
-                        Searching…
-                      </Text>
-                    )}
-                    {suggestions.map((s, i) => (
-                      <TouchableOpacity
-                        key={`${s.source}-${s.name}-${i}`}
-                        testID="suggestion-row"
-                        style={styles.suggestionCard}
-                        onPress={() => pick(s)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.suggestionAv}>
-                          <Text style={styles.suggestionEmoji}>{s.emoji}</Text>
-                        </View>
-                        <View style={styles.suggestionTx}>
-                          <Text style={styles.suggestionName} numberOfLines={1}>{s.name}</Text>
-                          <Text style={styles.suggestionMeta} numberOfLines={1}>
-                            {s.packageWeightG
-                              ? <><Text style={styles.suggestionMetaNum}>{s.packageWeightG}</Text>{' g · '}<Text style={styles.suggestionMetaNum}>{kcalForWeight(s.kcalPer100g, s.packageWeightG)}</Text>{' kcal'}</>
-                              : <><Text style={styles.suggestionMetaNum}>{s.kcalPer100g}</Text>{' kcal/100g'}</>
-                            }
-                            {s.source === 'off' ? '  · OFF' : ''}
-                          </Text>
-                        </View>
-                        <View style={styles.suggestionAdd}>
-                          <PlusIcon size={18} color={colors.white} strokeWidth={2.6} />
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
-
-                {/* ── 4. CUSTOM-ADD CARD (manual, no suggestion picked) ── */}
-                {isManual && kcalPer100g == null && (
-                  <View style={styles.customCard}>
-                    <View style={styles.customCardHeader}>
-                      <View style={styles.customCardAv}>
-                        <Text style={styles.customCardEmoji}>{emoji}</Text>
-                      </View>
-                      <Text style={styles.customCardName} numberOfLines={1}>
-                        {name.trim() ? `Add "${name.trim()}"` : 'Enter details below'}
-                      </Text>
-                    </View>
-
-                    {/* Weight input inside custom card */}
-                    <View style={styles.fieldRow}>
-                      <View style={styles.field}>
-                        <Text style={styles.fieldLabel}>Weight (g)</Text>
-                        <TextInput
-                          testID="weight-input"
-                          style={styles.fieldInput}
-                          keyboardType="numeric"
-                          value={weight}
-                          onChangeText={setWeight}
-                          returnKeyType="done"
-                          placeholderTextColor={colors.mossFaint}
-                          placeholder="500"
-                        />
-                      </View>
-                      <View style={styles.field}>
-                        <Text style={styles.fieldLabel}>Calories (per 100g)</Text>
-                        <TextInput
-                          testID="kcal-per-100g-input"
-                          style={styles.fieldInput}
-                          keyboardType="numeric"
-                          value={manualKcal100}
-                          onChangeText={setManualKcal100}
-                          returnKeyType="done"
-                          placeholderTextColor={colors.mossFaint}
-                          placeholder="320"
-                        />
-                      </View>
-                    </View>
-                  </View>
-                )}
-
-                {/* ── 5. SCANNED PRODUCT SUMMARY (read-only default view) ── */}
-                {!isManual && !editing && (
-                  <View style={styles.productSummary}>
-                    <View style={styles.productAv}>
-                      <Text style={styles.productEmoji}>{emoji}</Text>
-                    </View>
-                    <View style={styles.productTx}>
-                      <Text style={styles.productName}>{name}</Text>
-                      {kcalPer100g != null && (
-                        <Text style={styles.productMeta}>{kcalPer100g} kcal / 100g</Text>
+                  {/* ── 2. SEARCH BAR (manual mode) ── */}
+                  {isManual && (
+                    <View style={styles.searchBar}>
+                      <Text style={styles.searchIcon}>🔍</Text>
+                      <TextInput
+                        testID="manual-name-input"
+                        style={styles.searchInput}
+                        placeholder="Search food or add your own…"
+                        placeholderTextColor={colors.mossFaint}
+                        value={name}
+                        onChangeText={handleNameChange}
+                        returnKeyType="done"
+                        autoCorrect={false}
+                      />
+                      {name.length > 0 && (
+                        <TouchableOpacity
+                          style={styles.searchClear}
+                          onPress={() => {
+                            setName('')
+                            setKcalPer100g(null)
+                            setEmoji('🛒')
+                            setDropdownOpen(false)
+                          }}
+                        >
+                          <Text style={styles.searchClearText}>✕</Text>
+                        </TouchableOpacity>
                       )}
                     </View>
-                    <View>
-                      <Text style={styles.productKcal}>
-                        {perUnitKcal > 0 ? formatEnergy(perUnitKcal, units) : '—'}
-                      </Text>
-                      <Text style={styles.productKcalSmall}>KCAL</Text>
+                  )}
+
+                  {/* ── 3. SUGGESTION LIST ── */}
+                  {isManual && dropdownOpen && (suggestions.length > 0 || loading) && (
+                    <ScrollView
+                      style={styles.suggestionList}
+                      keyboardShouldPersistTaps="handled"
+                      nestedScrollEnabled
+                    >
+                      {suggestions.length === 0 && loading && (
+                        <Text style={styles.searching} testID="suggestions-loading">
+                          Searching…
+                        </Text>
+                      )}
+                      {suggestions.map((s, i) => (
+                        <TouchableOpacity
+                          key={`${s.source}-${s.name}-${i}`}
+                          testID="suggestion-row"
+                          style={styles.suggestionCard}
+                          onPress={() => pick(s)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.suggestionAv}>
+                            <Text style={styles.suggestionEmoji}>{s.emoji}</Text>
+                          </View>
+                          <View style={styles.suggestionTx}>
+                            <Text style={styles.suggestionName} numberOfLines={1}>{s.name}</Text>
+                            <Text style={styles.suggestionMeta} numberOfLines={1}>
+                              {s.packageWeightG
+                                ? <><Text style={styles.suggestionMetaNum}>{s.packageWeightG}</Text>{' g · '}<Text style={styles.suggestionMetaNum}>{kcalForWeight(s.kcalPer100g, s.packageWeightG)}</Text>{' kcal'}</>
+                                : <><Text style={styles.suggestionMetaNum}>{s.kcalPer100g}</Text>{' kcal/100g'}</>
+                              }
+                              {s.source === 'off' ? '  · OFF' : ''}
+                            </Text>
+                          </View>
+                          <View style={styles.suggestionAdd}>
+                            <PlusIcon size={18} color={colors.white} strokeWidth={2.6} />
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+
+                  {/* ── 4. CUSTOM-ADD CARD (manual, no suggestion picked) ── */}
+                  {isManual && kcalPer100g == null && (
+                    <View style={styles.customCard}>
+                      {/* Weight input inside custom card */}
+                      <View style={styles.fieldRow}>
+                        <View style={styles.field}>
+                          <Text style={styles.fieldLabel}>{weightLabel}</Text>
+                          <TextInput
+                            testID="weight-input"
+                            style={styles.fieldInput}
+                            keyboardType="decimal-pad"
+                            value={weightToDisplay(weight)}
+                            onChangeText={(t) => setWeight(displayToGrams(t))}
+                            returnKeyType="done"
+                            placeholderTextColor={colors.mossFaint}
+                            placeholder={weightPlaceholder}
+                          />
+                        </View>
+                        <View style={styles.field}>
+                          <Text style={styles.fieldLabel}>Calories (per 100g)</Text>
+                          <TextInput
+                            testID="kcal-per-100g-input"
+                            style={styles.fieldInput}
+                            keyboardType="numeric"
+                            value={manualKcal100}
+                            onChangeText={setManualKcal100}
+                            returnKeyType="done"
+                            placeholderTextColor={colors.mossFaint}
+                            placeholder="320"
+                          />
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
 
-                {/* ── 5b. EDIT FORM — Name (found scan, after tapping Edit) ── */}
-                {!isManual && editing && (
-                  <>
-                    <Text style={styles.sectionLabel}>Name</Text>
-                    <TextInput
-                      testID="edit-name-input"
-                      style={styles.weightInput}
-                      value={name}
-                      onChangeText={setName}
-                      returnKeyType="done"
-                      placeholderTextColor={colors.mossFaint}
-                    />
-                  </>
-                )}
+                  {/* ── 5. SCANNED PRODUCT SUMMARY (read-only default view) ── */}
+                  {!isManual && !editing && (
+                    <View style={styles.productSummary}>
+                      <View style={styles.productAv}>
+                        <Text style={styles.productEmoji}>{emoji}</Text>
+                      </View>
+                      <View style={styles.productTx}>
+                        <Text style={styles.productName}>{name}</Text>
+                        {kcalPer100g != null && (
+                          <Text style={styles.productMeta}>{kcalPer100g} kcal / 100g</Text>
+                        )}
+                      </View>
+                      <View>
+                        <Text style={styles.productKcal}>
+                          {perUnitKcal > 0 ? formatEnergy(perUnitKcal, units) : ''}
+                        </Text>
+                        <Text style={styles.productKcalSmall}>KCAL</Text>
+                      </View>
+                    </View>
+                  )}
 
-                {/* ── WEIGHT input (manual after a pick, or a found scan in edit mode) ── */}
-                {((isManual && kcalPer100g != null) || (!isManual && editing)) && (
-                  <>
-                    <Text style={styles.sectionLabel}>Weight (g)</Text>
-                    <TextInput
-                      testID="weight-input"
-                      style={styles.weightInput}
-                      keyboardType="numeric"
-                      value={weight}
-                      onChangeText={setWeight}
-                      returnKeyType="done"
-                      placeholderTextColor={colors.mossFaint}
-                    />
-                  </>
-                )}
+                  {/* ── 5b-unit. UNIT PICKER (scanned read-only view, when servings available) ── */}
+                  {!isManual && !editing && servings.length > 0 && (
+                    <View style={styles.unitRow}>
+                      {servings.map((s, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          style={[styles.unitPill, servingIdx === i && styles.unitPillActive]}
+                          onPress={() => { setServingIdx(i); setWeight(String(s.weightG)) }}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={[styles.unitPillText, servingIdx === i && styles.unitPillTextActive]}>
+                            {s.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      <TouchableOpacity
+                        style={[styles.unitPill, servingIdx === null && styles.unitPillActive]}
+                        onPress={() => setServingIdx(null)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[styles.unitPillText, servingIdx === null && styles.unitPillTextActive]}>
+                          Custom ({isOz ? 'oz' : 'g'})
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
-                {/* ── CALORIES input (found scan in edit mode) ── */}
-                {!isManual && editing && (
-                  <>
-                    <Text style={styles.sectionLabel}>Calories (per 100g)</Text>
-                    <TextInput
-                      testID="kcal-per-100g-input"
-                      style={styles.weightInput}
-                      keyboardType="numeric"
-                      value={manualKcal100}
-                      onChangeText={setManualKcal100}
-                      returnKeyType="done"
-                      placeholderTextColor={colors.mossFaint}
-                    />
-                  </>
-                )}
+                  {/* ── 5b. EDIT FORM — Name (found scan, after tapping Edit) ── */}
+                  {!isManual && editing && (
+                    <>
+                      <Text style={styles.sectionLabel}>Name</Text>
+                      <TextInput
+                        testID="edit-name-input"
+                        style={styles.weightInput}
+                        value={name}
+                        onChangeText={setName}
+                        returnKeyType="done"
+                        placeholderTextColor={colors.mossFaint}
+                      />
+                    </>
+                  )}
+
+                  {/* ── WEIGHT input (manual after a pick) ── */}
+                  {isManual && kcalPer100g != null && (
+                    <View style={styles.unitRow}>
+                      {servings.map((s, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          style={[styles.unitPill, servingIdx === i && styles.unitPillActive]}
+                          onPress={() => { setServingIdx(i); setWeight(String(s.weightG)) }}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={[styles.unitPillText, servingIdx === i && styles.unitPillTextActive]}>
+                            {s.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      {servings.length > 0 && (
+                        <TouchableOpacity
+                          style={[styles.unitPill, servingIdx === null && styles.unitPillActive]}
+                          onPress={() => setServingIdx(null)}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={[styles.unitPillText, servingIdx === null && styles.unitPillTextActive]}>
+                            Custom ({isOz ? 'oz' : 'g'})
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                  {((isManual && kcalPer100g != null && servingIdx === null) || (!isManual && editing)) && (
+                    <>
+                      <Text style={styles.sectionLabel}>{weightLabel}</Text>
+                      <TextInput
+                        testID="weight-input"
+                        style={styles.weightInput}
+                        keyboardType="decimal-pad"
+                        value={weightToDisplay(weight)}
+                        onChangeText={(t) => setWeight(displayToGrams(t))}
+                        returnKeyType="done"
+                        placeholderTextColor={colors.mossFaint}
+                      />
+                    </>
+                  )}
+
+                  {/* ── CALORIES input (found scan in edit mode) ── */}
+                  {!isManual && editing && (
+                    <>
+                      <Text style={styles.sectionLabel}>Calories (per 100g)</Text>
+                      <TextInput
+                        testID="kcal-per-100g-input"
+                        style={styles.weightInput}
+                        keyboardType="numeric"
+                        value={manualKcal100}
+                        onChangeText={setManualKcal100}
+                        returnKeyType="done"
+                        placeholderTextColor={colors.mossFaint}
+                      />
+                    </>
+                  )}
+                </View>
 
                 {/* ── QUANTITY ── */}
                 <View style={styles.qtyRow}>
@@ -679,7 +751,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-            </ScrollView>
           </View>
         </DismissArea>
       </KeyboardAvoidingView>

@@ -19,17 +19,15 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
-      backgroundColor: colors.detailBackground,
-      borderTopLeftRadius: 20, borderTopRightRadius: 20,
       paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32,
     },
     seclbl: {
-      flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between',
-      paddingTop: 4, paddingBottom: 11,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      marginBottom: 12,
     },
-    seclblTitle: { fontFamily: fonts.head, fontSize: 18, color: colors.forest },
+    seclblTitle: { fontFamily: fonts.head, fontWeight: '700', fontSize: 18, color: colors.forest },
     seclblCount: { fontFamily: fonts.display, fontSize: 12, fontWeight: '700', color: colors.moss },
-    empty: { fontSize: 14, color: colors.moss, marginTop: 8 },
+    empty: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.mossFaint, marginTop: 8 },
   }), [colors])
 
   return (
@@ -41,7 +39,7 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
         )}
       </View>
       {extras.length === 0 ? (
-        <Text style={styles.empty}>No extra meals in this period — tap ＋ to add one.</Text>
+        <Text style={styles.empty}>No extra meals in this period. Tap ＋ to add one.</Text>
       ) : (
         <View>
           {extras.map((e) => {

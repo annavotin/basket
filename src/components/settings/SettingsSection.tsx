@@ -54,7 +54,7 @@ export default function SettingsSection({ label, hint, children }: SettingsSecti
 
   return (
     <View style={styles.section}>
-      <Text style={styles.label}>{label}</Text>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.card}>
         {childArray.map((child, i) => (
           <React.Fragment key={i}>

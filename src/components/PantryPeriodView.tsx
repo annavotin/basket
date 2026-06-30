@@ -21,29 +21,31 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantr
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
-      backgroundColor: colors.white,
-      borderTopLeftRadius: 20, borderTopRightRadius: 20,
       paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32,
     },
     header: {
-      fontFamily: fonts.display,
-      fontSize: 15,
-      color: colors.forest,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       marginBottom: 12,
     },
+    headerTitle: {
+      fontFamily: fonts.head, fontWeight: '700', fontSize: 18, color: colors.forest,
+    },
+    headerMeta: {
+      fontFamily: fonts.display, fontSize: 12, fontWeight: '700', color: colors.moss,
+    },
     empty: {
-      fontFamily: fonts.body,
-      fontSize: 14,
-      color: colors.moss,
-      marginTop: 8,
+      fontFamily: fonts.bodySemi, fontSize: 14, color: colors.mossFaint, marginTop: 8,
     },
   }), [colors])
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Pantry · {cycleDays} days</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Pantry staples</Text>
+        <Text style={styles.headerMeta}>{cycleDays} days</Text>
+      </View>
       {pantry.length === 0 ? (
-        <Text style={styles.empty}>No pantry staples yet — add them from the Pantry settings.</Text>
+        <Text style={styles.empty}>No pantry staples yet. Add them from the Pantry settings.</Text>
       ) : (
         <View>
           {pantry.map((item) => {

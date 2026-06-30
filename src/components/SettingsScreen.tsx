@@ -1,23 +1,25 @@
 import React, { useMemo, useState } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity, ScrollView,
-  SafeAreaView, StyleSheet, Linking,
+  SafeAreaView, StyleSheet, Linking, Animated,
 } from 'react-native'
+import { useSlideIn } from '../hooks/useSlideIn'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { Preferences } from '../types'
 import { Account, AuthService } from '../services/auth'
 import SettingsSection from './settings/SettingsSection'
 import SettingsRow from './settings/SettingsRow'
+import CustomFoodsScreen from './CustomFoodsScreen'
 import Stepper from './settings/Stepper'
 import Segmented from './settings/Segmented'
 import ConfirmDialog from './settings/ConfirmDialog'
 import AuthSheet from './settings/AuthSheet'
 import ChangePasswordSheet from './settings/ChangePasswordSheet'
 
-// TODO: swap for real hosted pages before App Store submission.
-const PRIVACY_URL = 'https://basket.app/privacy'
-const TERMS_URL = 'https://basket.app/terms'
+const PRIVACY_URL = 'https://annavotin.github.io/batch-app/privacy.html'
+const TERMS_URL = 'https://annavotin.github.io/batch-app/terms.html'
+const FEEDBACK_URL = 'https://forms.gle/vWmeYtEisCDVE4mU6'
 
 type SyncStatus = 'synced' | 'syncing' | 'offline' | 'error'
 
@@ -30,7 +32,9 @@ type Props = {
   onDailyGoal: (n: number) => void
   onExport: () => void
   onClearAll: () => void
-  onOpenMyFoods?: () => void
+  customFoods?: import('../types').CustomFood[]
+  onSaveFood?: (food: import('../types').CustomFood) => void
+  onDeleteFood?: (id: string) => void
   // Account/auth props
   account?: Account | null
   onAuthed?: (a: Account) => void
@@ -45,14 +49,14 @@ function syncLabel(sync: SyncStatus): string {
   switch (sync) {
     case 'synced': return 'Synced just now'
     case 'syncing': return 'Syncing…'
-    case 'offline': return 'Offline — will sync later'
-    case 'error': return 'Sync error — tap to retry'
+    case 'offline': return 'Offline, will sync later'
+    case 'error': return 'Sync error, tap to retry'
   }
 }
 
 export default function SettingsScreen({
   visible, onClose, prefs, setPrefs, dailyGoal, onDailyGoal, onExport, onClearAll,
-  onOpenMyFoods,
+  customFoods = [], onSaveFood, onDeleteFood,
   account = null,
   onAuthed = () => {},
   onSignOut = () => {},
@@ -62,11 +66,13 @@ export default function SettingsScreen({
   version = '1.0.0',
 }: Props) {
   const colors = useColors()
+  const slideX = useSlideIn(visible)
   const [confirmClear, setConfirmClear] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [authVisible, setAuthVisible] = useState(false)
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
   const [changePwVisible, setChangePwVisible] = useState(false)
+  const [myFoodsVisible, setMyFoodsVisible] = useState(false)
 
   const styles = useMemo(() => StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.sageBg },
@@ -261,7 +267,8 @@ export default function SettingsScreen({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="none" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <Animated.View style={[{ flex: 1 }, { transform: [{ translateX: slideX }] }]}>
       <SafeAreaView style={styles.screen} testID="settings-screen">
         <View style={styles.topBar}>
           <TouchableOpacity testID="settings-close" onPress={onClose} style={styles.backBtn}>
@@ -289,16 +296,14 @@ export default function SettingsScreen({
                 <Text testID="sync-status" style={styles.syncText}>{syncLabel(sync)}</Text>
               </View>
               <View>
-                <SettingsRow icon="🔑" label="Change password" chevron onPress={() => setChangePwVisible(true)} />
+                <SettingsRow label="Change password" chevron onPress={() => setChangePwVisible(true)} />
                 <SettingsRow
                   testID="account-signout"
-                  icon="🚪"
                   label="Sign out"
                   onPress={onSignOut}
                 />
                 <SettingsRow
                   testID="account-delete"
-                  icon="🗑️"
                   label="Delete account"
                   danger
                   onPress={() => setConfirmDelete(true)}
@@ -310,7 +315,7 @@ export default function SettingsScreen({
               {/* Soft radial highlight top-right */}
               <View style={styles.signInHighlight} pointerEvents="none" />
               <View style={styles.signInText}>
-                <Text style={styles.signInTitle}>Sign in to Basket</Text>
+                <Text style={styles.signInTitle}>Sign in to Batch</Text>
                 <Text style={styles.signInSub}>Sync your data across devices</Text>
               </View>
               <View style={styles.signInBtns}>
@@ -332,10 +337,8 @@ export default function SettingsScreen({
             </View>
           )}
 
-          {/* Profile */}
-          <SettingsSection label="Profile">
+          <SettingsSection label="">
             <SettingsRow
-              icon="🙂"
               label="Display name"
               right={
                 <TextInput
@@ -348,34 +351,22 @@ export default function SettingsScreen({
                 />
               }
             />
-            <SettingsRow
-              icon="🖼️"
-              label="Avatar"
-              value="Optional"
-              chevron
-              onPress={() => {}}
-            />
           </SettingsSection>
 
           {/* Library */}
           <SettingsSection label="Library">
             <SettingsRow
               testID="open-my-foods"
-              icon="🥣"
               label="My Foods"
               value="Saved items & barcodes"
               chevron
-              onPress={onOpenMyFoods}
+              onPress={() => setMyFoodsVisible(true)}
             />
           </SettingsSection>
 
           {/* Goals */}
-          <SettingsSection
-            label="Goals"
-            hint="Your daily budget × the days in each prep sets the basket target."
-          >
+          <SettingsSection label="Goals">
             <SettingsRow
-              icon="🔥"
               label="Daily goal"
               right={
                 <Stepper
@@ -390,7 +381,6 @@ export default function SettingsScreen({
               }
             />
             <SettingsRow
-              icon="🥩"
               label="Protein"
               right={
                 <Stepper
@@ -404,7 +394,6 @@ export default function SettingsScreen({
               }
             />
             <SettingsRow
-              icon="🍞"
               label="Carbs"
               right={
                 <Stepper
@@ -418,7 +407,6 @@ export default function SettingsScreen({
               }
             />
             <SettingsRow
-              icon="🥑"
               label="Fat"
               right={
                 <Stepper
@@ -434,12 +422,8 @@ export default function SettingsScreen({
           </SettingsSection>
 
           {/* Meal prep */}
-          <SettingsSection
-            label="Meal prep"
-            hint="New prep periods start at this length."
-          >
+          <SettingsSection label="Meal prep">
             <SettingsRow
-              icon="📆"
               label="Default period length"
               right={
                 <Stepper
@@ -458,7 +442,6 @@ export default function SettingsScreen({
           {/* Units */}
           <SettingsSection label="Units">
             <SettingsRow
-              icon="⚖️"
               label="Weight"
               right={
                 <Segmented
@@ -470,7 +453,6 @@ export default function SettingsScreen({
               }
             />
             <SettingsRow
-              icon="⚡"
               label="Energy"
               right={
                 <Segmented
@@ -486,7 +468,6 @@ export default function SettingsScreen({
           {/* Appearance */}
           <SettingsSection label="Appearance">
             <SettingsRow
-              icon="🎨"
               label="Theme"
               right={
                 <Segmented
@@ -506,7 +487,6 @@ export default function SettingsScreen({
           {/* Data */}
           <SettingsSection label="Data">
             <SettingsRow
-              icon="📤"
               label="Export data"
               sub="Share a JSON backup"
               chevron
@@ -514,7 +494,6 @@ export default function SettingsScreen({
               testID="export-data"
             />
             <SettingsRow
-              icon="🧨"
               label="Clear all data"
               danger
               onPress={() => setConfirmClear(true)}
@@ -524,18 +503,10 @@ export default function SettingsScreen({
 
           {/* About */}
           <SettingsSection label="About">
-            <SettingsRow icon="📦" label="Version" value={version} />
-            <SettingsRow icon="💬" label="Send feedback" chevron onPress={() => {}} />
-            <SettingsRow icon="⭐" label="Rate the app" chevron onPress={() => {}} />
-            <SettingsRow icon="⚖️" label="Open-source licenses" chevron onPress={() => {}} />
-            <SettingsRow icon="🔒" label="Privacy Policy" chevron onPress={() => Linking.openURL(PRIVACY_URL)} />
-            <SettingsRow icon="📄" label="Terms of Service" chevron onPress={() => Linking.openURL(TERMS_URL)} />
-            <SettingsRow
-              label="Realtime sync"
-              badge="Soon"
-              disabled
-              value="Coming soon"
-            />
+            <SettingsRow label="Version" value={version} />
+            <SettingsRow label="Send feedback" chevron onPress={() => Linking.openURL(FEEDBACK_URL)} />
+            <SettingsRow label="Privacy Policy" chevron onPress={() => Linking.openURL(PRIVACY_URL)} />
+            <SettingsRow label="Terms of Service" chevron onPress={() => Linking.openURL(TERMS_URL)} />
           </SettingsSection>
 
         </ScrollView>
@@ -583,6 +554,15 @@ export default function SettingsScreen({
         onClose={() => setChangePwVisible(false)}
         auth={authService}
       />
+
+      <CustomFoodsScreen
+        visible={myFoodsVisible}
+        foods={customFoods}
+        onClose={() => setMyFoodsVisible(false)}
+        onSave={(food) => onSaveFood?.(food)}
+        onDelete={(id) => onDeleteFood?.(id)}
+      />
+      </Animated.View>
     </Modal>
   )
 }

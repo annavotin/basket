@@ -11,7 +11,7 @@ export const OFF_USER_AGENT = 'basket-mealprep/1.0 (contact@example.com)'
 // it. Do NOT also list bare `proteins_100g`/`carbohydrates_100g`/`fat_100g`: OFF's API
 // treats those as top-level fields, flattens them, and then OMITS the `nutriments`
 // object entirely — which drops `energy-kcal_100g` and makes every lookup miss.
-const FIELDS = 'product_name,brands,product_quantity,quantity,nutriments'
+const FIELDS = 'product_name,brands,product_quantity,quantity,nutriments,serving_quantity,serving_size'
 const BASE = 'https://world.openfoodfacts.org/api/v2/product'
 
 const offHeaders: Record<string, string> = { 'User-Agent': OFF_USER_AGENT }
@@ -34,6 +34,22 @@ function macrosFrom(nutriments: any): Macros | undefined {
   const p = nutriments?.proteins_100g, c = nutriments?.carbohydrates_100g, f = nutriments?.fat_100g
   if ([p, c, f].some((n) => typeof n !== 'number')) return undefined
   return { protein: p, carbs: c, fat: f }
+}
+
+function parseServingOFF(p: any): import('../foods').Serving | null {
+  const qty = parseFloat(p?.serving_quantity)
+  if (!Number.isFinite(qty) || qty <= 0) return null
+  const rawLabel: string = typeof p?.serving_size === 'string' ? p.serving_size.trim() : ''
+  if (!rawLabel) return null
+  // Strip trailing gram annotations like " (30g)", " / 30g", " 30g", " (30 g)"
+  const cleaned = rawLabel
+    .replace(/\s*\/\s*[\d.,]+\s*g\b/gi, '')
+    .replace(/\s*\([\d.,]+\s*g\)/gi, '')
+    .replace(/\s+[\d.,]+\s*g\b/gi, '')
+    .trim()
+  // If what remains is just a number+unit or empty, it's not a useful label
+  if (!cleaned || /^[\d.,]+\s*(g|ml|kg|l)?$/i.test(cleaned)) return null
+  return { label: cleaned, weightG: Math.round(qty) }
 }
 
 function packageWeightFrom(p: any): number | undefined {
@@ -75,7 +91,8 @@ export async function lookupProductByBarcode(
         ? p.product_name.trim()
         : `Product ${barcode}`
 
-    return { name, emoji: '🛒', packageWeightG, kcalPer100g: roundTenth(kcalPer100g), macrosPer100g: macrosFrom(p.nutriments) }
+    const serving = parseServingOFF(p)
+    return { name, emoji: '🛒', packageWeightG, kcalPer100g: roundTenth(kcalPer100g), macrosPer100g: macrosFrom(p.nutriments), servings: serving ? [serving] : undefined }
   } catch {
     return null
   }
@@ -101,7 +118,7 @@ export async function searchProductsByName(
   try {
     const url =
       `https://search.openfoodfacts.org/search?q=${encodeURIComponent(query)}` +
-      `&fields=product_name,nutriments,product_quantity&page_size=15`
+      `&fields=product_name,nutriments,product_quantity,serving_quantity,serving_size&page_size=15`
     const res = await deps.fetch(url, { headers: offHeaders })
     if (!res || !res.ok) return []
     const json: any = await res.json()
@@ -111,7 +128,8 @@ export async function searchProductsByName(
       const kcalPer100g = p?.nutriments?.['energy-kcal_100g']
       const name = typeof p?.product_name === 'string' ? p.product_name.trim() : ''
       if (typeof kcalPer100g !== 'number' || kcalPer100g <= 0 || !name) continue
-      out.push({ name, emoji: '🛒', kcalPer100g: roundTenth(kcalPer100g), packageWeightG: packageWeightFrom(p), source: 'off', macrosPer100g: macrosFrom(p?.nutriments) })
+      const serving = parseServingOFF(p)
+      out.push({ name, emoji: '🛒', kcalPer100g: roundTenth(kcalPer100g), packageWeightG: packageWeightFrom(p), source: 'off', macrosPer100g: macrosFrom(p?.nutriments), servings: serving ? [serving] : undefined })
     }
     return out
   } catch {
