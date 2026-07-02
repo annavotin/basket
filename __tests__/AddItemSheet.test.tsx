@@ -49,14 +49,19 @@ describe('AddItemSheet — scanned mode', () => {
 })
 
 describe('AddItemSheet — manual mode', () => {
-  it('autofills name + kcal from a tapped local suggestion', async () => {
+  it('shows a summary with an Edit button after picking a suggestion, then reveals editable fields', async () => {
     const onAdd = jest.fn()
-    const { getByTestId, getByText } = render(
+    const { getByTestId, getByText, queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
     await waitFor(() => getByText('Banana'))
     fireEvent.press(getByText('Banana'))
+    // Summary first: no editable weight field yet, but an Edit button is present.
+    expect(queryByTestId('weight-input')).toBeNull()
+    expect(getByTestId('edit-product-button')).toBeTruthy()
+    fireEvent.press(getByTestId('edit-product-button'))
+    expect(queryByTestId('edit-product-button')).toBeNull() // hides once editing
     // Banana ships a "per banana" serving, so it opens on that unit pill;
     // switch to Custom (g) to enter an arbitrary weight.
     fireEvent.press(getByText('Custom (g)'))
@@ -66,11 +71,11 @@ describe('AddItemSheet — manual mode', () => {
       expect.objectContaining({
         name: 'Banana', weightG: 120, kcal: 107, quantity: 1, source: 'manual',
       }),
-      { save: true }
+      { save: true } // weight change makes it dirty -> saved
     )
   })
 
-  it('prefills macros from a tapped suggestion and shows them editable', async () => {
+  it('prefills macros from a tapped suggestion, editable after tapping Edit', async () => {
     const onAdd = jest.fn()
     const { getByTestId, getByText } = render(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
@@ -78,10 +83,19 @@ describe('AddItemSheet — manual mode', () => {
     fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
     await waitFor(() => getByText('Banana'))
     fireEvent.press(getByText('Banana'))
-    // Banana ships a "per banana" serving, so it opens on that unit pill;
-    // switch to Custom (g) to enter an arbitrary weight.
+    fireEvent.press(getByTestId('edit-product-button'))
     fireEvent.press(getByText('Custom (g)'))
     expect(getByTestId('nf-protein').props.value).not.toBe('')
+  })
+
+  it('shows the weight per pack in the summary before editing', async () => {
+    const { getByTestId, getByText } = render(
+      <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
+    await waitFor(() => getByText('Banana'))
+    fireEvent.press(getByText('Banana'))
+    expect(getByText(/per pack/)).toBeTruthy()
   })
 
   it('shows a calories-per-100g field for a free item with no match and uses it', () => {

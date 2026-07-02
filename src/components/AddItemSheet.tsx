@@ -374,6 +374,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setEmoji(s.emoji)
     setMacrosPer100g(s.macrosPer100g)
     setPickedSuggestion(true)
+    setEditing(false)
     const srvs = s.servings ?? []
     setServings(srvs)
     const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (s.packageWeightG || 0)
@@ -413,7 +414,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const perUnitKcal = effectivePer100g != null ? kcalForWeight(effectivePer100g, weightNum) : 0
   // Guard against silently adding an empty/garbage item.
   const canAdd = weightNum > 0 && name.trim().length > 0
-  const showEditButton = scanned && !isManual && !editing
+  const showEditButton = (scanned && !isManual && !editing) || (isManual && pickedSuggestion && !editing)
   // True once there's something to act on: a product/suggestion is chosen, an active scan
   // is in flight (found or not), or the user has started typing their own item.
   const hasTypedOrChosen = !isManual || pickedSuggestion || scanned || name.trim().length > 0
@@ -595,17 +596,19 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     </View>
                   )}
 
-                  {/* ── 5. SCANNED PRODUCT SUMMARY (read-only default view) ── */}
-                  {!isManual && !editing && (
+                  {/* ── 5. FOOD SUMMARY (read-only default view — scanned, or a picked suggestion) ── */}
+                  {((!isManual || pickedSuggestion) && !editing) && (
                     <View style={styles.productSummary}>
                       <View style={styles.productAv}>
                         <Text style={styles.productEmoji}>{emoji}</Text>
                       </View>
                       <View style={styles.productTx}>
                         <Text style={styles.productName}>{name}</Text>
-                        {kcalPer100g != null && (
-                          <Text style={styles.productMeta}>{kcalPer100g} kcal / 100g</Text>
-                        )}
+                        <Text style={styles.productMeta}>
+                          {weightNum > 0 ? `${weightToDisplay(weight)} ${isOz ? 'oz' : 'g'} per pack` : ''}
+                          {weightNum > 0 && kcalPer100g != null ? '  ·  ' : ''}
+                          {kcalPer100g != null ? `${kcalPer100g} kcal/100g` : ''}
+                        </Text>
                       </View>
                       <View>
                         <Text style={styles.productKcal}>
@@ -613,33 +616,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                         </Text>
                         <Text style={styles.productKcalSmall}>KCAL</Text>
                       </View>
-                    </View>
-                  )}
-
-                  {/* ── 5b-unit. UNIT PICKER (scanned read-only view, when servings available) ── */}
-                  {!isManual && !editing && servings.length > 0 && (
-                    <View style={styles.unitRow}>
-                      {servings.map((s, i) => (
-                        <TouchableOpacity
-                          key={i}
-                          style={[styles.unitPill, servingIdx === i && styles.unitPillActive]}
-                          onPress={() => { setServingIdx(i); setWeight(String(s.weightG)) }}
-                          activeOpacity={0.75}
-                        >
-                          <Text style={[styles.unitPillText, servingIdx === i && styles.unitPillTextActive]}>
-                            {s.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                      <TouchableOpacity
-                        style={[styles.unitPill, servingIdx === null && styles.unitPillActive]}
-                        onPress={() => setServingIdx(null)}
-                        activeOpacity={0.75}
-                      >
-                        <Text style={[styles.unitPillText, servingIdx === null && styles.unitPillTextActive]}>
-                          Custom ({isOz ? 'oz' : 'g'})
-                        </Text>
-                      </TouchableOpacity>
                     </View>
                   )}
 
@@ -658,8 +634,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     </>
                   )}
 
-                  {/* ── WEIGHT input (manual after a pick) ── */}
-                  {isManual && pickedSuggestion && (
+                  {/* ── WEIGHT input (manual after a pick, once editing) ── */}
+                  {isManual && pickedSuggestion && editing && (
                     <View style={styles.unitRow}>
                       {servings.map((s, i) => (
                         <TouchableOpacity
@@ -686,7 +662,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       )}
                     </View>
                   )}
-                  {((isManual && pickedSuggestion && servingIdx === null) || (!isManual && editing)) && (
+                  {editing && ((isManual && pickedSuggestion && servingIdx === null) || !isManual) && (
                     <>
                       <Text style={styles.sectionLabel}>{weightLabel}</Text>
                       <TextInput
@@ -701,8 +677,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     </>
                   )}
 
-                  {/* ── NUTRITION (manual after a pick, or found scan in edit mode) ── */}
-                  {((isManual && pickedSuggestion) || (!isManual && editing)) && (
+                  {/* ── NUTRITION (manual after a pick, or found scan — both once editing) ── */}
+                  {editing && (isManual ? pickedSuggestion : true) && (
                     <NutritionFields
                       basis={basis}
                       onBasisChange={onBasisChange}
