@@ -45,6 +45,19 @@ describe('ItemDetail — basket item', () => {
     expect(getByText('1,500 g')).toBeTruthy()
     expect(getByText('3 × 500 g')).toBeTruthy()
   })
+
+  it('edits item nutrition in the chosen basis and saves canonical values', () => {
+    const onSaveItem = jest.fn()
+    const riceItem: FoodItem = { name: 'Rice', weightG: 500, kcal: 650, quantity: 1, emoji: '🍚', macrosPer100g: { protein: 8, carbs: 28, fat: 1 } }
+    const { getByText, getByTestId } = wrap(
+      <ItemDetail visible kind="item" item={riceItem} days={5} basis="per100g" onBasisChange={jest.fn()}
+        onRemove={jest.fn()} onClose={jest.fn()} onSaveItem={onSaveItem} />
+    )
+    fireEvent.press(getByText('Edit'))
+    fireEvent.changeText(getByTestId('nf-kcal'), '130')   // 130 kcal/100g over 500g = 650 kcal
+    fireEvent.press(getByText('Save'))
+    expect(onSaveItem).toHaveBeenCalledWith(expect.objectContaining({ kcal: 650 }))
+  })
 })
 
 describe('ItemDetail — extra', () => {

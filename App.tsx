@@ -1106,6 +1106,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                 ? pantryGramsForCycle(livePantry.find((p) => p.id === detailTarget.id)!, activeCycle, activeDayCount)
                 : undefined
             }
+            basis={prefs.nutritionBasis}
+            onBasisChange={(b) => setPrefs((p) => ({ ...p, nutritionBasis: b }))}
             onSaveItem={(patch) => { if (detailTarget.kind === 'item') handleSaveItemPatch(detailTarget.index, patch) }}
             onSaveExtra={(patch) => { if (detailTarget.kind === 'extra') handleSaveExtraPatch(detailTarget.id, patch) }}
             onSavePantry={(patch) => {

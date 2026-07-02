@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
-import { FoodItem, ExtraMeal, PantryItem, Macros } from '../types'
-import { itemMacros, kcalDerivedMacros } from '../utils/nutrition'
+import { FoodItem, ExtraMeal, PantryItem, Macros, NutritionBasis } from '../types'
+import { itemMacros, kcalDerivedMacros, kcalForWeight } from '../utils/nutrition'
 import { EditIcon } from './icons'
+import NutritionFields from './NutritionFields'
 
 type Kind = 'item' | 'extra' | 'pantry'
 const SRC_LABELS: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
@@ -23,6 +24,8 @@ type Props = {
   pantryWeekG?: number
   days: number
   dateLabel?: string
+  basis?: NutritionBasis
+  onBasisChange?: (b: NutritionBasis) => void
   onSaveItem?: (patch: Partial<FoodItem>) => void
   onSaveExtra?: (patch: { name: string; kcal: number; macros: Macros }) => void
   onSavePantry?: (patch: { name?: string; kcalPer100g: number; dailyG: number; thisWeekG: number }) => void
@@ -33,7 +36,7 @@ type Props = {
 const num = (s: string) => (parseFloat(s) > 0 ? parseFloat(s) : 0)
 
 export default function ItemDetail(props: Props) {
-  const { visible, kind, item, extra, pantryItem, pantryWeekG, days, dateLabel, onClose, onRemove } = props
+  const { visible, kind, item, extra, pantryItem, pantryWeekG, days, dateLabel, basis, onBasisChange, onClose, onRemove } = props
   const colors = useColors()
   const [editing, setEditing] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
@@ -56,6 +59,8 @@ export default function ItemDetail(props: Props) {
   const [per100Str, setPer100Str] = useState('0')
   const [dailyStr, setDailyStr] = useState('0')
   const [weekStr, setWeekStr] = useState('0')
+  const [kcalPer100g, setKcalPer100g] = useState<number | null>(null)
+  const [macrosPer100g, setMacrosPer100g] = useState<Macros | undefined>(undefined)
 
   function seed() {
     setConfirmDel(false)
@@ -68,6 +73,8 @@ export default function ItemDetail(props: Props) {
       setPStr(String(Math.round(m.protein)))
       setCStr(String(Math.round(m.carbs)))
       setFStr(String(Math.round(m.fat)))
+      setKcalPer100g(item.weightG > 0 ? (item.kcal / item.weightG) * 100 : null)
+      setMacrosPer100g(item.macrosPer100g)
     } else if (kind === 'extra' && extra) {
       const em = extra.macros ?? kcalDerivedMacros(extra.kcal)
       setName(extra.name)
@@ -85,25 +92,22 @@ export default function ItemDetail(props: Props) {
   function startEdit() { seed(); setEditing(true) }
 
   function onWeight(next: string) {
-    const newW = num(next), oldW = num(weightStr)
-    const ratio = oldW > 0 && newW > 0 ? newW / oldW : 1
-    if (oldW > 0 && newW > 0) {
-      setKcalStr(String(Math.round(num(kcalStr) * ratio)))
-      setPStr(String(Math.round(num(pStr) * ratio)))
-      setCStr(String(Math.round(num(cStr) * ratio)))
-      setFStr(String(Math.round(num(fStr) * ratio)))
-    }
+    // Weight only scales the *displayed* nutrition (via NutritionFields' G prop);
+    // the canonical kcalPer100g/macrosPer100g are weight-independent and untouched here.
     setWeightStr(next)
   }
 
   function saveItem() {
     const w = Math.round(num(weightStr))
     if (w <= 0) return // guard: never persist a zero weight against nonzero kcal/macros
-    const perUnitKcal = Math.round(num(kcalStr))
-    const macrosPer100g: Macros = w > 0
-      ? { protein: (num(pStr) / w) * 100, carbs: (num(cStr) / w) * 100, fat: (num(fStr) / w) * 100 }
-      : (item?.macrosPer100g ?? { protein: 0, carbs: 0, fat: 0 })
-    props.onSaveItem?.({ name: name.trim() || item?.name || 'Item', weightG: w, kcal: perUnitKcal, quantity: Math.max(1, Math.round(num(qtyStr))), macrosPer100g })
+    const perUnitKcal = kcalForWeight(kcalPer100g ?? 0, w)
+    props.onSaveItem?.({
+      name: name.trim() || item?.name || 'Item',
+      weightG: w,
+      kcal: perUnitKcal,
+      quantity: Math.max(1, Math.round(num(qtyStr))),
+      macrosPer100g: macrosPer100g ?? item?.macrosPer100g ?? { protein: 0, carbs: 0, fat: 0 },
+    })
     setEditing(false)
   }
   function saveExtra() { props.onSaveExtra?.({ name: name.trim() || extra?.name || 'Extra', kcal: Math.max(0, Math.round(num(kcalStr))), macros: { protein: num(pStr), carbs: num(cStr), fat: num(fStr) } }); setEditing(false) }
@@ -241,24 +245,36 @@ export default function ItemDetail(props: Props) {
           )}
           {kind === 'extra' && dateLabel && !editing && <Text style={styles.when}>Logged {dateLabel}</Text>}
 
-          <Text style={styles.seclbl}>Macros{editingMacros ? ' · tap to edit' : estimated ? ' · estimated' : ''}</Text>
-          <View style={styles.macroRow}>
-            {MAC_DEFS.map((d) => (
-              <View style={styles.macroTop} key={d.key}>
-                <Text style={styles.macroL}>{d.label}</Text>
-                {editingMacros
-                  ? <TextInput testID={`id-macro-${d.key}`} style={styles.macroInput} keyboardType="numeric" selectTextOnFocus
-                      value={d.key === 'protein' ? pStr : d.key === 'carbs' ? cStr : fStr}
-                      onChangeText={d.key === 'protein' ? setPStr : d.key === 'carbs' ? setCStr : setFStr} />
-                  : <Text style={styles.macroV}>{Math.round(macroGrams[d.key])}g</Text>}
+          {!editingItem && (
+            <>
+              <Text style={styles.seclbl}>Macros{editingMacros ? ' · tap to edit' : estimated ? ' · estimated' : ''}</Text>
+              <View style={styles.macroRow}>
+                {MAC_DEFS.map((d) => (
+                  <View style={styles.macroTop} key={d.key}>
+                    <Text style={styles.macroL}>{d.label}</Text>
+                    {editingMacros
+                      ? <TextInput testID={`id-macro-${d.key}`} style={styles.macroInput} keyboardType="numeric" selectTextOnFocus
+                          value={d.key === 'protein' ? pStr : d.key === 'carbs' ? cStr : fStr}
+                          onChangeText={d.key === 'protein' ? setPStr : d.key === 'carbs' ? setCStr : setFStr} />
+                      : <Text style={styles.macroV}>{Math.round(macroGrams[d.key])}g</Text>}
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            </>
+          )}
 
           {editing && kind === 'item' && (
             <View style={{ marginTop: 16 }}>
               {renderField('Name', name, setName, 'id-name', 'default', true)}
-              {renderField('Calories', kcalStr, setKcalStr, 'id-kcal')}
+              <NutritionFields
+                basis={basis ?? 'per100g'}
+                onBasisChange={onBasisChange ?? (() => {})}
+                G={num(weightStr) * num(qtyStr)}
+                kcalPer100g={kcalPer100g}
+                macrosPer100g={macrosPer100g}
+                onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
+                editable
+              />
               {renderField('Weight (g)', weightStr, onWeight, 'id-weight')}
               {renderField('Quantity', qtyStr, setQtyStr, 'id-qty')}
             </View>
