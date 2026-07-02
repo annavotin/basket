@@ -79,9 +79,13 @@ export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, 
     segOn: { backgroundColor: colors.white },
     segDisabled: { opacity: 0.4 },
     segTxt: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.moss },
-    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
     name: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.moss },
-    input: { fontFamily: fonts.num, fontSize: 15, color: colors.forest, textAlign: 'right', minWidth: 70, padding: 0 },
+    input: {
+      fontFamily: fonts.num, fontSize: 15, color: colors.forest, textAlign: 'right', minWidth: 64,
+      borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.white,
+      borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6,
+    },
     unit: { fontFamily: fonts.body, fontSize: 11, color: colors.mossFaint, marginLeft: 6, minWidth: 42 },
   }), [colors])
 

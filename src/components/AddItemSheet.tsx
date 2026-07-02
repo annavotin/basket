@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Keyboard, Platform, ScrollView, StyleSheet,
@@ -69,6 +69,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   // Snapshot of the picked/scanned food's starting values, for dirty-checking. null means
   // there's no prior version to compare against — this is a brand-new (fully custom) food.
   const [original, setOriginal] = useState<{ weightG: number; kcalPer100g: number | null; macrosPer100g?: Macros } | null>(null)
+  const nameInputRef = useRef<TextInput>(null)
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
@@ -235,6 +236,11 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       textAlign: 'right', letterSpacing: 0.4,
     },
 
+    // ── Pack size — always-visible weight row below the tile, own breathing room ──
+    packSizeWrap: {
+      marginBottom: 14,
+    },
+
     // ── Weight + qty section ──────────────────────────────────────────────────
     sectionLabel: {
       fontFamily: fonts.display,
@@ -290,10 +296,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       fontFamily: fonts.display, color: colors.cream, fontSize: 16, fontWeight: '600',
     },
 
-    // ── Edit button (top-right of a found scan) ───────────────────────────────
+    // ── Edit button (sits on the food tile, right side) ───────────────────────
     editBtn: {
-      position: 'absolute', top: 12, right: 14, zIndex: 2,
-      flexDirection: 'row', alignItems: 'center', gap: 5,
+      flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0,
       paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
       backgroundColor: colors.sageBg2,
     },
@@ -330,7 +335,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setWeight(initialWeightG > 0 ? String(initialWeightG) : '')
       setEmoji(product.emoji)
       setMacrosPer100g(product.macrosPer100g)
-      setEditing(unknownWeight)
+      setEditing(false)
       setKcalPer100g(product.kcalPer100g)
       setServings(srvs)
       setServingIdx(srvs.length > 0 ? 0 : null)
@@ -374,14 +379,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setEmoji(s.emoji)
     setMacrosPer100g(s.macrosPer100g)
     setPickedSuggestion(true)
+    setEditing(false)
     const srvs = s.servings ?? []
     setServings(srvs)
     const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (s.packageWeightG || 0)
-    // No known weight (e.g. a per-100g-only staple with no default pack size or servings) —
-    // there's nothing to summarize, so skip straight to Edit rather than showing a summary
-    // with an empty kcal readout and a silently-disabled Add button. Mirrors how an
-    // unknown-weight scanned product already forces editing=true.
-    setEditing(initialWeightG <= 0)
     setWeight(initialWeightG > 0 ? String(initialWeightG) : '')
     setServingIdx(srvs.length > 0 ? 0 : null)
     setOriginal({ weightG: initialWeightG, kcalPer100g: s.kcalPer100g, macrosPer100g: s.macrosPer100g })
@@ -417,6 +418,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   // True once there's something to act on: a product/suggestion is chosen, an active scan
   // is in flight (found or not), or the user has started typing their own item.
   const hasTypedOrChosen = !isManual || pickedSuggestion || scanned || name.trim().length > 0
+  // Only offer "add your own" once there's actually nothing to pick: search has settled
+  // (not loading) with zero matches. While a match is still possible, only the dropdown
+  // shows — no point racing custom-entry fields alongside a live search.
+  const showCustomCard = isManual && !pickedSuggestion && name.trim().length > 0 && !loading && suggestions.length === 0
   const isDirty = original != null && (
     weightNum !== original.weightG ||
     kcalPer100g !== original.kcalPer100g ||
@@ -456,7 +461,13 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const showScanRow = isManual && (onScanBarcode != null || onScanReceipt != null)
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onShow={() => { if (isManual) nameInputRef.current?.focus() }}
+    >
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -468,19 +479,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                 <View style={styles.grab} />
 
                 <View>
-                  {/* Edit affordance for a found scan (read-only summary by default) */}
-                  {showEditButton && (
-                    <TouchableOpacity
-                      style={styles.editBtn}
-                      onPress={enterEdit}
-                      testID="edit-product-button"
-                      accessibilityLabel="Edit item"
-                    >
-                      <EditIcon size={13} color={colors.forest} />
-                      <Text style={styles.editBtnText}>Edit</Text>
-                    </TouchableOpacity>
-                  )}
-
                   {/* Sheet header */}
                   <Text style={styles.sheetTitle}>
                     {isManual ? 'Add to batch' : name}
@@ -496,6 +494,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     <View style={styles.searchBar}>
                       <Text style={styles.searchIcon}>🔍</Text>
                       <TextInput
+                        ref={nameInputRef}
                         testID="manual-name-input"
                         style={styles.searchInput}
                         placeholder="Search food or add your own…"
@@ -564,8 +563,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     </ScrollView>
                   )}
 
-                  {/* ── 4. CUSTOM-ADD CARD (manual, no suggestion picked) ── */}
-                  {isManual && !pickedSuggestion && (
+                  {/* ── 4. CUSTOM-ADD CARD (manual, search settled with no match) ── */}
+                  {showCustomCard && (
                     <View style={styles.customCard}>
                       {/* Weight input inside custom card */}
                       <View style={styles.fieldRow}>
@@ -595,26 +594,83 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     </View>
                   )}
 
-                  {/* ── 5. FOOD SUMMARY (read-only default view — scanned, or a picked suggestion) ── */}
-                  {((!isManual || pickedSuggestion) && !editing) && (
+                  {/* ── 5. FOOD TILE (scanned, or a picked suggestion) — name/kcal + Edit ── */}
+                  {(!isManual || pickedSuggestion) && (
                     <View style={styles.productSummary}>
                       <View style={styles.productAv}>
                         <Text style={styles.productEmoji}>{emoji}</Text>
                       </View>
                       <View style={styles.productTx}>
                         <Text style={styles.productName}>{name}</Text>
-                        <Text style={styles.productMeta}>
-                          {weightNum > 0 ? `${weightToDisplay(weight)} ${isOz ? 'oz' : 'g'} per pack` : ''}
-                          {weightNum > 0 && kcalPer100g != null ? '  ·  ' : ''}
-                          {kcalPer100g != null ? `${kcalPer100g} kcal/100g` : ''}
-                        </Text>
+                        {kcalPer100g != null && (
+                          <Text style={styles.productMeta}>{kcalPer100g} kcal/100g</Text>
+                        )}
                       </View>
-                      <View>
-                        <Text style={styles.productKcal}>
-                          {perUnitKcal > 0 ? formatEnergy(perUnitKcal, units) : ''}
-                        </Text>
-                        <Text style={styles.productKcalSmall}>KCAL</Text>
-                      </View>
+                      {showEditButton ? (
+                        <TouchableOpacity
+                          style={styles.editBtn}
+                          onPress={enterEdit}
+                          testID="edit-product-button"
+                          accessibilityLabel="Edit item"
+                        >
+                          <EditIcon size={13} color={colors.forest} />
+                          <Text style={styles.editBtnText}>Edit</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View>
+                          <Text style={styles.productKcal}>
+                            {perUnitKcal > 0 ? formatEnergy(perUnitKcal, units) : ''}
+                          </Text>
+                          <Text style={styles.productKcalSmall}>KCAL</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* ── 5a. PACK SIZE — always visible and editable once a food is chosen; never
+                       gated behind Edit, since "how much did I actually buy" isn't a macro edit. ── */}
+                  {(!isManual || pickedSuggestion) && (
+                    <View style={styles.packSizeWrap}>
+                      {servings.length > 0 && (
+                        <View style={styles.unitRow}>
+                          {servings.map((s, i) => (
+                            <TouchableOpacity
+                              key={i}
+                              style={[styles.unitPill, servingIdx === i && styles.unitPillActive]}
+                              onPress={() => { setServingIdx(i); setWeight(String(s.weightG)) }}
+                              activeOpacity={0.75}
+                            >
+                              <Text style={[styles.unitPillText, servingIdx === i && styles.unitPillTextActive]}>
+                                {s.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                          <TouchableOpacity
+                            style={[styles.unitPill, servingIdx === null && styles.unitPillActive]}
+                            onPress={() => setServingIdx(null)}
+                            activeOpacity={0.75}
+                          >
+                            <Text style={[styles.unitPillText, servingIdx === null && styles.unitPillTextActive]}>
+                              Custom ({isOz ? 'oz' : 'g'})
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {servingIdx === null && (
+                        <>
+                          <Text style={styles.sectionLabel}>{weightLabel}</Text>
+                          <TextInput
+                            testID="weight-input"
+                            style={styles.weightInput}
+                            keyboardType="decimal-pad"
+                            value={weightToDisplay(weight)}
+                            onChangeText={(t) => setWeight(displayToGrams(t))}
+                            returnKeyType="done"
+                            placeholderTextColor={colors.mossFaint}
+                            placeholder={weightPlaceholder}
+                          />
+                        </>
+                      )}
                     </View>
                   )}
 
@@ -627,49 +683,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                         style={styles.weightInput}
                         value={name}
                         onChangeText={setName}
-                        returnKeyType="done"
-                        placeholderTextColor={colors.mossFaint}
-                      />
-                    </>
-                  )}
-
-                  {/* ── WEIGHT input (manual after a pick, once editing) ── */}
-                  {isManual && pickedSuggestion && editing && (
-                    <View style={styles.unitRow}>
-                      {servings.map((s, i) => (
-                        <TouchableOpacity
-                          key={i}
-                          style={[styles.unitPill, servingIdx === i && styles.unitPillActive]}
-                          onPress={() => { setServingIdx(i); setWeight(String(s.weightG)) }}
-                          activeOpacity={0.75}
-                        >
-                          <Text style={[styles.unitPillText, servingIdx === i && styles.unitPillTextActive]}>
-                            {s.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                      {servings.length > 0 && (
-                        <TouchableOpacity
-                          style={[styles.unitPill, servingIdx === null && styles.unitPillActive]}
-                          onPress={() => setServingIdx(null)}
-                          activeOpacity={0.75}
-                        >
-                          <Text style={[styles.unitPillText, servingIdx === null && styles.unitPillTextActive]}>
-                            Custom ({isOz ? 'oz' : 'g'})
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
-                  {editing && ((isManual && pickedSuggestion && servingIdx === null) || !isManual) && (
-                    <>
-                      <Text style={styles.sectionLabel}>{weightLabel}</Text>
-                      <TextInput
-                        testID="weight-input"
-                        style={styles.weightInput}
-                        keyboardType="decimal-pad"
-                        value={weightToDisplay(weight)}
-                        onChangeText={(t) => setWeight(displayToGrams(t))}
                         returnKeyType="done"
                         placeholderTextColor={colors.mossFaint}
                       />

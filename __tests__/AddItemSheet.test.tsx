@@ -17,8 +17,10 @@ describe('AddItemSheet — scanned mode', () => {
     const { getByTestId, queryByTestId } = render(
       <AddItemSheet visible product={product} scanned onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
-    // Default scanned view: summary only — no editable fields until you tap Edit.
-    expect(queryByTestId('weight-input')).toBeNull()
+    // Default scanned view: pack size is visible/editable straight away, but macros stay
+    // behind Edit until tapped.
+    expect(getByTestId('weight-input')).toBeTruthy()
+    expect(queryByTestId('nf-kcal')).toBeNull()
     fireEvent.press(getByTestId('add-item-button'))
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -57,13 +59,17 @@ describe('AddItemSheet — manual mode', () => {
     fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
     await waitFor(() => getByText('Banana'))
     fireEvent.press(getByText('Banana'))
-    // Summary first: no editable weight field yet, but an Edit button is present.
-    expect(queryByTestId('weight-input')).toBeNull()
+    // Tile + pack size (as a serving pill, since Banana ships one) are visible right away;
+    // macros stay behind Edit until tapped.
+    expect(getByText('per banana')).toBeTruthy()
+    expect(queryByTestId('nf-kcal')).toBeNull()
     expect(getByTestId('edit-product-button')).toBeTruthy()
     fireEvent.press(getByTestId('edit-product-button'))
     expect(queryByTestId('edit-product-button')).toBeNull() // hides once editing
+    expect(getByTestId('nf-kcal')).toBeTruthy() // macros now revealed
     // Banana ships a "per banana" serving, so it opens on that unit pill;
-    // switch to Custom (g) to enter an arbitrary weight.
+    // switch to Custom (g) to enter an arbitrary weight (pack size was already editable
+    // before tapping Edit — this just changes which serving option is selected).
     fireEvent.press(getByText('Custom (g)'))
     fireEvent.changeText(getByTestId('weight-input'), '120')
     fireEvent.press(getByTestId('add-item-button'))
@@ -75,7 +81,7 @@ describe('AddItemSheet — manual mode', () => {
     )
   })
 
-  it('skips the summary straight into Edit when a picked suggestion has no known weight', async () => {
+  it('shows the tile and an always-editable weight field even when the pack size is unknown', async () => {
     const onAdd = jest.fn()
     const { getByTestId, getByText, queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
@@ -83,11 +89,12 @@ describe('AddItemSheet — manual mode', () => {
     fireEvent.changeText(getByTestId('manual-name-input'), 'cauliflower')
     await waitFor(() => getByText('Cauliflower'))
     fireEvent.press(getByText('Cauliflower'))
-    // No servings and no packageWeightG for this local staple — nothing to summarize,
-    // so it should open directly into Edit (mirrors an unknown-weight scanned product).
-    expect(queryByTestId('edit-product-button')).toBeNull()
+    // No servings and no packageWeightG for this local staple — the pack-size field is
+    // still there (blank) and directly editable, with no need to tap Edit first. Macros
+    // stay behind Edit, same as any other picked food.
+    expect(getByTestId('edit-product-button')).toBeTruthy()
     expect(getByTestId('weight-input')).toBeTruthy()
-    expect(getByTestId('nf-kcal')).toBeTruthy()
+    expect(queryByTestId('nf-kcal')).toBeNull()
     fireEvent.changeText(getByTestId('weight-input'), '200')
     fireEvent.press(getByTestId('add-item-button'))
     expect(onAdd).toHaveBeenCalledWith(
@@ -109,24 +116,25 @@ describe('AddItemSheet — manual mode', () => {
     expect(getByTestId('nf-protein').props.value).not.toBe('')
   })
 
-  it('shows the weight per pack in the summary before editing', async () => {
-    const { getByTestId, getByText } = render(
+  it('shows an editable "weight per pack" field as soon as a food is picked, before editing', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
-    fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
-    await waitFor(() => getByText('Banana'))
-    fireEvent.press(getByText('Banana'))
-    expect(getByText(/per pack/)).toBeTruthy()
+    fireEvent.changeText(getByTestId('manual-name-input'), 'cauliflower')
+    await waitFor(() => getByText('Cauliflower'))
+    fireEvent.press(getByText('Cauliflower'))
+    expect(queryByTestId('edit-product-button')).toBeTruthy() // still unedited
+    expect(getByText(/Weight per pack/)).toBeTruthy()
+    expect(getByTestId('weight-input')).toBeTruthy()
   })
 
-  it('shows a calories-per-100g field for a free item with no match and uses it', () => {
+  it('shows a calories-per-100g field for a free item with no match and uses it', async () => {
     const onAdd = jest.fn()
     const { getByTestId, queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Grandmas Stew')
-    const per100 = getByTestId('nf-kcal')
-    expect(per100).toBeTruthy()
+    const per100 = await waitFor(() => getByTestId('nf-kcal'))
     fireEvent.changeText(per100, '150')
     fireEvent.changeText(getByTestId('weight-input'), '300')
     fireEvent.press(getByTestId('add-item-button'))
@@ -154,6 +162,19 @@ describe('AddItemSheet — manual mode', () => {
     expect(queryByTestId('toggle-save-to-foods')).toBeNull()
     expect(queryByTestId('add-item-button')).toBeNull()
     expect(getByTestId('cancel-button')).toBeTruthy() // always reachable
+    expect(queryByTestId('weight-input')).toBeNull()
+    expect(queryByTestId('nf-kcal')).toBeNull()
+  })
+
+  it('does not show custom-entry fields while a matching suggestion is still available to pick', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
+    await waitFor(() => getByText('Banana')) // a match is available to pick
+    // Nothing to add-your-own here — the user hasn't committed to anything yet.
+    expect(queryByTestId('weight-input')).toBeNull()
+    expect(queryByTestId('nf-kcal')).toBeNull()
   })
 
   it('reveals quantity, toggles, and the add button once a name is typed', () => {
@@ -166,22 +187,23 @@ describe('AddItemSheet — manual mode', () => {
     expect(getByTestId('add-item-button')).toBeTruthy()
   })
 
-  it('labels the weight field "per pack"', () => {
+  it('labels the weight field "per pack"', async () => {
     const { getByTestId, getByText } = render(
       <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Mystery Soup')
-    expect(getByText('Weight per pack (g)')).toBeTruthy()
+    await waitFor(() => getByText('Weight per pack (g)'))
   })
 })
 
 describe('AddItemSheet — validation guard', () => {
-  it('does not add when weight is empty, and adds once weight is set', () => {
+  it('does not add when weight is empty, and adds once weight is set', async () => {
     const onAdd = jest.fn()
     const { getByTestId } = render(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Mystery Soup')
+    await waitFor(() => getByTestId('nf-kcal'))
     fireEvent.press(getByTestId('add-item-button')) // weight still empty -> guarded
     expect(onAdd).not.toHaveBeenCalled()
     fireEvent.changeText(getByTestId('nf-kcal'), '80')
@@ -309,7 +331,7 @@ describe('AddItemSheet — Save to My Foods', () => {
     expect(await findByText('Barcode linked ✓')).toBeTruthy()
   })
 
-  it('resets to default ON when the sheet reopens for a new item, even after being turned off', () => {
+  it('resets to default ON when the sheet reopens for a new item, even after being turned off', async () => {
     const onAdd = jest.fn()
     const { getByTestId, rerender } = render(
       <AddItemSheet visible={false} product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
@@ -327,6 +349,7 @@ describe('AddItemSheet — Save to My Foods', () => {
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Fresh Item')
+    await waitFor(() => getByTestId('nf-kcal'))
     fireEvent.changeText(getByTestId('nf-kcal'), '50')
     fireEvent.changeText(getByTestId('weight-input'), '100')
     fireEvent.press(getByTestId('add-item-button'))
