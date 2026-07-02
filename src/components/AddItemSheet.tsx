@@ -22,10 +22,11 @@ import { fonts } from '../styles/fonts'
 type Props = {
   visible: boolean
   product: Product | null
-  onAdd: (item: FoodItem, opts: { save: boolean }) => void
+  onAdd: (item: FoodItem, opts: { save: boolean; barcode?: string }) => void
   onClose: () => void
   onScanBarcode?: () => void
   onScanReceipt?: () => void
+  onScanForBarcode?: () => Promise<string | null>
   customFoods?: CustomFood[]
   scanned?: boolean
   scanBarcode?: string | null
@@ -35,7 +36,7 @@ type Props = {
   onBasisChange: (b: NutritionBasis) => void
 }
 
-export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [], scanned = false, scanBarcode = null, keepScanning = false, onKeepScanning, basis, onBasisChange }: Props) {
+export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, onScanForBarcode, customFoods = [], scanned = false, scanBarcode = null, keepScanning = false, onKeepScanning, basis, onBasisChange }: Props) {
   const colors = useColors()
   const units = useUnits()
   const isManual = product === null
@@ -56,6 +57,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const [editing, setEditing] = useState(false)
   // Always-visible "Save to My Foods" toggle, default on.
   const [saveToFoods, setSaveToFoods] = useState(true)
+  // Barcode linked to a manual/custom item via the "Link a barcode" flow (distinct from
+  // scanBarcode, which comes from an actual scanned product match).
+  const [linkedBarcode, setLinkedBarcode] = useState<string | null>(null)
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
@@ -340,6 +344,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setQty(1)
     setDropdownOpen(false)
     setSaveToFoods(true)
+    setLinkedBarcode(null)
   }, [product, visible])
 
   function enterEdit() {
@@ -406,6 +411,14 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const matchedFood = (scanBarcode && findCustomByBarcode(customFoods, scanBarcode))
     || findCustomByName(customFoods, name)
   const saveLabel = matchedFood ? `Update "${matchedFood.name}"` : 'Save to My Foods'
+  // The barcode that will end up stored on the saved CustomFood: a real scan match takes
+  // priority; otherwise whatever the user linked manually via "Link a barcode".
+  const effectiveBarcode = scanBarcode ?? linkedBarcode
+
+  async function handleLinkBarcode() {
+    const code = await onScanForBarcode?.()
+    if (code) setLinkedBarcode(code)
+  }
 
   function handleAdd() {
     if (!canAdd) return
@@ -417,7 +430,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       quantity: qty,
       source: product ? 'barcode' : 'manual',
       macrosPer100g,
-    }, { save: saveToFoods })
+    }, { save: saveToFoods, barcode: effectiveBarcode ?? undefined })
     Keyboard.dismiss()
     onClose()
   }
@@ -715,6 +728,32 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       testID="toggle-save-to-foods"
                     />
                   </View>
+                  {isManual && (
+                    <>
+                      <View style={styles.toggleDivider} />
+                      {effectiveBarcode ? (
+                        <View style={styles.toggleRow}>
+                          <View style={styles.toggleLabelWrap}>
+                            <Text style={styles.toggleLabel}>Barcode linked ✓</Text>
+                            <Text style={styles.toggleHint}>Next scan of this item will find it</Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          testID="link-barcode-button"
+                          style={styles.toggleRow}
+                          onPress={handleLinkBarcode}
+                          accessibilityLabel="Link a barcode"
+                        >
+                          <View style={styles.toggleLabelWrap}>
+                            <Text style={styles.toggleLabel}>Link a barcode</Text>
+                            <Text style={styles.toggleHint}>Scan the pack so this item is found next time</Text>
+                          </View>
+                          <BarcodeIcon size={20} color={colors.forest} />
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
                   {scanned && (
                     <>
                       <View style={styles.toggleDivider} />

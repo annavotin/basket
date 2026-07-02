@@ -229,6 +229,17 @@ describe('AddItemSheet — Save to My Foods', () => {
     expect(getByText(/Update .Kale./)).toBeTruthy()
   })
 
+  it('links a scanned barcode to the food being saved', async () => {
+    const onAdd = jest.fn()
+    const onScanForBarcode = jest.fn(() => Promise.resolve('50000001'))
+    const { getByTestId, getByText, findByText } = render(
+      <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} onScanForBarcode={onScanForBarcode} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Home Hummus')
+    fireEvent.press(getByText('Link a barcode'))
+    expect(await findByText('Barcode linked ✓')).toBeTruthy()
+  })
+
   it('resets to default ON when the sheet reopens for a new item, even after being turned off', () => {
     const onAdd = jest.fn()
     const { getByTestId, rerender } = render(

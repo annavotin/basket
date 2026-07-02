@@ -650,6 +650,13 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     setSheetVisible(true)
   }
 
+  // "Link a barcode" from inside the Add sheet: just capture a raw code to attach to the
+  // custom food being saved. Unlike handleScanBarcode, this never looks up a product or
+  // touches sheetProduct/scanBarcode — the sheet that's already open stays exactly as-is.
+  async function handleScanForBarcode(): Promise<string | null> {
+    return scanBarcodeWithCamera()
+  }
+
   async function handleScanReceipt() {
     const lines = await scanReceipt(() => setReceiptScanning(true))
     setReceiptScanning(false)
@@ -671,13 +678,14 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     if (activeCycleId) markDirty('cycles', activeCycleId)
   }
 
-  function handleAddItem(item: FoodItem, { save }: { save: boolean }) {
+  function handleAddItem(item: FoodItem, { save, barcode }: { save: boolean; barcode?: string }) {
     const wasScanned = scanBarcode != null
     handleAddItems([item])
     // Unified "Save to My Foods" toggle in the sheet drives whether we upsert, for both
-    // manual and scanned adds.
+    // manual and scanned adds. `barcode` carries either the real scan match or one linked
+    // manually via "Link a barcode" in the sheet.
     if (save) {
-      const food = customFoodFromItem(item, scanBarcode ?? undefined)
+      const food = customFoodFromItem(item, barcode)
       if (food) setCustomFoods((prev) => upsertCustomFood(prev, food))
     }
     setScanBarcode(null)
@@ -1033,6 +1041,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onAdd={handleAddItem}
           onScanBarcode={() => { setSheetVisible(false); handleScanBarcode() }}
           onScanReceipt={() => { setSheetVisible(false); handleScanReceipt() }}
+          onScanForBarcode={handleScanForBarcode}
           onClose={() => { setSheetVisible(false); setScanBarcode(null) }}
         />
         <ReceiptReviewSheet
