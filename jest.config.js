@@ -4,6 +4,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': 'babel-jest',
     '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.(bmp|gif|jpg|jpeg|mp4|png|psd|svg|webp)$': require.resolve('react-native/jest/assetFileTransformer.js'),
   },
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|@testing-library/react-native|expo|expo-status-bar|@expo-google-fonts)/)',

@@ -15,7 +15,7 @@ describe('BasketOptionsSheet', () => {
     )
     fireEvent.press(getByTestId('prep-days-inc'))
     expect(onDaysChange).toHaveBeenCalledWith(8)
-    fireEvent.press(getByText('Delete basket'))
+    fireEvent.press(getByText('Delete batch'))
     expect(onDelete).toHaveBeenCalled()
   })
 })

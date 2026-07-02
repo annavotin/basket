@@ -4,7 +4,7 @@ import TrackSlider from './TrackSlider'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { MealPrepCycle, FoodItem } from '../types'
-import { carriedItem } from '../utils/nutrition'
+import { carriedItem, totalKcal } from '../utils/nutrition'
 
 type Props = {
   visible: boolean
@@ -14,13 +14,16 @@ type Props = {
   onClose: () => void
 }
 
-const total = (it: FoodItem) => it.kcal * (it.quantity ?? 1)
-const leftKcal = (it: FoodItem, left: number) => Math.round(total(it) * (it.weightG ? left / it.weightG : 0))
+/** Total grams purchased for an item (per-unit weightG × quantity). */
+const totalWeight = (it: FoodItem) => it.weightG * (it.quantity ?? 1)
+const total = (it: FoodItem) => totalKcal([it])
+/** kcal for whatever's left, via the same per-unit-rate math as carriedItem. */
+const leftKcal = (it: FoodItem, left: number) => carriedItem(it, left).kcal
 
 export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, onClose }: Props) {
   const colors = useColors()
   const items = prevCycle.items
-  const [picks, setPicks] = useState(() => items.map((it) => ({ on: false, left: it.weightG })))
+  const [picks, setPicks] = useState(() => items.map((it) => ({ on: false, left: totalWeight(it) })))
 
   const allOn = items.length > 0 && picks.every((p) => p.on)
   const toggle = (i: number, on: boolean) => setPicks((p) => p.map((x, j) => (j === i ? { ...x, on } : x)))
@@ -84,7 +87,7 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
                   <Text style={styles.av}>{it.emoji}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.nm}>{it.name}</Text>
-                    <Text style={styles.meta}>{it.weightG} g bought · {total(it).toLocaleString()} kcal</Text>
+                    <Text style={styles.meta}>{totalWeight(it)} g bought · {total(it).toLocaleString()} kcal</Text>
                   </View>
                   <View style={[styles.check, picks[i].on && styles.checkOn]}><Text style={styles.checkTxt}>{picks[i].on ? '✓' : ''}</Text></View>
                 </TouchableOpacity>
@@ -94,7 +97,7 @@ export default function CarryOverSheet({ visible, prevCycle, onConfirm, onSkip, 
                       <Text style={styles.slidL}>Amount left to carry</Text>
                       <Text style={styles.slidV}>{Math.round(picks[i].left)} g · {leftKcal(it, picks[i].left).toLocaleString()} kcal</Text>
                     </View>
-                    <TrackSlider testID={`carry-slider-${i}`} minimumValue={0} maximumValue={it.weightG || 0} step={5}
+                    <TrackSlider testID={`carry-slider-${i}`} minimumValue={0} maximumValue={totalWeight(it) || 0} step={5}
                       value={picks[i].left} onValueChange={(v) => setLeft(i, v)} />
                   </View>
                 )}

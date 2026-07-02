@@ -44,7 +44,7 @@ describe('TimelineView', () => {
     expect(onCyclePress).toHaveBeenCalledWith(cycles[0].id)
   })
 
-  it('shows a cluster of up to 3 item emojis on a stocked cycle pill', () => {
+  it('labels a stocked cycle pill as Meal Prep (no item-emoji cluster on the pill)', () => {
     const stocked = [
       {
         id: 'c1',
@@ -73,10 +73,10 @@ describe('TimelineView', () => {
       />
     )
     expect(getByText('Meal Prep')).toBeTruthy()
-    expect(getByText('🐟')).toBeTruthy()
-    expect(getByText('🍠')).toBeTruthy()
-    expect(getByText('🥬')).toBeTruthy()
-    // capped at 3 — the 4th emoji is not shown
+    // The pill no longer renders an item-emoji cluster — just the plain label.
+    expect(queryByText('🐟')).toBeNull()
+    expect(queryByText('🍠')).toBeNull()
+    expect(queryByText('🥬')).toBeNull()
     expect(queryByText('🍎')).toBeNull()
   })
 })
@@ -160,7 +160,7 @@ describe('TimelineView — edit mode', () => {
     onSetCycleDates: jest.fn(), onDeleteCycle: jest.fn(), onEditingChange: jest.fn(),
   }
 
-  it('long-press enters edit mode (shows Delete + resize handles) and Delete fires onDeleteCycle(id)', () => {
+  it('long-press enters edit mode (shows Delete + resize handles) and Delete fires onDeleteCycle(id) after confirming', () => {
     const onDeleteCycle = jest.fn()
     const { getAllByTestId, getByTestId, queryByTestId } = render(
       <TimelineView {...base} cycles={oneCycle} onDeleteCycle={onDeleteCycle} />
@@ -172,7 +172,10 @@ describe('TimelineView — edit mode', () => {
     expect(getByTestId('delete-period')).toBeTruthy()
     expect(getByTestId('resize-start')).toBeTruthy()
     expect(getByTestId('resize-end')).toBeTruthy()
+    // Delete now opens a confirmation dialog rather than deleting immediately.
     fireEvent.press(getByTestId('delete-period'))
+    expect(onDeleteCycle).not.toHaveBeenCalled()
+    fireEvent.press(getByTestId('confirm-go'))
     expect(onDeleteCycle).toHaveBeenCalledWith('c1')
   })
 

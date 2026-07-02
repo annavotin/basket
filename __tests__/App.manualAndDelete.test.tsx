@@ -12,6 +12,7 @@ beforeEach(async () => {
   jest.useFakeTimers().setSystemTime(new Date('2026-06-02'))
   await AsyncStorage.clear()
   jest.clearAllMocks()
+  await AsyncStorage.setItem('basket:v1:onboarded', '1')
 })
 afterEach(() => jest.useRealTimers())
 

@@ -2,6 +2,18 @@ import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import NewPeriodPanel from '../src/components/NewPeriodPanel'
 
+// The prep-length control is a gesture-driven RadialDrumPicker; stub it so we can test that
+// NewPeriodPanel forwards its onChange to onDaysChange without driving a synthetic PanResponder.
+jest.mock('../src/components/RadialDrumPicker', () => {
+  const React = require('react')
+  const { TouchableOpacity } = require('react-native')
+  return {
+    __esModule: true,
+    default: ({ onChange }: { onChange: (n: number) => void }) =>
+      React.createElement(TouchableOpacity, { testID: 'day-picker-set', onPress: () => onChange(6) }),
+  }
+})
+
 function setup(overrides = {}) {
   const props = {
     dayCount: 4,
@@ -53,9 +65,9 @@ describe('NewPeriodPanel', () => {
     expect(props.onScanReceipt).toHaveBeenCalled()
   })
 
-  it('calls onDaysChange (rounded) when the slider value changes', () => {
+  it('forwards the drum picker value change to onDaysChange', () => {
     const { props, getByTestId } = setup()
-    fireEvent(getByTestId('day-slider'), 'valueChange', 6)
+    fireEvent.press(getByTestId('day-picker-set'))
     expect(props.onDaysChange).toHaveBeenCalledWith(6)
   })
 })

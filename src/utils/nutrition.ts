@@ -68,15 +68,16 @@ export function itemSharePct(itemKcal: number, totalKcal: number): number {
 }
 
 /** Build a new "carried over" item from the remaining grams of a prior item.
- *  kcal scales from the item's TOTAL (kcal × quantity) by left/weightG. */
+ *  weightG/kcal are per-unit, so per-unit kcal/g is quantity-independent —
+ *  scale leftG by that per-unit rate rather than by the item's total. */
 export function carriedItem(item: FoodItem, leftG: number): FoodItem {
   const w = item.weightG || 0
-  const frac = w > 0 ? leftG / w : 0
+  const kcalPerG = w > 0 ? item.kcal / w : 0
   return {
     name: item.name,
     emoji: item.emoji,
     weightG: Math.round(leftG),
-    kcal: Math.round(item.kcal * (item.quantity ?? 1) * frac),
+    kcal: Math.round(leftG * kcalPerG),
     source: 'carry',
     macrosPer100g: item.macrosPer100g,
   }

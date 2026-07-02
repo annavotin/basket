@@ -75,7 +75,7 @@ describe('createSupabaseAuth', () => {
     const a = createSupabaseAuth(mockClient())
     expect(await a.signInWithApple()).toEqual({
       ok: false,
-      error: 'Use email sign-in for now — Apple/Google coming soon.',
+      error: 'Use email sign-in for now. Apple/Google coming soon.',
     })
   })
 
@@ -83,7 +83,7 @@ describe('createSupabaseAuth', () => {
     const a = createSupabaseAuth(mockClient())
     expect(await a.signInWithGoogle()).toEqual({
       ok: false,
-      error: 'Use email sign-in for now — Apple/Google coming soon.',
+      error: 'Use email sign-in for now. Apple/Google coming soon.',
     })
   })
 

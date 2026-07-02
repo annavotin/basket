@@ -168,9 +168,14 @@ describe('carriedItem', () => {
     const it = { name: 'Salmon', weightG: 600, kcal: 1200, emoji: '🐟', macrosPer100g: { protein: 20, carbs: 0, fat: 13 } }
     expect(carriedItem(it, 300)).toEqual({ name: 'Salmon', emoji: '🐟', weightG: 300, kcal: 600, source: 'carry', macrosPer100g: { protein: 20, carbs: 0, fat: 13 } })
   })
-  it('accounts for quantity in the total kcal it scales', () => {
+  it('scales kcal by the per-unit rate, independent of quantity', () => {
     const it = { name: 'Bar', weightG: 100, kcal: 200, emoji: '🍫', quantity: 2 }
-    expect(carriedItem(it, 50)).toEqual({ name: 'Bar', emoji: '🍫', weightG: 50, kcal: 200, source: 'carry', macrosPer100g: undefined })
+    expect(carriedItem(it, 50)).toEqual({ name: 'Bar', emoji: '🍫', weightG: 50, kcal: 100, source: 'carry', macrosPer100g: undefined })
+  })
+  it('correctly scales kcal for a multi-quantity purchase (weightG/kcal are per-unit)', () => {
+    // 3 packs of 200g/330kcal = 600g / 990kcal total; carrying half (300g) should be half the kcal (495).
+    const it = { name: 'Yogurt', weightG: 200, kcal: 330, emoji: '🥛', quantity: 3 }
+    expect(carriedItem(it, 300)).toEqual({ name: 'Yogurt', emoji: '🥛', weightG: 300, kcal: 495, source: 'carry', macrosPer100g: undefined })
   })
 })
 

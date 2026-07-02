@@ -166,14 +166,16 @@ export async function savePrefs(prefs: Preferences, deps: StorageDeps = defaultD
   try { await deps.storage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs)) } catch {}
 }
 
-const ALL_KEYS = [STORAGE_KEY, STORAGE_KEY_EXTRAS, STORAGE_KEY_DAILY_GOAL, STORAGE_KEY_PANTRY, STORAGE_KEY_PREFS]
+const ALL_KEYS = [STORAGE_KEY, STORAGE_KEY_CUSTOM_FOODS, STORAGE_KEY_EXTRAS, STORAGE_KEY_DAILY_GOAL, STORAGE_KEY_KEEP_SCANNING, STORAGE_KEY_PANTRY, STORAGE_KEY_PREFS]
 
 export async function exportAll(deps: StorageDeps = defaultDeps): Promise<string> {
   const out: Record<string, unknown> = { exportedAt: new Date().toISOString() }
   const map: Record<string, string> = {
     [STORAGE_KEY]: 'cycles',
+    [STORAGE_KEY_CUSTOM_FOODS]: 'customFoods',
     [STORAGE_KEY_EXTRAS]: 'extras',
     [STORAGE_KEY_DAILY_GOAL]: 'dailyGoal',
+    [STORAGE_KEY_KEEP_SCANNING]: 'keepScanning',
     [STORAGE_KEY_PANTRY]: 'pantry',
     [STORAGE_KEY_PREFS]: 'preferences',
   }

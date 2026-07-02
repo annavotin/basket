@@ -71,14 +71,10 @@ const WINDOW_OFFSET = 7  // days before today the window starts
 const syncQueue = makeQueue(AsyncStorage)
 const SYNC_DEBOUNCE_MS = 1500
 
-function getWindowStart(): string {
-  return addDays(todayISO(), -WINDOW_OFFSET)
-}
-
 function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dispatch<React.SetStateAction<Preferences>> }) {
   const colors = useColors()
-  const today = useMemo(() => todayISO(), [])
-  const windowStart = useMemo(() => getWindowStart(), [])
+  const [today, setToday] = useState(todayISO)
+  const windowStart = useMemo(() => addDays(today, -WINDOW_OFFSET), [today])
 
   const styles = useMemo(() => StyleSheet.create({
     // Three visually distinct horizontal bands, getting greener top -> bottom:
@@ -311,6 +307,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const exitTimelineEditRef = useRef<(() => void) | null>(null)
   // Horizontal calendar auto-scroll target.
   const scrollRef = useRef<ScrollView>(null)
+  // Pending "keep scanning" relaunch timer, cancelled on unmount so it can't fire post-teardown.
+  const rescanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Live (non-tombstone) views drive the UI; the raw arrays keep tombstones so deletes
   // still propagate through sync and survive a relaunch.
@@ -332,6 +330,12 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     void syncQueue.markDirty(table, id)
   }
 
+  // Guards against overlapping passes: the debounce, foreground, and sign-in triggers can all
+  // call runSync. Two passes reading the same pre-merge snapshot stomp each other, so if one is
+  // already in flight we ask it to run once more when it finishes instead of racing.
+  const syncingRef = useRef(false)
+  const syncAgainRef = useRef(false)
+
   /** One sync pass per table: push dirty rows, pull remote changes, merge. Only updates
    *  state when something actually changed, so it can't loop with the debounced trigger. */
   const runSync = useCallback(async () => {
@@ -340,22 +344,34 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       console.log('[sync] skipped — no engine (not signed in or Supabase not configured)')
       return
     }
-    console.log('[sync] running…', {
-      cycles: cyclesRef.current.length,
-      extraMeals: extraMealsRef.current.length,
-      pantry: pantryRef.current.length,
-    })
-    const pass = async <T,>(table: SyncTable, local: T[]): Promise<T[]> =>
-      (await eng.pushPull(table, local as unknown as SyncRecord[])) as unknown as T[]
-    const [c, e, p] = await Promise.all([
-      pass<MealPrepCycle>('cycles', cyclesRef.current),
-      pass<ExtraMeal>('extra_meals', extraMealsRef.current),
-      pass<PantryItem>('pantry_items', pantryRef.current),
-    ])
-    console.log('[sync] done', { cycles: c.length, extraMeals: e.length, pantry: p.length })
-    if (JSON.stringify(c) !== JSON.stringify(cyclesRef.current)) setCycles(c)
-    if (JSON.stringify(e) !== JSON.stringify(extraMealsRef.current)) setExtraMeals(e)
-    if (JSON.stringify(p) !== JSON.stringify(pantryRef.current)) setPantry(p)
+    if (syncingRef.current) {
+      syncAgainRef.current = true
+      return
+    }
+    syncingRef.current = true
+    try {
+      do {
+        syncAgainRef.current = false
+        console.log('[sync] running…', {
+          cycles: cyclesRef.current.length,
+          extraMeals: extraMealsRef.current.length,
+          pantry: pantryRef.current.length,
+        })
+        const pass = async <T,>(table: SyncTable, local: T[]): Promise<T[]> =>
+          (await eng.pushPull(table, local as unknown as SyncRecord[])) as unknown as T[]
+        const [c, e, p] = await Promise.all([
+          pass<MealPrepCycle>('cycles', cyclesRef.current),
+          pass<ExtraMeal>('extra_meals', extraMealsRef.current),
+          pass<PantryItem>('pantry_items', pantryRef.current),
+        ])
+        console.log('[sync] done', { cycles: c.length, extraMeals: e.length, pantry: p.length })
+        if (JSON.stringify(c) !== JSON.stringify(cyclesRef.current)) setCycles(c)
+        if (JSON.stringify(e) !== JSON.stringify(extraMealsRef.current)) setExtraMeals(e)
+        if (JSON.stringify(p) !== JSON.stringify(pantryRef.current)) setPantry(p)
+      } while (syncAgainRef.current)
+    } finally {
+      syncingRef.current = false
+    }
   }, [])
 
   // Build/tear down the backend on sign-in/out. On the very first sign-in on this device,
@@ -393,10 +409,14 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     }
   }, [account, runSync])
 
-  // Sync when the app returns to the foreground (also covers reconnect after offline).
+  // Sync when the app returns to the foreground (also covers reconnect after offline), and
+  // refresh "today" in case the app was backgrounded across midnight.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') void runSync()
+      if (s === 'active') {
+        setToday((prev) => { const t = todayISO(); return t !== prev ? t : prev })
+        void runSync()
+      }
     })
     return () => sub.remove()
   }, [runSync])
@@ -407,6 +427,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     const t = setTimeout(() => void runSync(), SYNC_DEBOUNCE_MS)
     return () => clearTimeout(t)
   }, [cycles, extraMeals, pantry, hydrated, runSync])
+
+  // Cancel a pending keep-scanning relaunch if the app unmounts first.
+  useEffect(() => () => { if (rescanTimerRef.current) clearTimeout(rescanTimerRef.current) }, [])
 
   useEffect(() => {
     const todayIndex = daysBetween(windowStart, today)
@@ -665,7 +688,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     // dismissing before relaunching the native scanner, or iOS rejects the present
     // ("presentation in progress") — same teardown discipline as scan.ts.
     if (wasScanned && keepScanning) {
-      setTimeout(() => { handleScanBarcode() }, 450)
+      rescanTimerRef.current = setTimeout(() => { handleScanBarcode() }, 450)
     }
   }
 

@@ -36,7 +36,7 @@ describe('SettingsScreen', () => {
 
   it('shows all section labels', () => {
     const { getByText } = renderSettings()
-    expect(getByText('Profile')).toBeTruthy()
+    // The display-name row's section label was intentionally emptied (no "Profile" heading).
     expect(getByText('Goals')).toBeTruthy()
     expect(getByText('Meal prep')).toBeTruthy()
     expect(getByText('Units')).toBeTruthy()
@@ -240,12 +240,12 @@ describe('SettingsScreen', () => {
 
     it('renders sync chip text for offline status', () => {
       const { getByTestId } = renderSettings({ account, sync: 'offline' })
-      expect(getByTestId('sync-status').props.children).toBe('Offline — will sync later')
+      expect(getByTestId('sync-status').props.children).toBe('Offline, will sync later')
     })
 
     it('renders sync chip text for error status', () => {
       const { getByTestId } = renderSettings({ account, sync: 'error' })
-      expect(getByTestId('sync-status').props.children).toBe('Sync error — tap to retry')
+      expect(getByTestId('sync-status').props.children).toBe('Sync error, tap to retry')
     })
 
     it('tapping account-delete then confirm-go calls onDeleteAccount', () => {
@@ -269,16 +269,11 @@ describe('SettingsScreen', () => {
       expect(getByText('2.5.0')).toBeTruthy()
     })
 
-    it('renders the "Soon" badge on Realtime sync row', () => {
-      const { getByText } = renderSettings()
-      expect(getByText('Soon')).toBeTruthy()
-    })
-
-    it('renders static rows: Send feedback, Rate the app, Privacy Policy', () => {
+    it('renders static rows: Send feedback, Privacy Policy, Terms of Service', () => {
       const { getByText } = renderSettings()
       expect(getByText('Send feedback')).toBeTruthy()
-      expect(getByText('Rate the app')).toBeTruthy()
       expect(getByText('Privacy Policy')).toBeTruthy()
+      expect(getByText('Terms of Service')).toBeTruthy()
     })
   })
 })

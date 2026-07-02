@@ -36,12 +36,21 @@ describe('BudgetBar', () => {
     expect(widthOf(getByTestId('budget-bar-extra-fill'))).toBe('0%')
   })
 
-  it('renders a legend for all three components', () => {
+  it('renders a legend for all three components when each contributes kcal', () => {
     const { getByText } = render(
-      <BudgetBar mealPrepKcal={0} pantryKcal={0} extraKcal={0} budgetKcal={2000} />
+      <BudgetBar mealPrepKcal={500} pantryKcal={300} extraKcal={200} budgetKcal={2000} />
     )
     expect(getByText('Meal prep')).toBeTruthy()
     expect(getByText('Pantry')).toBeTruthy()
     expect(getByText('Extra')).toBeTruthy()
+  })
+
+  it('omits the Pantry and Extra legend items when they contribute nothing', () => {
+    const { getByText, queryByText } = render(
+      <BudgetBar mealPrepKcal={0} pantryKcal={0} extraKcal={0} budgetKcal={2000} />
+    )
+    expect(getByText('Meal prep')).toBeTruthy()
+    expect(queryByText('Pantry')).toBeNull()
+    expect(queryByText('Extra')).toBeNull()
   })
 })

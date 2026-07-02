@@ -20,13 +20,18 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-font', () => ({ useFonts: () => [true], isLoaded: () => true, loadAsync: () => Promise.resolve() }));
 jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: () => Promise.resolve(), hideAsync: () => Promise.resolve() }));
 jest.mock('expo-blur', () => ({ BlurView: require('react-native').View }));
+jest.mock('expo-haptics', () => ({
+  impactAsync: () => Promise.resolve(),
+  selectionAsync: () => Promise.resolve(),
+  notificationAsync: () => Promise.resolve(),
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+}));
 // Keep the USDA network out of component/hook tests; usda.test.ts uses requireActual.
 jest.mock('./src/services/usda', () => ({
   usdaLookupByBarcode: jest.fn(async () => null),
   usdaSearchByName: jest.fn(async () => []),
 }));
-jest.mock('@expo-google-fonts/merriweather', () => ({ Merriweather_700Bold: 'Merriweather_700Bold' }));
-jest.mock('@expo-google-fonts/inter', () => ({ Inter_400Regular: 'Inter_400Regular', Inter_500Medium: 'Inter_500Medium', Inter_600SemiBold: 'Inter_600SemiBold', Inter_700Bold: 'Inter_700Bold', Inter_800ExtraBold: 'Inter_800ExtraBold' }));
 jest.mock('@expo-google-fonts/hanken-grotesk', () => ({ HankenGrotesk_400Regular: 'HankenGrotesk_400Regular', HankenGrotesk_500Medium: 'HankenGrotesk_500Medium', HankenGrotesk_600SemiBold: 'HankenGrotesk_600SemiBold', HankenGrotesk_700Bold: 'HankenGrotesk_700Bold', HankenGrotesk_800ExtraBold: 'HankenGrotesk_800ExtraBold' }));
 jest.mock('@expo-google-fonts/space-grotesk', () => ({ SpaceGrotesk_500Medium: 'SpaceGrotesk_500Medium', SpaceGrotesk_600SemiBold: 'SpaceGrotesk_600SemiBold', SpaceGrotesk_700Bold: 'SpaceGrotesk_700Bold' }));
 

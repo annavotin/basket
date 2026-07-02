@@ -21,4 +21,19 @@ describe('mergeLWW', () => {
     const noMeta = { id: 'a', v: 9 }
     expect(mergeLWW([noMeta as any], [A])).toEqual([A])
   })
+  it('resolves an exact-equal-updatedAt tie deterministically, independent of merge order', () => {
+    const tieLo = { id: 'a', updatedAt: '2026-06-01T00:00:00.000Z', v: 1 }
+    const tieHi = { id: 'a', updatedAt: '2026-06-01T00:00:00.000Z', v: 2 }
+    const winner = mergeLWW([tieLo], [tieHi])[0]
+    // Whichever record wins, both merge orders must converge on the SAME winner.
+    expect(mergeLWW([tieHi], [tieLo])).toEqual([winner])
+    expect(mergeLWW([tieLo], [tieHi])).toEqual([winner])
+  })
+  it('resolves a both-missing-updatedAt tie deterministically, independent of merge order', () => {
+    const tieLo = { id: 'a', v: 1 }
+    const tieHi = { id: 'a', v: 2 }
+    const winner = mergeLWW([tieLo as any], [tieHi as any])[0]
+    expect(mergeLWW([tieHi as any], [tieLo as any])).toEqual([winner])
+    expect(mergeLWW([tieLo as any], [tieHi as any])).toEqual([winner])
+  })
 })

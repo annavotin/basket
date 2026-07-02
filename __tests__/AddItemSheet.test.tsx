@@ -55,6 +55,9 @@ describe('AddItemSheet — manual mode', () => {
     fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
     await waitFor(() => getByText('Banana'))
     fireEvent.press(getByText('Banana'))
+    // Banana ships a "per banana" serving, so it opens on that unit pill;
+    // switch to Custom (g) to enter an arbitrary weight.
+    fireEvent.press(getByText('Custom (g)'))
     fireEvent.changeText(getByTestId('weight-input'), '120')
     fireEvent.press(getByTestId('add-item-button'))
     expect(onAdd).toHaveBeenCalledWith(

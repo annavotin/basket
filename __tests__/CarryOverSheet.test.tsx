@@ -40,4 +40,20 @@ describe('CarryOverSheet', () => {
     fireEvent.press(getByText('Start prep with leftovers'))
     expect(onConfirm.mock.calls[0][0]).toHaveLength(2)
   })
+  it('accounts for quantity: shows total purchased grams/kcal and carries the correct amount', () => {
+    const qtyCycle: MealPrepCycle = {
+      id: 'c1', startDate: '2026-06-01', endDate: '2026-06-05',
+      items: [{ name: 'Yogurt', weightG: 200, kcal: 330, emoji: '🥛', quantity: 3, source: 'barcode' }],
+    }
+    const onConfirm = jest.fn()
+    const { getByText, getByTestId } = wrap(<CarryOverSheet visible prevCycle={qtyCycle} onConfirm={onConfirm} onSkip={jest.fn()} onClose={jest.fn()} />)
+    // 200g × 3 = 600g bought; 330kcal × 3 = 990kcal — totals, not per-unit.
+    expect(getByText('600 g bought · 990 kcal')).toBeTruthy()
+    fireEvent.press(getByTestId('carry-toggle-0'))
+    fireEvent.press(getByText('Start prep with leftovers'))
+    const carried = onConfirm.mock.calls[0][0]
+    // Ticking carries the full remainder (600g), which is the full 990 kcal — not the
+    // per-unit-weight-scaled 2970 the bug used to produce.
+    expect(carried[0]).toMatchObject({ name: 'Yogurt', weightG: 600, kcal: 990, source: 'carry' })
+  })
 })

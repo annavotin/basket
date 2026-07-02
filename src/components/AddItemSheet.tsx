@@ -394,7 +394,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
 
   const effectivePer100g =
     kcalPer100g ?? (parseFloat(manualKcal100) > 0 ? parseFloat(manualKcal100) : null)
-  const weightNum = parseInt(weight, 10) || 0
+  const weightNum = parseFloat(weight) || 0
   const perUnitKcal = effectivePer100g != null ? kcalForWeight(effectivePer100g, weightNum) : 0
   const showManualPer100 = isManual && kcalPer100g == null
   // Guard against silently adding an empty/garbage item.

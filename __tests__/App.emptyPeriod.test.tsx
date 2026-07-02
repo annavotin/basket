@@ -12,11 +12,12 @@ beforeEach(async () => {
   jest.useFakeTimers().setSystemTime(new Date('2026-06-20'))
   await AsyncStorage.clear()
   jest.clearAllMocks()
+  await AsyncStorage.setItem('basket:v1:onboarded', '1')
 })
 afterEach(() => jest.useRealTimers())
 
 describe('empty period lifecycle', () => {
-  it('creates a new period from the + tile and discards it when deselected', async () => {
+  it('creates a new period from the + tile and keeps it when deselected', async () => {
     const { getAllByTestId, queryByTestId, findAllByTestId } = render(<App />)
     const baseBars = (await findAllByTestId('cycle-bar')).length
 
@@ -25,11 +26,12 @@ describe('empty period lifecycle', () => {
     await waitFor(() => expect(queryByTestId('new-period-panel')).toBeTruthy())
     expect(getAllByTestId('cycle-bar').length).toBe(baseBars + 1)
 
-    // tap the new (active) pill again to deselect -> empty period is removed
+    // tap the new (active) pill again to deselect -> panel closes, but the empty period is
+    // deliberately kept in the timeline as a "New shop" pill (see changeSelection in App.tsx)
     const bars = getAllByTestId('cycle-bar')
     fireEvent.press(bars[bars.length - 1])
     await waitFor(() => expect(queryByTestId('new-period-panel')).toBeNull())
-    expect(getAllByTestId('cycle-bar').length).toBe(baseBars)
+    expect(getAllByTestId('cycle-bar').length).toBe(baseBars + 1)
   })
 
   it('keeps only one empty new period when tapping the + tile again', async () => {

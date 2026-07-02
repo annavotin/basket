@@ -37,6 +37,7 @@ beforeEach(() => {
   // test would otherwise have written cycles into the in-memory AsyncStorage
   // mock, which hydration would then restore.
   AsyncStorage.clear()
+  AsyncStorage.setItem('basket:v1:onboarded', '1')
 })
 
 afterEach(() => {

@@ -6,6 +6,7 @@ import {
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { CustomFood, Macros } from '../types'
+import ConfirmDialog from './settings/ConfirmDialog'
 
 type Props = {
   visible: boolean
@@ -29,8 +30,10 @@ export default function CustomFoodsScreen({ visible, foods, onClose, onSave, onD
   const [p, setP] = useState('')
   const [c, setC] = useState('')
   const [f, setF] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   function openEdit(food: CustomFood) {
+    setConfirmDelete(false)
     setEditing(food)
     setName(food.name)
     setKcal(String(food.kcalPer100g))
@@ -60,6 +63,7 @@ export default function CustomFoodsScreen({ visible, foods, onClose, onSave, onD
   function remove() {
     if (!editing) return
     onDelete(editing.id)
+    setConfirmDelete(false)
     setEditing(null)
   }
 
@@ -181,10 +185,20 @@ export default function CustomFoodsScreen({ visible, foods, onClose, onSave, onD
               </View>
               {editing?.barcode ? <Text style={styles.bc}>🏷️ Barcode {editing.barcode}</Text> : null}
               <TouchableOpacity testID="cf-save" style={styles.btn} onPress={save}><Text style={styles.btnTxt}>Save</Text></TouchableOpacity>
-              <TouchableOpacity testID="cf-delete" style={styles.del} onPress={remove}><Text style={styles.delTxt}>🗑️  Delete this food</Text></TouchableOpacity>
+              <TouchableOpacity testID="cf-delete" style={styles.del} onPress={() => setConfirmDelete(true)}><Text style={styles.delTxt}>🗑️  Delete this food</Text></TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
         </Modal>
+
+        <ConfirmDialog
+          visible={confirmDelete}
+          title="Delete this food?"
+          body="This removes it from My Foods. This can't be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={remove}
+          onClose={() => setConfirmDelete(false)}
+        />
       </SafeAreaView>
     </Modal>
   )

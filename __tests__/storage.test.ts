@@ -1,5 +1,5 @@
-import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY, loadPrefs, savePrefs, STORAGE_KEY_PREFS, exportAll, clearAll } from '../src/services/storage'
-import { MealPrepCycle, ExtraMeal, PantryItem, Preferences } from '../src/types'
+import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY, loadPrefs, savePrefs, STORAGE_KEY_PREFS, loadCustomFoods, saveCustomFoods, STORAGE_KEY_CUSTOM_FOODS, loadKeepScanning, saveKeepScanning, STORAGE_KEY_KEEP_SCANNING, exportAll, clearAll } from '../src/services/storage'
+import { MealPrepCycle, ExtraMeal, PantryItem, Preferences, CustomFood } from '../src/types'
 import { DEFAULT_PREFERENCES } from '../src/data'
 
 function fakeStorage(initial: Record<string, string> = {}) {
@@ -88,6 +88,54 @@ describe('extras storage', () => {
   })
 })
 
+describe('custom foods storage', () => {
+  const customFoods: CustomFood[] = [
+    { id: 'cf-1', name: 'Protein Bar', emoji: '🍫', kcalPer100g: 410, createdAt: 1, updatedAt: 1 },
+  ]
+
+  it('round-trips saved custom foods', async () => {
+    const storage = fakeStorage()
+    await saveCustomFoods(customFoods, { storage })
+    expect(storage.setItem).toHaveBeenCalledWith(STORAGE_KEY_CUSTOM_FOODS, expect.any(String))
+    expect(await loadCustomFoods({ storage })).toEqual(customFoods)
+  })
+  it('returns null when nothing is stored', async () => {
+    expect(await loadCustomFoods({ storage: fakeStorage() })).toBeNull()
+  })
+  it('returns null on corrupt JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_CUSTOM_FOODS]: '{not valid json' })
+    expect(await loadCustomFoods({ storage })).toBeNull()
+  })
+  it('returns null on non-array JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_CUSTOM_FOODS]: '{}' })
+    expect(await loadCustomFoods({ storage })).toBeNull()
+  })
+  it('saveCustomFoods swallows setItem errors', async () => {
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }), removeItem: jest.fn() }
+    await expect(saveCustomFoods(customFoods, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('keep scanning storage', () => {
+  it('round-trips true through saveKeepScanning then loadKeepScanning', async () => {
+    const storage = fakeStorage()
+    await saveKeepScanning(true, { storage })
+    expect(storage.setItem).toHaveBeenCalledWith(STORAGE_KEY_KEEP_SCANNING, expect.any(String))
+    expect(await loadKeepScanning({ storage })).toBe(true)
+  })
+  it('returns false when nothing is stored', async () => {
+    expect(await loadKeepScanning({ storage: fakeStorage() })).toBe(false)
+  })
+  it('returns false on corrupt JSON', async () => {
+    const storage = fakeStorage({ [STORAGE_KEY_KEEP_SCANNING]: '{not json' })
+    expect(await loadKeepScanning({ storage })).toBe(false)
+  })
+  it('saveKeepScanning swallows setItem errors', async () => {
+    const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }), removeItem: jest.fn() }
+    await expect(saveKeepScanning(true, { storage })).resolves.toBeUndefined()
+  })
+})
+
 describe('pantry storage', () => {
   const pantryItems: PantryItem[] = [
     { id: 'pantry-oats', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 },
@@ -165,19 +213,25 @@ describe('preferences storage', () => {
 })
 
 describe('data management', () => {
+  const sampleCustomFoods = [{ id: 'cf-1', name: 'Protein Bar', emoji: '🍫', kcalPer100g: 410, createdAt: 1, updatedAt: 1 }]
+
   it('exportAll returns JSON with all stored fields', async () => {
     const storage = fakeStorage({
       [STORAGE_KEY]: JSON.stringify(sampleCycles),
+      [STORAGE_KEY_CUSTOM_FOODS]: JSON.stringify(sampleCustomFoods),
       [STORAGE_KEY_EXTRAS]: JSON.stringify([{ id: 'x', date: '2026-06-02', name: 'Bar', kcal: 220 }]),
       [STORAGE_KEY_DAILY_GOAL]: JSON.stringify(2000),
+      [STORAGE_KEY_KEEP_SCANNING]: JSON.stringify(true),
       [STORAGE_KEY_PANTRY]: JSON.stringify([{ id: 'p1', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 }]),
       [STORAGE_KEY_PREFS]: JSON.stringify({ name: 'Anna', defaultDays: 5, units: { weight: 'g', energy: 'kcal' }, theme: 'dark', accent: ['#111', '#222', '#333'], macroTargets: { protein: 100, carbs: 200, fat: 60 } }),
     })
     const json = await exportAll({ storage })
     const parsed = JSON.parse(json)
     expect(parsed.cycles).toEqual(sampleCycles)
+    expect(parsed.customFoods).toEqual(sampleCustomFoods)
     expect(parsed.extras).toEqual([{ id: 'x', date: '2026-06-02', name: 'Bar', kcal: 220 }])
     expect(parsed.dailyGoal).toBe(2000)
+    expect(parsed.keepScanning).toBe(true)
     expect(parsed.pantry).toEqual([{ id: 'p1', name: 'Oats', emoji: '🌾', kcalPer100g: 379, dailyG: 40 }])
     expect(parsed.preferences.name).toBe('Anna')
     expect(typeof parsed.exportedAt).toBe('string')
@@ -188,27 +242,33 @@ describe('data management', () => {
     const json = await exportAll({ storage })
     const parsed = JSON.parse(json)
     expect(parsed.cycles).toBeNull()
+    expect(parsed.customFoods).toBeNull()
     expect(parsed.extras).toBeNull()
     expect(parsed.dailyGoal).toBeNull()
+    expect(parsed.keepScanning).toBeNull()
     expect(parsed.pantry).toBeNull()
     expect(parsed.preferences).toBeNull()
   })
 
-  it('clearAll calls removeItem for all 5 keys and leaves storage empty', async () => {
+  it('clearAll calls removeItem for all 7 keys and leaves storage empty', async () => {
     const storage = fakeStorage({
       [STORAGE_KEY]: '[]',
+      [STORAGE_KEY_CUSTOM_FOODS]: '[]',
       [STORAGE_KEY_EXTRAS]: '[]',
       [STORAGE_KEY_DAILY_GOAL]: '2000',
+      [STORAGE_KEY_KEEP_SCANNING]: 'true',
       [STORAGE_KEY_PANTRY]: '[]',
       [STORAGE_KEY_PREFS]: '{}',
     })
     await clearAll({ storage })
     expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY)
+    expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_CUSTOM_FOODS)
     expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_EXTRAS)
     expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_DAILY_GOAL)
+    expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_KEEP_SCANNING)
     expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_PANTRY)
     expect(storage.removeItem).toHaveBeenCalledWith(STORAGE_KEY_PREFS)
-    expect(storage.removeItem).toHaveBeenCalledTimes(5)
+    expect(storage.removeItem).toHaveBeenCalledTimes(7)
     expect(Object.keys(storage.data)).toHaveLength(0)
   })
 })

@@ -37,7 +37,7 @@ describe('CalendarStrip', () => {
   })
 
   it('marks dates with extra meals with a dot', () => {
-    const { getAllByTestId } = render(
+    const { toJSON } = render(
       <CalendarStrip
         windowStart={WINDOW_START}
         totalDays={DAYS}
@@ -47,30 +47,35 @@ describe('CalendarStrip', () => {
         dayWidth={64}
       />
     )
-    expect(getAllByTestId('extra-pill')).toHaveLength(1)
+    // Each day-cell's dcell wrapper (its first rendered child) always renders the weekday +
+    // day-number Text nodes (2 children); a day with an extra gets a 3rd child — the dot View.
+    const cells = (toJSON() as any).children
+    const dotCounts = cells.map((cell: any) => cell.children[0].children.length)
+    expect(dotCounts.filter((n: number) => n === 3)).toHaveLength(1)
+    expect(dotCounts[1]).toBe(3) // 2026-06-02 is the 2nd day in the window
   })
 
-  it('renders a faint add-extra pill on a day with no extra and fires onExtraPress', () => {
+  it('every day cell is pressable and fires onExtraPress with its own date, extra or not', () => {
     const onExtraPress = jest.fn()
     const { getAllByTestId } = render(
       <CalendarStrip windowStart="2026-06-01" totalDays={3} today="2026-06-02"
         extraDates={['2026-06-02']} onExtraPress={onExtraPress} dayWidth={64} />
     )
-    const adds = getAllByTestId('add-extra')
-    expect(adds).toHaveLength(2) // 3 days, 1 has an extra
-    fireEvent.press(adds[0])
+    const cells = getAllByTestId('day-cell')
+    expect(cells).toHaveLength(3)
+    fireEvent.press(cells[0]) // no extra
     expect(onExtraPress).toHaveBeenCalledWith('2026-06-01')
+    fireEvent.press(cells[1]) // has an extra
+    expect(onExtraPress).toHaveBeenCalledWith('2026-06-02')
   })
 
-  it('renders exactly one solid extra-pill per day even with multiple extras and fires onExtraPress', () => {
-    const onExtraPress = jest.fn()
-    const { getAllByTestId } = render(
+  it('shows exactly one dot per day even when a date has multiple extras', () => {
+    const { toJSON } = render(
       <CalendarStrip windowStart="2026-06-01" totalDays={3} today="2026-06-02"
-        extraDates={['2026-06-02', '2026-06-02']} onExtraPress={onExtraPress} dayWidth={64} />
+        extraDates={['2026-06-02', '2026-06-02']} onExtraPress={() => {}} dayWidth={64} />
     )
-    const pills = getAllByTestId('extra-pill')
-    expect(pills).toHaveLength(1)
-    fireEvent.press(pills[0])
-    expect(onExtraPress).toHaveBeenCalledWith('2026-06-02')
+    const cells = (toJSON() as any).children
+    const dotCounts = cells.map((cell: any) => cell.children[0].children.length)
+    expect(dotCounts.filter((n: number) => n === 3)).toHaveLength(1)
   })
 })
