@@ -67,7 +67,7 @@ export default function Stepper({
   }), [colors])
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID={testID}>
       <Pressable
         style={styles.button}
         onPress={() => onChange(Math.max(min, value - step))}

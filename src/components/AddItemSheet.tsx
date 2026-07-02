@@ -383,7 +383,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
 
   // Weight is always stored in grams internally; display/input convert to the user's preferred unit.
   const isOz = units.weight === 'oz'
-  const weightLabel = isOz ? 'Weight (oz)' : 'Weight (g)'
+  const weightLabel = isOz ? 'Weight per pack (oz)' : 'Weight per pack (g)'
   const weightPlaceholder = isOz ? '17.6' : '500'
 
   function weightToDisplay(gStr: string): string {
@@ -406,6 +406,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   // Guard against silently adding an empty/garbage item.
   const canAdd = weightNum > 0 && name.trim().length > 0
   const showEditButton = scanned && !isManual && !editing
+  // True once there's something to act on: a product/suggestion is chosen, an active scan
+  // is in flight (found or not), or the user has started typing their own item.
+  const hasTypedOrChosen = !isManual || pickedSuggestion || scanned || name.trim().length > 0
   // Current match in My Foods: prefer barcode (stable even if the name gets edited),
   // else fall back to a case-insensitive name match on what's currently typed/shown.
   const matchedFood = (scanBarcode && findCustomByBarcode(customFoods, scanBarcode))
@@ -698,89 +701,93 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   )}
                 </View>
 
-                {/* ── QUANTITY ── */}
-                <View style={styles.qtyRow}>
-                  <Text style={[styles.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Quantity</Text>
-                  <Stepper value={qty} min={1} max={99} onChange={setQty} testID="qty" />
-                </View>
-
-                {/* ── KCAL PREVIEW (only once there's something to total) ── */}
-                {perUnitKcal > 0 && (
-                  <Text style={styles.kcalPreview} testID="kcal-preview">
-                    {qty > 1
-                      ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
-                      : formatEnergy(perUnitKcal, units)}
-                  </Text>
-                )}
-
-                {/* ── TOGGLES (Save to My Foods always shown; Keep scanning on scan-opened sheets) ── */}
-                <View style={styles.toggleGroup}>
-                  <View style={styles.toggleRow}>
-                    <View style={styles.toggleLabelWrap}>
-                      <Text style={styles.toggleLabel}>{saveLabel}</Text>
-                      <Text style={styles.toggleHint}>
-                        {matchedFood ? 'Refresh the saved details with what you entered' : 'Preload it next time you add this item'}
-                      </Text>
+                {hasTypedOrChosen && (
+                  <>
+                    {/* ── QUANTITY ── */}
+                    <View style={styles.qtyRow}>
+                      <Text style={[styles.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Quantity</Text>
+                      <Stepper value={qty} min={1} max={99} onChange={setQty} testID="qty" />
                     </View>
-                    <Toggle
-                      value={saveToFoods}
-                      onValueChange={setSaveToFoods}
-                      testID="toggle-save-to-foods"
-                    />
-                  </View>
-                  {isManual && (
-                    <>
-                      <View style={styles.toggleDivider} />
-                      {effectiveBarcode ? (
-                        <View style={styles.toggleRow}>
-                          <View style={styles.toggleLabelWrap}>
-                            <Text style={styles.toggleLabel}>Barcode linked ✓</Text>
-                            <Text style={styles.toggleHint}>Next scan of this item will find it</Text>
-                          </View>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          testID="link-barcode-button"
-                          style={styles.toggleRow}
-                          onPress={handleLinkBarcode}
-                          accessibilityLabel="Link a barcode"
-                        >
-                          <View style={styles.toggleLabelWrap}>
-                            <Text style={styles.toggleLabel}>Link a barcode</Text>
-                            <Text style={styles.toggleHint}>Scan the pack so this item is found next time</Text>
-                          </View>
-                          <BarcodeIcon size={20} color={colors.forest} />
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  )}
-                  {scanned && (
-                    <>
-                      <View style={styles.toggleDivider} />
+
+                    {/* ── KCAL PREVIEW (only once there's something to total) ── */}
+                    {perUnitKcal > 0 && (
+                      <Text style={styles.kcalPreview} testID="kcal-preview">
+                        {qty > 1
+                          ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
+                          : formatEnergy(perUnitKcal, units)}
+                      </Text>
+                    )}
+
+                    {/* ── TOGGLES (Save to My Foods always shown; Keep scanning on scan-opened sheets) ── */}
+                    <View style={styles.toggleGroup}>
                       <View style={styles.toggleRow}>
                         <View style={styles.toggleLabelWrap}>
-                          <Text style={styles.toggleLabel}>Keep scanning</Text>
-                          <Text style={styles.toggleHint}>Reopen the scanner after you add</Text>
+                          <Text style={styles.toggleLabel}>{saveLabel}</Text>
+                          <Text style={styles.toggleHint}>
+                            {matchedFood ? 'Refresh the saved details with what you entered' : 'Preload it next time you add this item'}
+                          </Text>
                         </View>
                         <Toggle
-                          value={keepScanning}
-                          onValueChange={onKeepScanning ?? (() => {})}
-                          testID="toggle-keep-scanning"
+                          value={saveToFoods}
+                          onValueChange={setSaveToFoods}
+                          testID="toggle-save-to-foods"
                         />
                       </View>
-                    </>
-                  )}
-                </View>
+                      {isManual && (
+                        <>
+                          <View style={styles.toggleDivider} />
+                          {effectiveBarcode ? (
+                            <View style={styles.toggleRow}>
+                              <View style={styles.toggleLabelWrap}>
+                                <Text style={styles.toggleLabel}>Barcode linked ✓</Text>
+                                <Text style={styles.toggleHint}>Next scan of this item will find it</Text>
+                              </View>
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              testID="link-barcode-button"
+                              style={styles.toggleRow}
+                              onPress={handleLinkBarcode}
+                              accessibilityLabel="Link a barcode"
+                            >
+                              <View style={styles.toggleLabelWrap}>
+                                <Text style={styles.toggleLabel}>Link a barcode</Text>
+                                <Text style={styles.toggleHint}>Scan the pack so this item is found next time</Text>
+                              </View>
+                              <BarcodeIcon size={20} color={colors.forest} />
+                            </TouchableOpacity>
+                          )}
+                        </>
+                      )}
+                      {scanned && (
+                        <>
+                          <View style={styles.toggleDivider} />
+                          <View style={styles.toggleRow}>
+                            <View style={styles.toggleLabelWrap}>
+                              <Text style={styles.toggleLabel}>Keep scanning</Text>
+                              <Text style={styles.toggleHint}>Reopen the scanner after you add</Text>
+                            </View>
+                            <Toggle
+                              value={keepScanning}
+                              onValueChange={onKeepScanning ?? (() => {})}
+                              testID="toggle-keep-scanning"
+                            />
+                          </View>
+                        </>
+                      )}
+                    </View>
 
-                {/* ── ADD BUTTON ── */}
-                <TouchableOpacity
-                  testID="add-item-button"
-                  style={[styles.addBtn, !canAdd && styles.addBtnDisabled]}
-                  onPress={handleAdd}
-                  disabled={!canAdd}
-                >
-                  <Text style={styles.addBtnText}>Add to period</Text>
-                </TouchableOpacity>
+                    {/* ── ADD BUTTON ── */}
+                    <TouchableOpacity
+                      testID="add-item-button"
+                      style={[styles.addBtn, !canAdd && styles.addBtnDisabled]}
+                      onPress={handleAdd}
+                      disabled={!canAdd}
+                    >
+                      <Text style={styles.addBtnText}>Add to period</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
 
                 {/* ── CANCEL ── */}
                 <TouchableOpacity testID="cancel-button" style={styles.cancelBtn} onPress={onClose}>

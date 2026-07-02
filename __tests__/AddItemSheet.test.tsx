@@ -109,6 +109,35 @@ describe('AddItemSheet — manual mode', () => {
     fireEvent.changeText(getByTestId('manual-name-input'), 'Plain Item')
     expect(queryByTestId('kcal-preview')).toBeNull()
   })
+
+  it('shows only the search bar on a fresh open, before typing or picking anything', () => {
+    const { getByTestId, queryByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    expect(getByTestId('manual-name-input')).toBeTruthy()
+    expect(queryByTestId('qty')).toBeNull()
+    expect(queryByTestId('toggle-save-to-foods')).toBeNull()
+    expect(queryByTestId('add-item-button')).toBeNull()
+    expect(getByTestId('cancel-button')).toBeTruthy() // always reachable
+  })
+
+  it('reveals quantity, toggles, and the add button once a name is typed', () => {
+    const { getByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Mystery Soup')
+    expect(getByTestId('qty')).toBeTruthy()
+    expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
+    expect(getByTestId('add-item-button')).toBeTruthy()
+  })
+
+  it('labels the weight field "per pack"', () => {
+    const { getByTestId, getByText } = render(
+      <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Mystery Soup')
+    expect(getByText('Weight per pack (g)')).toBeTruthy()
+  })
 })
 
 describe('AddItemSheet — validation guard', () => {
@@ -180,6 +209,7 @@ describe('AddItemSheet — scan toggles', () => {
     const { getByTestId, queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Something') // reveal the toggle group
     expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
     expect(queryByTestId('toggle-keep-scanning')).toBeNull()
     expect(queryByTestId('edit-product-button')).toBeNull()
@@ -248,6 +278,7 @@ describe('AddItemSheet — Save to My Foods', () => {
     rerender(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'placeholder') // reveal the toggle group
     fireEvent.press(getByTestId('toggle-save-to-foods')) // true -> false
     // Close, then reopen fresh (as App.tsx does between adds) — should default back to on.
     rerender(
