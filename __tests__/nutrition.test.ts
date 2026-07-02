@@ -1,4 +1,4 @@
-import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct, itemMacros, carriedItem, aggregateMacros } from '../src/utils/nutrition'
+import { kcalForWeight, totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryGramsForCycle, pantryKcalForCycle, kcalDerivedMacros, ringArcs, itemSharePct, itemMacros, carriedItem, aggregateMacros, toBasis, fromBasis } from '../src/utils/nutrition'
 import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle } from '../src/types'
 
 describe('kcalForWeight', () => {
@@ -187,5 +187,20 @@ describe('aggregateMacros', () => {
   it('estimates items with no profile from their kcal too', () => {
     const items = [{ name: 'Mystery', weightG: 100, kcal: 1000, emoji: '❓' }]
     expect(aggregateMacros(items, 0)).toEqual({ protein: 63, carbs: 113, fat: 33 })
+  })
+})
+
+describe('basis conversion', () => {
+  it('per100g mode is a passthrough', () => {
+    expect(toBasis(66, 1500, 'per100g')).toBe(66)
+    expect(fromBasis(66, 1500, 'per100g')).toBe(66)
+  })
+  it('total mode scales by full grams (weight x qty)', () => {
+    expect(toBasis(66, 1500, 'total')).toBe(990)
+    expect(fromBasis(990, 1500, 'total')).toBe(66)
+  })
+  it('guards G = 0 (unknown weight)', () => {
+    expect(toBasis(66, 0, 'total')).toBe(0)
+    expect(fromBasis(990, 0, 'total')).toBe(0)
   })
 })

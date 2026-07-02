@@ -1,4 +1,4 @@
-import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle, Macros } from '../types'
+import { FoodItem, ExtraMeal, PantryItem, MealPrepCycle, Macros, NutritionBasis } from '../types'
 
 /** Round to the nearest tenth — DB energy values like 2.84444 kcal/100g read nicer as 2.8. */
 export function roundTenth(n: number): number {
@@ -114,4 +114,14 @@ export function aggregateMacros(items: FoodItem[], otherKcal: number): Macros {
     carbs: Math.round(fromItems.carbs + est.carbs),
     fat: Math.round(fromItems.fat + est.fat),
   }
+}
+
+/** Canonical per-100g value -> value displayed in `basis` over G grams (weight x qty). */
+export function toBasis(per100g: number, G: number, basis: NutritionBasis): number {
+  return basis === 'per100g' ? per100g : G > 0 ? (per100g * G) / 100 : 0
+}
+
+/** Value shown in `basis` over G grams -> canonical per-100g. */
+export function fromBasis(shown: number, G: number, basis: NutritionBasis): number {
+  return basis === 'per100g' ? shown : G > 0 ? (shown * 100) / G : 0
 }
