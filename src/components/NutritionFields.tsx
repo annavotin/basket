@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
@@ -46,7 +46,19 @@ export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, 
     fat: show(macrosPer100g?.fat, G, effectiveBasis),
   })
 
+  // handleChange's own onChange() causes the parent to hand new kcalPer100g/macrosPer100g
+  // props right back down — without this guard, that echo re-syncs `values` from canonical
+  // and clobbers whatever the user typed into a SIBLING field a moment earlier but hasn't
+  // committed yet (e.g. clearing Protein then Carbs: Carbs's blank gets stomped back to its
+  // last canonical value by Protein's own round-trip before the user finishes). Set right
+  // before onChange, consumed (and cleared) by the very next effect run.
+  const skipNextSyncRef = useRef(false)
+
   useEffect(() => {
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false
+      return
+    }
     setValues({
       kcal: show(kcalPer100g, G, effectiveBasis),
       protein: show(macrosPer100g?.protein, G, effectiveBasis),
@@ -67,6 +79,7 @@ export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, 
     const macros = mp == null && mc == null && mf == null
       ? undefined
       : { protein: mp ?? 0, carbs: mc ?? 0, fat: mf ?? 0 }
+    skipNextSyncRef.current = true
     onChange({ kcalPer100g: k, macrosPer100g: macros })
   }
 

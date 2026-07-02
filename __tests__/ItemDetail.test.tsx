@@ -58,6 +58,32 @@ describe('ItemDetail — basket item', () => {
     fireEvent.press(getByText('Save'))
     expect(onSaveItem).toHaveBeenCalledWith(expect.objectContaining({ kcal: 650 }))
   })
+
+  it('seeds the per-100g kcal rounded to the tenth, matching how NutritionFields displays it', () => {
+    // 1000 kcal over 600g = 166.6666...7 per 100g — must round the same way NutritionFields
+    // rounds its own displayed values, or editing without touching kcal silently changes it.
+    const looseItem: FoodItem = { name: 'Oats', weightG: 600, kcal: 1000, emoji: '🌾' }
+    const { getByText, getByTestId } = wrap(
+      <ItemDetail visible kind="item" item={looseItem} days={5} basis="per100g" onBasisChange={jest.fn()}
+        onRemove={jest.fn()} onClose={jest.fn()} onSaveItem={jest.fn()} />
+    )
+    fireEvent.press(getByText('Edit'))
+    expect(getByTestId('nf-kcal').props.value).toBe('166.7')
+  })
+
+  it('clears macros to undefined (not the original profile) when all macro fields are cleared', () => {
+    const onSaveItem = jest.fn()
+    const { getByText, getByTestId } = wrap(
+      <ItemDetail visible kind="item" item={item} days={5} basis="per100g" onBasisChange={jest.fn()}
+        onRemove={jest.fn()} onClose={jest.fn()} onSaveItem={onSaveItem} />
+    )
+    fireEvent.press(getByText('Edit'))
+    fireEvent.changeText(getByTestId('nf-protein'), '')
+    fireEvent.changeText(getByTestId('nf-carbs'), '')
+    fireEvent.changeText(getByTestId('nf-fat'), '')
+    fireEvent.press(getByText('Save'))
+    expect(onSaveItem.mock.calls[0][0].macrosPer100g).toBeUndefined()
+  })
 })
 
 describe('ItemDetail — extra', () => {

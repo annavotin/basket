@@ -44,3 +44,6 @@ yarn-error.*
 # Supabase CLI local state (linked-project ref, versions — machine-specific)
 supabase/.temp/
 supabase/.branches/
+
+# Brainstorming visual companion scratch files
+.superpowers/

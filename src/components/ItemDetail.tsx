@@ -3,7 +3,7 @@ import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvo
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { FoodItem, ExtraMeal, PantryItem, Macros, NutritionBasis } from '../types'
-import { itemMacros, kcalDerivedMacros, kcalForWeight } from '../utils/nutrition'
+import { itemMacros, kcalDerivedMacros, kcalForWeight, roundTenth } from '../utils/nutrition'
 import { EditIcon } from './icons'
 import NutritionFields from './NutritionFields'
 
@@ -73,7 +73,7 @@ export default function ItemDetail(props: Props) {
       setPStr(String(Math.round(m.protein)))
       setCStr(String(Math.round(m.carbs)))
       setFStr(String(Math.round(m.fat)))
-      setKcalPer100g(item.weightG > 0 ? (item.kcal / item.weightG) * 100 : null)
+      setKcalPer100g(item.weightG > 0 ? roundTenth((item.kcal / item.weightG) * 100) : null)
       setMacrosPer100g(item.macrosPer100g)
     } else if (kind === 'extra' && extra) {
       const em = extra.macros ?? kcalDerivedMacros(extra.kcal)
@@ -106,7 +106,7 @@ export default function ItemDetail(props: Props) {
       weightG: w,
       kcal: perUnitKcal,
       quantity: Math.max(1, Math.round(num(qtyStr))),
-      macrosPer100g: macrosPer100g ?? item?.macrosPer100g ?? { protein: 0, carbs: 0, fat: 0 },
+      macrosPer100g,
     })
     setEditing(false)
   }
