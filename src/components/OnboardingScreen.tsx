@@ -497,7 +497,7 @@ function Complete({ dailyGoal, onEnter }: { dailyGoal: number; onEnter: () => vo
       <View style={co.glow} pointerEvents="none" />
       <SafeAreaView style={co.safe}>
         <View style={co.content}>
-          <Image source={require('../../assets/icon.png')} style={co.icon} resizeMode="contain" />
+          <Image source={require('../../assets/splash-icon.png')} style={co.icon} resizeMode="contain" />
           <Text style={co.title}>You're all set</Text>
           <Text style={co.sub}>
             {dailyGoal.toLocaleString()} kcal a day. Time to plan your first batch prep.
@@ -650,7 +650,7 @@ const su = StyleSheet.create({
 const co = StyleSheet.create({
   root: { flex: 1, backgroundColor: F },
   // Glow sphere sits at the vertical center of the screen so the icon floats inside it
-  glow: { position: 'absolute', top: -220, left: '50%', marginLeft: -340, width: 680, height: 680, borderRadius: 340, backgroundColor: 'rgba(78,137,42,0.28)' },
+  glow: { position: 'absolute', top: -170, left: '50%', marginLeft: -390, width: 780, height: 780, borderRadius: 390, backgroundColor: 'rgba(78,137,42,0.28)' },
   safe: { flex: 1 },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 60 },
   icon: { width: 150, height: 150, marginBottom: 24 },

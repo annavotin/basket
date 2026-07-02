@@ -2,17 +2,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native'
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
-import type { Palette } from '../styles/palette'
 import { FoodItem, ExtraMeal, PantryItem, Macros } from '../types'
 import { itemMacros, kcalDerivedMacros } from '../utils/nutrition'
 import { EditIcon } from './icons'
 
 type Kind = 'item' | 'extra' | 'pantry'
 const SRC_LABELS: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
-const MAC_DEFS: { key: keyof Macros; label: string; kcalPerG: number; fillKey: keyof Palette; trackColor: string }[] = [
-  { key: 'protein', label: 'Protein', kcalPerG: 4, fillKey: 'rose',        trackColor: 'rgba(197,106,76,0.15)' },
-  { key: 'carbs',   label: 'Carbs',   kcalPerG: 4, fillKey: 'pantry',      trackColor: 'rgba(217,164,65,0.18)' },
-  { key: 'fat',     label: 'Fat',     kcalPerG: 9, fillKey: 'matchaDeep',  trackColor: 'rgba(70,97,47,0.15)' },
+const MAC_DEFS: { key: keyof Macros; label: string }[] = [
+  { key: 'protein', label: 'Protein' },
+  { key: 'carbs',   label: 'Carbs' },
+  { key: 'fat',     label: 'Fat' },
 ]
 
 type Props = {
@@ -99,6 +98,7 @@ export default function ItemDetail(props: Props) {
 
   function saveItem() {
     const w = Math.round(num(weightStr))
+    if (w <= 0) return // guard: never persist a zero weight against nonzero kcal/macros
     const perUnitKcal = Math.round(num(kcalStr))
     const macrosPer100g: Macros = w > 0
       ? { protein: (num(pStr) / w) * 100, carbs: (num(cStr) / w) * 100, fat: (num(fStr) / w) * 100 }
@@ -134,8 +134,6 @@ export default function ItemDetail(props: Props) {
     : kind === 'item' && item ? itemMacros(item)
     : kind === 'extra' && extra?.macros ? extra.macros
     : kcalDerivedMacros(cals)
-  const macroKcal = MAC_DEFS.map((d) => macroGrams[d.key] * d.kcalPerG)
-  const macroSum = Math.max(1, macroKcal.reduce((s, v) => s + v, 0))
 
   const removeLabel = kind === 'extra' ? 'Delete this extra' : kind === 'pantry' ? 'Remove staple' : 'Remove from basket'
   const estimated = kind === 'pantry' || (kind === 'extra' && !extra?.macros)
@@ -161,13 +159,10 @@ export default function ItemDetail(props: Props) {
     statL: { fontFamily: fonts.body, fontSize: 10, color: colors.mossFaint, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
     when: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.moss, marginTop: 14 },
     seclbl: { fontFamily: fonts.bodyExtra, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: colors.mossFaint, marginTop: 18, marginBottom: 10 },
-    macroRow: { gap: 11 },
-    macro: { },
-    macroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+    macroRow: { gap: 14 },
+    macroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     macroL: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.moss },
     macroV: { fontFamily: fonts.num, fontSize: 13, color: colors.forest },
-    macroBar: { height: 7, borderRadius: 4, overflow: 'hidden' },
-    macroFill: { height: '100%', borderRadius: 4 },
     field: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.sageBg2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 9 },
     fieldL: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.moss },
     input: { fontFamily: fonts.num, fontSize: 16, color: colors.forest, textAlign: 'right', minWidth: 80, padding: 0 },
@@ -239,17 +234,14 @@ export default function ItemDetail(props: Props) {
 
           <Text style={styles.seclbl}>Macros{editingMacros ? ' · tap to edit' : estimated ? ' · estimated' : ''}</Text>
           <View style={styles.macroRow}>
-            {MAC_DEFS.map((d, i) => (
-              <View style={styles.macro} key={d.key}>
-                <View style={styles.macroTop}>
-                  <Text style={styles.macroL}>{d.label}</Text>
-                  {editingMacros
-                    ? <TextInput testID={`id-macro-${d.key}`} style={styles.macroInput} keyboardType="numeric" selectTextOnFocus
-                        value={d.key === 'protein' ? pStr : d.key === 'carbs' ? cStr : fStr}
-                        onChangeText={d.key === 'protein' ? setPStr : d.key === 'carbs' ? setCStr : setFStr} />
-                    : <Text style={styles.macroV}>{Math.round(macroGrams[d.key])}g</Text>}
-                </View>
-                <View style={[styles.macroBar, { backgroundColor: d.trackColor }]}><View style={[styles.macroFill, { width: `${(macroKcal[i] / macroSum) * 100}%`, backgroundColor: colors[d.fillKey] }]} /></View>
+            {MAC_DEFS.map((d) => (
+              <View style={styles.macroTop} key={d.key}>
+                <Text style={styles.macroL}>{d.label}</Text>
+                {editingMacros
+                  ? <TextInput testID={`id-macro-${d.key}`} style={styles.macroInput} keyboardType="numeric" selectTextOnFocus
+                      value={d.key === 'protein' ? pStr : d.key === 'carbs' ? cStr : fStr}
+                      onChangeText={d.key === 'protein' ? setPStr : d.key === 'carbs' ? setCStr : setFStr} />
+                  : <Text style={styles.macroV}>{Math.round(macroGrams[d.key])}g</Text>}
               </View>
             ))}
           </View>
