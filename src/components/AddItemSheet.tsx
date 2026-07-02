@@ -36,6 +36,12 @@ type Props = {
   onBasisChange: (b: NutritionBasis) => void
 }
 
+function macrosEqual(a?: Macros, b?: Macros): boolean {
+  if (a == null && b == null) return true
+  if (a == null || b == null) return false
+  return a.protein === b.protein && a.carbs === b.carbs && a.fat === b.fat
+}
+
 export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, onScanForBarcode, customFoods = [], scanned = false, scanBarcode = null, keepScanning = false, onKeepScanning, basis, onBasisChange }: Props) {
   const colors = useColors()
   const units = useUnits()
@@ -60,6 +66,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   // Barcode linked to a manual/custom item via the "Link a barcode" flow (distinct from
   // scanBarcode, which comes from an actual scanned product match).
   const [linkedBarcode, setLinkedBarcode] = useState<string | null>(null)
+  // Snapshot of the picked/scanned food's starting values, for dirty-checking. null means
+  // there's no prior version to compare against — this is a brand-new (fully custom) food.
+  const [original, setOriginal] = useState<{ weightG: number; kcalPer100g: number | null; macrosPer100g?: Macros } | null>(null)
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
@@ -315,21 +324,17 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   useEffect(() => {
     if (product) {
       const unknownWeight = product.packageWeightG <= 0
+      const srvs = product.servings ?? []
+      const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (unknownWeight ? 0 : product.packageWeightG)
       setName(product.name)
-      setWeight(unknownWeight ? '' : String(product.packageWeightG))
+      setWeight(initialWeightG > 0 ? String(initialWeightG) : '')
       setEmoji(product.emoji)
       setMacrosPer100g(product.macrosPer100g)
-      // Unknown pack weight can't be added as-is (needs weight > 0) → open straight into edit.
       setEditing(unknownWeight)
       setKcalPer100g(product.kcalPer100g)
-      const srvs = product.servings ?? []
       setServings(srvs)
-      if (srvs.length > 0) {
-        setServingIdx(0)
-        setWeight(String(srvs[0].weightG))  // override the weight set above
-      } else {
-        setServingIdx(null)
-      }
+      setServingIdx(srvs.length > 0 ? 0 : null)
+      setOriginal({ weightG: initialWeightG, kcalPer100g: product.kcalPer100g, macrosPer100g: product.macrosPer100g })
     } else {
       setName('')
       setWeight('')
@@ -339,6 +344,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setEditing(false)
       setServings([])
       setServingIdx(null)
+      setOriginal(null)
     }
     setPickedSuggestion(false)
     setQty(1)
@@ -370,6 +376,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setPickedSuggestion(true)
     const srvs = s.servings ?? []
     setServings(srvs)
+    const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (s.packageWeightG || 0)
     if (srvs.length > 0) {
       setServingIdx(0)
       setWeight(String(srvs[0].weightG))
@@ -377,6 +384,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setServingIdx(null)
       if (s.packageWeightG) setWeight(String(s.packageWeightG))
     }
+    setOriginal({ weightG: initialWeightG, kcalPer100g: s.kcalPer100g, macrosPer100g: s.macrosPer100g })
     setDropdownOpen(false)
     Keyboard.dismiss()
   }
@@ -409,6 +417,12 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   // True once there's something to act on: a product/suggestion is chosen, an active scan
   // is in flight (found or not), or the user has started typing their own item.
   const hasTypedOrChosen = !isManual || pickedSuggestion || scanned || name.trim().length > 0
+  const isDirty = original != null && (
+    weightNum !== original.weightG ||
+    kcalPer100g !== original.kcalPer100g ||
+    !macrosEqual(macrosPer100g, original.macrosPer100g)
+  )
+  const showSaveToggle = original === null || isDirty
   // Current match in My Foods: prefer barcode (stable even if the name gets edited),
   // else fall back to a case-insensitive name match on what's currently typed/shown.
   const matchedFood = (scanBarcode && findCustomByBarcode(customFoods, scanBarcode))
@@ -433,7 +447,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       quantity: qty,
       source: product ? 'barcode' : 'manual',
       macrosPer100g,
-    }, { save: saveToFoods, barcode: effectiveBarcode ?? undefined })
+    }, { save: showSaveToggle && saveToFoods, barcode: effectiveBarcode ?? undefined })
     Keyboard.dismiss()
     onClose()
   }
@@ -718,64 +732,68 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       </Text>
                     )}
 
-                    {/* ── TOGGLES (Save to My Foods always shown; Keep scanning on scan-opened sheets) ── */}
-                    <View style={styles.toggleGroup}>
-                      <View style={styles.toggleRow}>
-                        <View style={styles.toggleLabelWrap}>
-                          <Text style={styles.toggleLabel}>{saveLabel}</Text>
-                          <Text style={styles.toggleHint}>
-                            {matchedFood ? 'Refresh the saved details with what you entered' : 'Preload it next time you add this item'}
-                          </Text>
-                        </View>
-                        <Toggle
-                          value={saveToFoods}
-                          onValueChange={setSaveToFoods}
-                          testID="toggle-save-to-foods"
-                        />
-                      </View>
-                      {isManual && (
-                        <>
-                          <View style={styles.toggleDivider} />
-                          {effectiveBarcode ? (
-                            <View style={styles.toggleRow}>
-                              <View style={styles.toggleLabelWrap}>
-                                <Text style={styles.toggleLabel}>Barcode linked ✓</Text>
-                                <Text style={styles.toggleHint}>Next scan of this item will find it</Text>
-                              </View>
-                            </View>
-                          ) : (
-                            <TouchableOpacity
-                              testID="link-barcode-button"
-                              style={styles.toggleRow}
-                              onPress={handleLinkBarcode}
-                              accessibilityLabel="Link a barcode"
-                            >
-                              <View style={styles.toggleLabelWrap}>
-                                <Text style={styles.toggleLabel}>Link a barcode</Text>
-                                <Text style={styles.toggleHint}>Scan the pack so this item is found next time</Text>
-                              </View>
-                              <BarcodeIcon size={20} color={colors.forest} />
-                            </TouchableOpacity>
-                          )}
-                        </>
-                      )}
-                      {scanned && (
-                        <>
-                          <View style={styles.toggleDivider} />
+                    {/* ── TOGGLES (Save to My Foods only for new/edited items; Keep scanning on scan-opened sheets) ── */}
+                    {(showSaveToggle || isManual || scanned) && (
+                      <View style={styles.toggleGroup}>
+                        {showSaveToggle && (
                           <View style={styles.toggleRow}>
                             <View style={styles.toggleLabelWrap}>
-                              <Text style={styles.toggleLabel}>Keep scanning</Text>
-                              <Text style={styles.toggleHint}>Reopen the scanner after you add</Text>
+                              <Text style={styles.toggleLabel}>{saveLabel}</Text>
+                              <Text style={styles.toggleHint}>
+                                {matchedFood ? 'Refresh the saved details with what you entered' : 'Preload it next time you add this item'}
+                              </Text>
                             </View>
                             <Toggle
-                              value={keepScanning}
-                              onValueChange={onKeepScanning ?? (() => {})}
-                              testID="toggle-keep-scanning"
+                              value={saveToFoods}
+                              onValueChange={setSaveToFoods}
+                              testID="toggle-save-to-foods"
                             />
                           </View>
-                        </>
-                      )}
-                    </View>
+                        )}
+                        {isManual && (
+                          <>
+                            {showSaveToggle && <View style={styles.toggleDivider} />}
+                            {effectiveBarcode ? (
+                              <View style={styles.toggleRow}>
+                                <View style={styles.toggleLabelWrap}>
+                                  <Text style={styles.toggleLabel}>Barcode linked ✓</Text>
+                                  <Text style={styles.toggleHint}>Next scan of this item will find it</Text>
+                                </View>
+                              </View>
+                            ) : (
+                              <TouchableOpacity
+                                testID="link-barcode-button"
+                                style={styles.toggleRow}
+                                onPress={handleLinkBarcode}
+                                accessibilityLabel="Link a barcode"
+                              >
+                                <View style={styles.toggleLabelWrap}>
+                                  <Text style={styles.toggleLabel}>Link a barcode</Text>
+                                  <Text style={styles.toggleHint}>Scan the pack so this item is found next time</Text>
+                                </View>
+                                <BarcodeIcon size={20} color={colors.forest} />
+                              </TouchableOpacity>
+                            )}
+                          </>
+                        )}
+                        {scanned && (
+                          <>
+                            {(showSaveToggle || isManual) && <View style={styles.toggleDivider} />}
+                            <View style={styles.toggleRow}>
+                              <View style={styles.toggleLabelWrap}>
+                                <Text style={styles.toggleLabel}>Keep scanning</Text>
+                                <Text style={styles.toggleHint}>Reopen the scanner after you add</Text>
+                              </View>
+                              <Toggle
+                                value={keepScanning}
+                                onValueChange={onKeepScanning ?? (() => {})}
+                                testID="toggle-keep-scanning"
+                              />
+                            </View>
+                          </>
+                        )}
+                      </View>
+                    )}
 
                     {/* ── ADD BUTTON ── */}
                     <TouchableOpacity
