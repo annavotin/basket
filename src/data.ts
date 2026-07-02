@@ -9,6 +9,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: 'system',
   accent: ['#7CC96E', '#5FB152', '#3E8F38'],
   macroTargets: { protein: 140, carbs: 220, fat: 70 },
+  nutritionBasis: 'per100g',
 }
 
 export const cycles: MealPrepCycle[] = [

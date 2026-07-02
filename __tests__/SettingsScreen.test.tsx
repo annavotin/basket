@@ -11,6 +11,7 @@ const DEFAULT_PREFS: Preferences = {
   theme: 'system',
   accent: ['#7CC96E', '#5FB152', '#3E8F38'],
   macroTargets: { protein: 50, carbs: 200, fat: 70 },
+  nutritionBasis: 'per100g',
 }
 
 function renderSettings(overrides?: Partial<Parameters<typeof SettingsScreen>[0]>) {

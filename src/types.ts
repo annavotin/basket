@@ -65,6 +65,7 @@ export type WeeklyTab = 'basket' | 'extras' | 'pantry'
 export type WeightUnit = 'g' | 'oz'
 export type EnergyUnit = 'kcal' | 'kJ'
 export type ThemePref = 'light' | 'dark' | 'system'
+export type NutritionBasis = 'per100g' | 'total'
 
 export type Macros = { protein: number; carbs: number; fat: number }
 
@@ -77,4 +78,5 @@ export type Preferences = {
   theme: ThemePref
   accent: [string, string, string]
   macroTargets: MacroTargets
+  nutritionBasis: NutritionBasis
 }

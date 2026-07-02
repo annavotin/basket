@@ -1,6 +1,7 @@
 import { loadCycles, saveCycles, STORAGE_KEY, loadExtras, saveExtras, STORAGE_KEY_EXTRAS, loadDailyGoal, saveDailyGoal, STORAGE_KEY_DAILY_GOAL, loadPantry, savePantry, STORAGE_KEY_PANTRY, loadPrefs, savePrefs, STORAGE_KEY_PREFS, loadCustomFoods, saveCustomFoods, STORAGE_KEY_CUSTOM_FOODS, loadKeepScanning, saveKeepScanning, STORAGE_KEY_KEEP_SCANNING, exportAll, clearAll } from '../src/services/storage'
 import { MealPrepCycle, ExtraMeal, PantryItem, Preferences, CustomFood } from '../src/types'
 import { DEFAULT_PREFERENCES } from '../src/data'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 function fakeStorage(initial: Record<string, string> = {}) {
   const data: Record<string, string> = { ...initial }
@@ -176,6 +177,7 @@ describe('preferences storage', () => {
     theme: 'dark',
     accent: ['#111111', '#222222', '#333333'],
     macroTargets: { protein: 150, carbs: 200, fat: 60 },
+    nutritionBasis: 'total',
   }
 
   it('round-trips a full Preferences object through save→load', async () => {
@@ -209,6 +211,17 @@ describe('preferences storage', () => {
   it('savePrefs swallows setItem errors', async () => {
     const storage = { getItem: jest.fn(), setItem: jest.fn(async () => { throw new Error('full') }), removeItem: jest.fn() }
     await expect(savePrefs(fullPrefs, { storage })).resolves.toBeUndefined()
+  })
+})
+
+describe('nutritionBasis preference', () => {
+  it('defaults to per100g', () => {
+    expect(DEFAULT_PREFERENCES.nutritionBasis).toBe('per100g')
+  })
+  it('back-fills the default when an older prefs blob lacks it', async () => {
+    await AsyncStorage.setItem('basket:prefs:v1', JSON.stringify({ name: 'X', defaultDays: 4 }))
+    const p = await loadPrefs()
+    expect(p.nutritionBasis).toBe('per100g')
   })
 })
 
