@@ -374,17 +374,16 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setEmoji(s.emoji)
     setMacrosPer100g(s.macrosPer100g)
     setPickedSuggestion(true)
-    setEditing(false)
     const srvs = s.servings ?? []
     setServings(srvs)
     const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (s.packageWeightG || 0)
-    if (srvs.length > 0) {
-      setServingIdx(0)
-      setWeight(String(srvs[0].weightG))
-    } else {
-      setServingIdx(null)
-      if (s.packageWeightG) setWeight(String(s.packageWeightG))
-    }
+    // No known weight (e.g. a per-100g-only staple with no default pack size or servings) —
+    // there's nothing to summarize, so skip straight to Edit rather than showing a summary
+    // with an empty kcal readout and a silently-disabled Add button. Mirrors how an
+    // unknown-weight scanned product already forces editing=true.
+    setEditing(initialWeightG <= 0)
+    setWeight(initialWeightG > 0 ? String(initialWeightG) : '')
+    setServingIdx(srvs.length > 0 ? 0 : null)
     setOriginal({ weightG: initialWeightG, kcalPer100g: s.kcalPer100g, macrosPer100g: s.macrosPer100g })
     setDropdownOpen(false)
     Keyboard.dismiss()

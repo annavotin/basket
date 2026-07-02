@@ -75,6 +75,27 @@ describe('AddItemSheet — manual mode', () => {
     )
   })
 
+  it('skips the summary straight into Edit when a picked suggestion has no known weight', async () => {
+    const onAdd = jest.fn()
+    const { getByTestId, getByText, queryByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'cauliflower')
+    await waitFor(() => getByText('Cauliflower'))
+    fireEvent.press(getByText('Cauliflower'))
+    // No servings and no packageWeightG for this local staple — nothing to summarize,
+    // so it should open directly into Edit (mirrors an unknown-weight scanned product).
+    expect(queryByTestId('edit-product-button')).toBeNull()
+    expect(getByTestId('weight-input')).toBeTruthy()
+    expect(getByTestId('nf-kcal')).toBeTruthy()
+    fireEvent.changeText(getByTestId('weight-input'), '200')
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Cauliflower', weightG: 200, kcal: 50 }),
+      { save: true },
+    )
+  })
+
   it('prefills macros from a tapped suggestion, editable after tapping Edit', async () => {
     const onAdd = jest.fn()
     const { getByTestId, getByText } = render(
