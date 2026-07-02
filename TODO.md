@@ -42,6 +42,7 @@ Details + status in `docs/CODE-REVIEW-2026-07-01.md`.
 - [ ] Onboarding "You're all set" — logo/circle sizing after the latest tweak
 - [ ] Scan-while-shopping loop — keep-scanning toggle reopens camera cleanly, remember-off skips My Foods save
 - [ ] Unified home scroll — whole page scrolls as one, nav + FAB stay pinned
+- [ ] "Link a barcode" from inside the Add sheet — confirm the native scanner launches over the still-open sheet without an iOS "presentation in progress" conflict (see nutrition-entry plan, Task 8). If it conflicts, switch that one flow to CameraView's inline scanner.
 
 ## 🔭 Nice to have / deferred
 See `docs/ROADMAP.md` for the full feature list. Near-term:
