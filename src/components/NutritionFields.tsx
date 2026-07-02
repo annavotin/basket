@@ -35,19 +35,23 @@ const FIELDS: FieldDef[] = [
 
 export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, macrosPer100g, onChange, editable }: Props) {
   const colors = useColors()
+  // "total" needs a known weight to convert; with G <= 0 there's nothing to scale by, so fall
+  // back to per-100g entry (and disable the total toggle) rather than silently zeroing values.
+  const totalDisabled = G <= 0
+  const effectiveBasis: NutritionBasis = basis === 'total' && totalDisabled ? 'per100g' : basis
   const [values, setValues] = useState<Record<FieldDef['key'], string>>({
-    kcal: show(kcalPer100g, G, basis),
-    protein: show(macrosPer100g?.protein, G, basis),
-    carbs: show(macrosPer100g?.carbs, G, basis),
-    fat: show(macrosPer100g?.fat, G, basis),
+    kcal: show(kcalPer100g, G, effectiveBasis),
+    protein: show(macrosPer100g?.protein, G, effectiveBasis),
+    carbs: show(macrosPer100g?.carbs, G, effectiveBasis),
+    fat: show(macrosPer100g?.fat, G, effectiveBasis),
   })
 
   useEffect(() => {
     setValues({
-      kcal: show(kcalPer100g, G, basis),
-      protein: show(macrosPer100g?.protein, G, basis),
-      carbs: show(macrosPer100g?.carbs, G, basis),
-      fat: show(macrosPer100g?.fat, G, basis),
+      kcal: show(kcalPer100g, G, effectiveBasis),
+      protein: show(macrosPer100g?.protein, G, effectiveBasis),
+      carbs: show(macrosPer100g?.carbs, G, effectiveBasis),
+      fat: show(macrosPer100g?.fat, G, effectiveBasis),
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basis, G, kcalPer100g, macrosPer100g])
@@ -56,23 +60,24 @@ export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, 
     const next = { ...values, [key]: text }
     setValues(next)
 
-    const k = canon(next.kcal, G, basis)
-    const mp = canon(next.protein, G, basis)
-    const mc = canon(next.carbs, G, basis)
-    const mf = canon(next.fat, G, basis)
+    const k = canon(next.kcal, G, effectiveBasis)
+    const mp = canon(next.protein, G, effectiveBasis)
+    const mc = canon(next.carbs, G, effectiveBasis)
+    const mf = canon(next.fat, G, effectiveBasis)
     const macros = mp == null && mc == null && mf == null
       ? undefined
       : { protein: mp ?? 0, carbs: mc ?? 0, fat: mf ?? 0 }
     onChange({ kcalPer100g: k, macrosPer100g: macros })
   }
 
-  const unit = basis === 'per100g' ? '/ 100g' : 'total'
+  const unit = effectiveBasis === 'per100g' ? '/ 100g' : 'total'
   const styles = useMemo(() => StyleSheet.create({
     head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     lbl: { fontFamily: fonts.bodyExtra, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.mossFaint },
     seg: { flexDirection: 'row', backgroundColor: colors.sageBg2, borderRadius: 10, padding: 2 },
     segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
     segOn: { backgroundColor: colors.white },
+    segDisabled: { opacity: 0.4 },
     segTxt: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.moss },
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
     name: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.moss },
@@ -85,16 +90,20 @@ export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, 
       <View style={styles.head}>
         <Text style={styles.lbl}>Nutrition</Text>
         <View style={styles.seg}>
-          {(['per100g', 'total'] as NutritionBasis[]).map((b) => (
-            <TouchableOpacity
-              key={b}
-              testID={`nf-basis-${b}`}
-              style={[styles.segBtn, basis === b && styles.segOn]}
-              onPress={() => onBasisChange(b)}
-            >
-              <Text style={styles.segTxt}>{b === 'per100g' ? 'per 100g' : 'total'}</Text>
-            </TouchableOpacity>
-          ))}
+          {(['per100g', 'total'] as NutritionBasis[]).map((b) => {
+            const disabled = b === 'total' && totalDisabled
+            return (
+              <TouchableOpacity
+                key={b}
+                testID={`nf-basis-${b}`}
+                disabled={disabled}
+                style={[styles.segBtn, effectiveBasis === b && styles.segOn, disabled && styles.segDisabled]}
+                onPress={() => onBasisChange(b)}
+              >
+                <Text style={styles.segTxt}>{b === 'per100g' ? 'per 100g' : 'total'}</Text>
+              </TouchableOpacity>
+            )
+          })}
         </View>
       </View>
       {FIELDS.map((f) => (
