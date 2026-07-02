@@ -6,9 +6,10 @@ import {
 import DismissArea from './DismissArea'
 import Stepper from './settings/Stepper'
 import Toggle from './settings/Toggle'
+import NutritionFields from './NutritionFields'
 import { BarcodeIcon, ReceiptIcon, EditIcon, PlusIcon } from './icons'
 import { Product } from '../mockProducts'
-import { FoodItem, Macros, CustomFood } from '../types'
+import { FoodItem, Macros, CustomFood, NutritionBasis } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
 import { useFoodSearch } from '../hooks/useFoodSearch'
 import { FoodSuggestion, Serving } from '../foods'
@@ -30,9 +31,11 @@ type Props = {
   onSaveForLater?: (next: boolean) => void
   keepScanning?: boolean
   onKeepScanning?: (next: boolean) => void
+  basis: NutritionBasis
+  onBasisChange: (b: NutritionBasis) => void
 }
 
-export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [], scanned = false, saveForLater = true, onSaveForLater, keepScanning = false, onKeepScanning }: Props) {
+export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [], scanned = false, saveForLater = true, onSaveForLater, keepScanning = false, onKeepScanning, basis, onBasisChange }: Props) {
   const colors = useColors()
   const units = useUnits()
   const isManual = product === null
@@ -41,7 +44,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const [qty, setQty] = useState(1)
   const [kcalPer100g, setKcalPer100g] = useState<number | null>(null)
   const [macrosPer100g, setMacrosPer100g] = useState<Macros | undefined>(undefined)
-  const [manualKcal100, setManualKcal100] = useState('')
+  // Manual mode: has a search suggestion been picked? Drives layout (custom-add card vs.
+  // weight/unit picker) independent of kcalPer100g, which NutritionFields now writes to
+  // directly as the user types — that must not itself flip the layout.
+  const [pickedSuggestion, setPickedSuggestion] = useState(false)
   const [emoji, setEmoji] = useState('🛒')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [servings, setServings] = useState<Serving[]>([])
@@ -307,13 +313,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setWeight(unknownWeight ? '' : String(product.packageWeightG))
       setEmoji(product.emoji)
       setMacrosPer100g(product.macrosPer100g)
-      // Prefill the editable calories string from the DB value (shown once Edit is tapped).
-      setManualKcal100(String(product.kcalPer100g))
       // Unknown pack weight can't be added as-is (needs weight > 0) → open straight into edit.
       setEditing(unknownWeight)
-      // While not editing, the numeric kcal drives the read-only summary; in edit mode it's
-      // null so the editable `manualKcal100` string takes over (see effectivePer100g).
-      setKcalPer100g(unknownWeight ? null : product.kcalPer100g)
+      setKcalPer100g(product.kcalPer100g)
       const srvs = product.servings ?? []
       setServings(srvs)
       if (srvs.length > 0) {
@@ -328,20 +330,16 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setKcalPer100g(null)
       setMacrosPer100g(undefined)
       setEmoji('🛒')
-      setManualKcal100('')
       setEditing(false)
       setServings([])
       setServingIdx(null)
     }
+    setPickedSuggestion(false)
     setQty(1)
     setDropdownOpen(false)
   }, [product, visible])
 
   function enterEdit() {
-    if (kcalPer100g != null) {
-      setManualKcal100(String(kcalPer100g))
-      setKcalPer100g(null) // hand the value to the editable string field
-    }
     setEditing(true)
     onSaveForLater?.(true) // editing implies you want to remember the correction
   }
@@ -351,7 +349,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   function handleNameChange(text: string) {
     setName(text)
     setKcalPer100g(null)
+    setMacrosPer100g(undefined)
     setEmoji('🛒')
+    setPickedSuggestion(false)
     setDropdownOpen(true)
   }
 
@@ -360,6 +360,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setKcalPer100g(s.kcalPer100g)
     setEmoji(s.emoji)
     setMacrosPer100g(s.macrosPer100g)
+    setPickedSuggestion(true)
     const srvs = s.servings ?? []
     setServings(srvs)
     if (srvs.length > 0) {
@@ -392,11 +393,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     return isOz ? String(Math.round(v * 28.3495)) : displayStr
   }
 
-  const effectivePer100g =
-    kcalPer100g ?? (parseFloat(manualKcal100) > 0 ? parseFloat(manualKcal100) : null)
+  const effectivePer100g = kcalPer100g
   const weightNum = parseFloat(weight) || 0
   const perUnitKcal = effectivePer100g != null ? kcalForWeight(effectivePer100g, weightNum) : 0
-  const showManualPer100 = isManual && kcalPer100g == null
   // Guard against silently adding an empty/garbage item.
   const canAdd = weightNum > 0 && name.trim().length > 0
   // "Remember" only makes sense once you've changed the DB data: shown when typing a
@@ -479,7 +478,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                           onPress={() => {
                             setName('')
                             setKcalPer100g(null)
+                            setMacrosPer100g(undefined)
                             setEmoji('🛒')
+                            setPickedSuggestion(false)
                             setDropdownOpen(false)
                           }}
                         >
@@ -531,7 +532,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   )}
 
                   {/* ── 4. CUSTOM-ADD CARD (manual, no suggestion picked) ── */}
-                  {isManual && kcalPer100g == null && (
+                  {isManual && !pickedSuggestion && (
                     <View style={styles.customCard}>
                       {/* Weight input inside custom card */}
                       <View style={styles.fieldRow}>
@@ -548,20 +549,16 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                             placeholder={weightPlaceholder}
                           />
                         </View>
-                        <View style={styles.field}>
-                          <Text style={styles.fieldLabel}>Calories (per 100g)</Text>
-                          <TextInput
-                            testID="kcal-per-100g-input"
-                            style={styles.fieldInput}
-                            keyboardType="numeric"
-                            value={manualKcal100}
-                            onChangeText={setManualKcal100}
-                            returnKeyType="done"
-                            placeholderTextColor={colors.mossFaint}
-                            placeholder="320"
-                          />
-                        </View>
                       </View>
+                      <NutritionFields
+                        basis={basis}
+                        onBasisChange={onBasisChange}
+                        G={weightNum * qty}
+                        kcalPer100g={effectivePer100g}
+                        macrosPer100g={macrosPer100g}
+                        onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
+                        editable={isManual || editing}
+                      />
                     </View>
                   )}
 
@@ -629,7 +626,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   )}
 
                   {/* ── WEIGHT input (manual after a pick) ── */}
-                  {isManual && kcalPer100g != null && (
+                  {isManual && pickedSuggestion && (
                     <View style={styles.unitRow}>
                       {servings.map((s, i) => (
                         <TouchableOpacity
@@ -656,7 +653,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       )}
                     </View>
                   )}
-                  {((isManual && kcalPer100g != null && servingIdx === null) || (!isManual && editing)) && (
+                  {((isManual && pickedSuggestion && servingIdx === null) || (!isManual && editing)) && (
                     <>
                       <Text style={styles.sectionLabel}>{weightLabel}</Text>
                       <TextInput
@@ -671,20 +668,17 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     </>
                   )}
 
-                  {/* ── CALORIES input (found scan in edit mode) ── */}
-                  {!isManual && editing && (
-                    <>
-                      <Text style={styles.sectionLabel}>Calories (per 100g)</Text>
-                      <TextInput
-                        testID="kcal-per-100g-input"
-                        style={styles.weightInput}
-                        keyboardType="numeric"
-                        value={manualKcal100}
-                        onChangeText={setManualKcal100}
-                        returnKeyType="done"
-                        placeholderTextColor={colors.mossFaint}
-                      />
-                    </>
+                  {/* ── NUTRITION (manual after a pick, or found scan in edit mode) ── */}
+                  {((isManual && pickedSuggestion) || (!isManual && editing)) && (
+                    <NutritionFields
+                      basis={basis}
+                      onBasisChange={onBasisChange}
+                      G={weightNum * qty}
+                      kcalPer100g={effectivePer100g}
+                      macrosPer100g={macrosPer100g}
+                      onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
+                      editable={isManual || editing}
+                    />
                   )}
                 </View>
 

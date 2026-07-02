@@ -1032,6 +1032,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onSaveForLater={setSaveForLater}
           keepScanning={keepScanning}
           onKeepScanning={setKeepScanning}
+          basis={prefs.nutritionBasis}
+          onBasisChange={(b) => setPrefs((p) => ({ ...p, nutritionBasis: b }))}
           onAdd={handleAddItem}
           onScanBarcode={() => { setSheetVisible(false); handleScanBarcode() }}
           onScanReceipt={() => { setSheetVisible(false); handleScanReceipt() }}
