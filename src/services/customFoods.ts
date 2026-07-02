@@ -60,6 +60,13 @@ export function findCustomByBarcode(list: CustomFood[], barcode: string): Custom
   return list.find((f) => f.barcode === barcode) ?? null
 }
 
+/** Case-insensitive exact-name lookup, used to detect a match when no barcode is available. */
+export function findCustomByName(list: CustomFood[], name: string): CustomFood | null {
+  const n = norm(name)
+  if (!n) return null
+  return list.find((f) => norm(f.name) === n) ?? null
+}
+
 /** Map a saved custom food into the Product shape the Add sheet consumes. */
 export function customFoodToProduct(f: CustomFood): Product {
   return {

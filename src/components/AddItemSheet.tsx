@@ -11,6 +11,7 @@ import { BarcodeIcon, ReceiptIcon, EditIcon, PlusIcon } from './icons'
 import { Product } from '../mockProducts'
 import { FoodItem, Macros, CustomFood, NutritionBasis } from '../types'
 import { kcalForWeight } from '../utils/nutrition'
+import { findCustomByBarcode, findCustomByName } from '../services/customFoods'
 import { useFoodSearch } from '../hooks/useFoodSearch'
 import { FoodSuggestion, Serving } from '../foods'
 import { useColors } from '../styles/ThemeProvider'
@@ -21,21 +22,20 @@ import { fonts } from '../styles/fonts'
 type Props = {
   visible: boolean
   product: Product | null
-  onAdd: (item: FoodItem) => void
+  onAdd: (item: FoodItem, opts: { save: boolean }) => void
   onClose: () => void
   onScanBarcode?: () => void
   onScanReceipt?: () => void
   customFoods?: CustomFood[]
   scanned?: boolean
-  saveForLater?: boolean
-  onSaveForLater?: (next: boolean) => void
+  scanBarcode?: string | null
   keepScanning?: boolean
   onKeepScanning?: (next: boolean) => void
   basis: NutritionBasis
   onBasisChange: (b: NutritionBasis) => void
 }
 
-export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [], scanned = false, saveForLater = true, onSaveForLater, keepScanning = false, onKeepScanning, basis, onBasisChange }: Props) {
+export default function AddItemSheet({ visible, product, onAdd, onClose, onScanBarcode, onScanReceipt, customFoods = [], scanned = false, scanBarcode = null, keepScanning = false, onKeepScanning, basis, onBasisChange }: Props) {
   const colors = useColors()
   const units = useUnits()
   const isManual = product === null
@@ -52,8 +52,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [servings, setServings] = useState<Serving[]>([])
   const [servingIdx, setServingIdx] = useState<number | null>(null) // null = custom g input
-  // Found scans open as a read-only summary; tapping Edit reveals the fields (and Remember).
+  // Found scans open as a read-only summary; tapping Edit reveals the editable fields.
   const [editing, setEditing] = useState(false)
+  // Always-visible "Save to My Foods" toggle, default on.
+  const [saveToFoods, setSaveToFoods] = useState(true)
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
@@ -337,11 +339,11 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setPickedSuggestion(false)
     setQty(1)
     setDropdownOpen(false)
+    setSaveToFoods(true)
   }, [product, visible])
 
   function enterEdit() {
     setEditing(true)
-    onSaveForLater?.(true) // editing implies you want to remember the correction
   }
 
   const { suggestions, loading } = useFoodSearch(isManual && dropdownOpen ? name : '', customFoods)
@@ -398,11 +400,12 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const perUnitKcal = effectivePer100g != null ? kcalForWeight(effectivePer100g, weightNum) : 0
   // Guard against silently adding an empty/garbage item.
   const canAdd = weightNum > 0 && name.trim().length > 0
-  // "Remember" only makes sense once you've changed the DB data: shown when typing a
-  // not-found item (isManual) or after tapping Edit on a found one. The Edit button is the
-  // entry point for the found case. "Keep scanning" shows on any scan-opened sheet.
-  const showRemember = scanned && (isManual || editing)
   const showEditButton = scanned && !isManual && !editing
+  // Current match in My Foods: prefer barcode (stable even if the name gets edited),
+  // else fall back to a case-insensitive name match on what's currently typed/shown.
+  const matchedFood = (scanBarcode && findCustomByBarcode(customFoods, scanBarcode))
+    || findCustomByName(customFoods, name)
+  const saveLabel = matchedFood ? `Update "${matchedFood.name}"` : 'Save to My Foods'
 
   function handleAdd() {
     if (!canAdd) return
@@ -414,7 +417,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       quantity: qty,
       source: product ? 'barcode' : 'manual',
       macrosPer100g,
-    })
+    }, { save: saveToFoods })
     Keyboard.dismiss()
     onClose()
   }
@@ -697,38 +700,38 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                   </Text>
                 )}
 
-                {/* ── SCAN TOGGLES (scan-opened sheets only) ── */}
-                {scanned && (
-                  <View style={styles.toggleGroup}>
-                    {showRemember && (
-                      <>
-                        <View style={styles.toggleRow}>
-                          <View style={styles.toggleLabelWrap}>
-                            <Text style={styles.toggleLabel}>Remember this item</Text>
-                            <Text style={styles.toggleHint}>Preload it next time you scan this barcode</Text>
-                          </View>
-                          <Toggle
-                            value={saveForLater}
-                            onValueChange={onSaveForLater ?? (() => {})}
-                            testID="toggle-remember"
-                          />
-                        </View>
-                        <View style={styles.toggleDivider} />
-                      </>
-                    )}
-                    <View style={styles.toggleRow}>
-                      <View style={styles.toggleLabelWrap}>
-                        <Text style={styles.toggleLabel}>Keep scanning</Text>
-                        <Text style={styles.toggleHint}>Reopen the scanner after you add</Text>
-                      </View>
-                      <Toggle
-                        value={keepScanning}
-                        onValueChange={onKeepScanning ?? (() => {})}
-                        testID="toggle-keep-scanning"
-                      />
+                {/* ── TOGGLES (Save to My Foods always shown; Keep scanning on scan-opened sheets) ── */}
+                <View style={styles.toggleGroup}>
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleLabelWrap}>
+                      <Text style={styles.toggleLabel}>{saveLabel}</Text>
+                      <Text style={styles.toggleHint}>
+                        {matchedFood ? 'Refresh the saved details with what you entered' : 'Preload it next time you add this item'}
+                      </Text>
                     </View>
+                    <Toggle
+                      value={saveToFoods}
+                      onValueChange={setSaveToFoods}
+                      testID="toggle-save-to-foods"
+                    />
                   </View>
-                )}
+                  {scanned && (
+                    <>
+                      <View style={styles.toggleDivider} />
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleLabelWrap}>
+                          <Text style={styles.toggleLabel}>Keep scanning</Text>
+                          <Text style={styles.toggleHint}>Reopen the scanner after you add</Text>
+                        </View>
+                        <Toggle
+                          value={keepScanning}
+                          onValueChange={onKeepScanning ?? (() => {})}
+                          testID="toggle-keep-scanning"
+                        />
+                      </View>
+                    </>
+                  )}
+                </View>
 
                 {/* ── ADD BUTTON ── */}
                 <TouchableOpacity

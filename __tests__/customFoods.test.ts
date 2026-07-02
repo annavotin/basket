@@ -1,5 +1,5 @@
 import {
-  customFoodFromItem, upsertCustomFood, findCustomByBarcode, customFoodToProduct, searchCustomFoods,
+  customFoodFromItem, upsertCustomFood, findCustomByBarcode, findCustomByName, customFoodToProduct, searchCustomFoods,
 } from '../src/services/customFoods'
 import { CustomFood, FoodItem } from '../src/types'
 
@@ -65,6 +65,13 @@ describe('lookup + search', () => {
   it('finds a saved food by barcode', () => {
     expect(findCustomByBarcode(foods, '222')!.name).toBe('Oat Milk')
     expect(findCustomByBarcode(foods, '999')).toBeNull()
+  })
+
+  it('finds a saved food by case-insensitive name', () => {
+    expect(findCustomByName(foods, 'oat milk')!.id).toBe('b')
+    expect(findCustomByName(foods, 'STRAWBERRIES')!.id).toBe('a')
+    expect(findCustomByName(foods, 'Kale')).toBeNull()
+    expect(findCustomByName(foods, '')).toBeNull()
   })
 
   it('maps to a Product shape', () => {

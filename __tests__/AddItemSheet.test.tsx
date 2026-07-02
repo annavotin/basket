@@ -23,7 +23,8 @@ describe('AddItemSheet — scanned mode', () => {
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Nutella', weightG: 400, kcal: 2156, quantity: 1, source: 'barcode',
-      })
+      }),
+      { save: true }
     )
   })
 
@@ -41,7 +42,8 @@ describe('AddItemSheet — scanned mode', () => {
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Nutella', weightG: 200, kcal: 1078, quantity: 2, source: 'barcode',
-      })
+      }),
+      { save: true }
     )
   })
 })
@@ -63,7 +65,8 @@ describe('AddItemSheet — manual mode', () => {
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Banana', weightG: 120, kcal: 107, quantity: 1, source: 'manual',
-      })
+      }),
+      { save: true }
     )
   })
 
@@ -93,7 +96,8 @@ describe('AddItemSheet — manual mode', () => {
     fireEvent.changeText(getByTestId('weight-input'), '300')
     fireEvent.press(getByTestId('add-item-button'))
     expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Grandmas Stew', weightG: 300, kcal: 450, quantity: 1 })
+      expect.objectContaining({ name: 'Grandmas Stew', weightG: 300, kcal: 450, quantity: 1 }),
+      { save: true }
     )
     expect(queryByTestId('manual-kcal-input')).toBeNull()
   })
@@ -120,7 +124,8 @@ describe('AddItemSheet — validation guard', () => {
     fireEvent.changeText(getByTestId('weight-input'), '250')
     fireEvent.press(getByTestId('add-item-button'))
     expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Mystery Soup', weightG: 250, kcal: 200, quantity: 1 })
+      expect.objectContaining({ name: 'Mystery Soup', weightG: 250, kcal: 200, quantity: 1 }),
+      { save: true }
     )
   })
 })
@@ -140,71 +145,110 @@ it('passes the product macrosPer100g onto the added item', () => {
 describe('AddItemSheet — scan toggles', () => {
   const scanned: Product = { name: 'Oatly', emoji: '🥛', packageWeightG: 1000, kcalPer100g: 61 }
 
-  it('found scan: Edit button + Keep-scanning, but no Remember until you edit', () => {
-    const { getByTestId, queryByTestId } = render(
+  it('found scan: Edit button + Keep-scanning + Save to My Foods, all before editing', () => {
+    const { getByTestId } = render(
       <AddItemSheet visible product={scanned} scanned onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     expect(getByTestId('edit-product-button')).toBeTruthy()
     expect(getByTestId('toggle-keep-scanning')).toBeTruthy()
-    expect(queryByTestId('toggle-remember')).toBeNull()
+    expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
   })
 
-  it('reveals Remember + editable fields after tapping Edit (Remember defaults on)', () => {
-    const onSaveForLater = jest.fn()
+  it('reveals editable fields after tapping Edit; Save to My Foods stays visible throughout', () => {
     const { getByTestId, queryByTestId } = render(
-      <AddItemSheet visible product={scanned} scanned onSaveForLater={onSaveForLater} onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+      <AddItemSheet visible product={scanned} scanned onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
+    expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
     fireEvent.press(getByTestId('edit-product-button'))
-    expect(onSaveForLater).toHaveBeenCalledWith(true)
-    expect(getByTestId('toggle-remember')).toBeTruthy()
+    expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
     expect(getByTestId('edit-name-input')).toBeTruthy()
     expect(getByTestId('weight-input')).toBeTruthy()
     expect(getByTestId('nf-kcal')).toBeTruthy()
     expect(queryByTestId('edit-product-button')).toBeNull() // Edit hides once editing
   })
 
-  it('not-found scan (manual entry): shows Remember + Keep-scanning, no Edit button', () => {
+  it('not-found scan (manual entry): shows Save to My Foods + Keep-scanning, no Edit button', () => {
     const { getByTestId, queryByTestId } = render(
       <AddItemSheet visible product={null} scanned onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
-    expect(getByTestId('toggle-remember')).toBeTruthy()
+    expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
     expect(getByTestId('toggle-keep-scanning')).toBeTruthy()
     expect(queryByTestId('edit-product-button')).toBeNull()
   })
 
-  it('hides all toggles + Edit on a manual + add (not scanned)', () => {
-    const { queryByTestId } = render(
+  it('shows Save to My Foods (default on) but hides Keep-scanning + Edit on a manual add (not scanned)', () => {
+    const { getByTestId, queryByTestId } = render(
       <AddItemSheet visible product={null} onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
-    expect(queryByTestId('toggle-remember')).toBeNull()
+    expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
     expect(queryByTestId('toggle-keep-scanning')).toBeNull()
     expect(queryByTestId('edit-product-button')).toBeNull()
   })
 
-  it('reports Remember + Keep-scanning changes to the parent', () => {
-    const onSaveForLater = jest.fn()
+  it('toggling Save to My Foods off carries save:false into onAdd', () => {
+    const onAdd = jest.fn()
+    const { getByTestId } = render(
+      <AddItemSheet visible product={scanned} scanned onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.press(getByTestId('toggle-save-to-foods'))  // true -> false
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Oatly' }), { save: false })
+  })
+
+  it('reports Keep-scanning changes to the parent', () => {
     const onKeepScanning = jest.fn()
     const { getByTestId } = render(
       <AddItemSheet
         visible product={null} scanned
-        saveForLater onSaveForLater={onSaveForLater}
         keepScanning={false} onKeepScanning={onKeepScanning}
         onAdd={() => {}} onClose={() => {}}
         basis="per100g" onBasisChange={() => {}}
       />
     )
-    fireEvent.press(getByTestId('toggle-remember'))      // true -> false
-    expect(onSaveForLater).toHaveBeenCalledWith(false)
     fireEvent.press(getByTestId('toggle-keep-scanning'))  // false -> true
     expect(onKeepScanning).toHaveBeenCalledWith(true)
   })
 
-  it('still emits the item on Add (found, from summary)', () => {
+  it('still emits the item on Add (found, from summary), saving by default', () => {
     const onAdd = jest.fn()
     const { getByTestId } = render(
       <AddItemSheet visible product={scanned} scanned onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.press(getByTestId('add-item-button'))
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Oatly', source: 'barcode' }))
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Oatly', source: 'barcode' }), { save: true })
+  })
+})
+
+describe('AddItemSheet — Save to My Foods', () => {
+  it('reads "Update <name>" when the food already exists in My Foods', () => {
+    const custom = [{ id: 'cf1', name: 'Kale', emoji: '🥬', kcalPer100g: 33, createdAt: 1, updatedAt: 1 }]
+    const { getByTestId, getByText } = render(
+      <AddItemSheet visible product={null} customFoods={custom} onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Kale')
+    expect(getByText(/Update .Kale./)).toBeTruthy()
+  })
+
+  it('resets to default ON when the sheet reopens for a new item, even after being turned off', () => {
+    const onAdd = jest.fn()
+    const { getByTestId, rerender } = render(
+      <AddItemSheet visible={false} product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    rerender(
+      <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.press(getByTestId('toggle-save-to-foods')) // true -> false
+    // Close, then reopen fresh (as App.tsx does between adds) — should default back to on.
+    rerender(
+      <AddItemSheet visible={false} product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    rerender(
+      <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Fresh Item')
+    fireEvent.changeText(getByTestId('nf-kcal'), '50')
+    fireEvent.changeText(getByTestId('weight-input'), '100')
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Fresh Item' }), { save: true })
   })
 })

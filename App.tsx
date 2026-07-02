@@ -290,7 +290,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   // Barcode of the product currently in the Add sheet (so it's stored when the item is added).
   const [scanBarcode, setScanBarcode] = useState<string | null>(null)
   const [keepScanning, setKeepScanning] = useState(false)
-  const [saveForLater, setSaveForLater] = useState(true)
   const [hydrated, setHydrated] = useState(false)
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
   const [settingsVisible, setSettingsVisible] = useState(false)
@@ -647,9 +646,6 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
         `No match for barcode ${barcode}.\n\nCheck this is the code on the pack, as scanners sometimes grab a nearby barcode. If your connection is patchy, try again. Otherwise add it manually below and it'll be saved so the next scan finds it instantly.`,
       )
     }
-    // Found items are trusted from the DB — only "remember" them once the user taps Edit
-    // (handled in the sheet). Not-found items are typed from scratch, so default to saving.
-    setSaveForLater(product == null)
     setSheetProduct(product)
     setSheetVisible(true)
   }
@@ -675,11 +671,12 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     if (activeCycleId) markDirty('cycles', activeCycleId)
   }
 
-  function handleAddItem(item: FoodItem) {
+  function handleAddItem(item: FoodItem, { save }: { save: boolean }) {
     const wasScanned = scanBarcode != null
     handleAddItems([item])
-    // Manual adds always save (today's behavior); scanned adds respect the "Remember" toggle.
-    if (!wasScanned || saveForLater) {
+    // Unified "Save to My Foods" toggle in the sheet drives whether we upsert, for both
+    // manual and scanned adds.
+    if (save) {
       const food = customFoodFromItem(item, scanBarcode ?? undefined)
       if (food) setCustomFoods((prev) => upsertCustomFood(prev, food))
     }
@@ -1028,8 +1025,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           product={sheetProduct}
           customFoods={customFoods}
           scanned={scanBarcode != null}
-          saveForLater={saveForLater}
-          onSaveForLater={setSaveForLater}
+          scanBarcode={scanBarcode}
           keepScanning={keepScanning}
           onKeepScanning={setKeepScanning}
           basis={prefs.nutritionBasis}
