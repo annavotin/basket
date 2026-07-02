@@ -38,6 +38,13 @@ describe('ItemDetail — basket item', () => {
     fireEvent.press(getByText('Delete'))
     expect(onRemove).toHaveBeenCalled()
   })
+
+  it('shows total bought weight (weightG x quantity) with a per-unit subtitle', () => {
+    const qtyItem: FoodItem = { name: 'Rice', weightG: 500, kcal: 650, quantity: 3, emoji: '🍚' }
+    const { getByText } = wrap(<ItemDetail visible kind="item" item={qtyItem} days={5} onRemove={jest.fn()} onClose={jest.fn()} onSaveItem={jest.fn()} />)
+    expect(getByText('1,500 g')).toBeTruthy()
+    expect(getByText('3 × 500 g')).toBeTruthy()
+  })
 })
 
 describe('ItemDetail — extra', () => {

@@ -126,6 +126,8 @@ export default function ItemDetail(props: Props) {
   else if (kind === 'extra' && extra) cals = extra.kcal
   else if (kind === 'pantry' && pantryItem) cals = Math.round((pantryItem.dailyG * days * pantryItem.kcalPer100g) / 100)
 
+  const boughtG = (item?.weightG ?? 0) * (item?.quantity ?? 1)
+
   const editingItem = editing && kind === 'item'
   const editingExtra = editing && kind === 'extra'
   const editingMacros = editingItem || editingExtra
@@ -157,6 +159,7 @@ export default function ItemDetail(props: Props) {
     stat: { flex: 1, backgroundColor: colors.sageBg2, borderRadius: 16, paddingVertical: 12, alignItems: 'center' },
     statV: { fontFamily: fonts.num, fontSize: 17, color: colors.forest },
     statL: { fontFamily: fonts.body, fontSize: 10, color: colors.mossFaint, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
+    statSub: { fontFamily: fonts.body, fontSize: 9, color: colors.mossFaint, marginTop: 2 },
     when: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.moss, marginTop: 14 },
     seclbl: { fontFamily: fonts.bodyExtra, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: colors.mossFaint, marginTop: 18, marginBottom: 10 },
     macroRow: { gap: 14 },
@@ -218,7 +221,13 @@ export default function ItemDetail(props: Props) {
 
           {kind === 'item' && item && !editing && (
             <View style={styles.stats}>
-              <View style={styles.stat}><Text style={styles.statV}>{item.weightG.toLocaleString()}g</Text><Text style={styles.statL}>bought</Text></View>
+              <View style={styles.stat}>
+                <Text style={styles.statV}>{boughtG.toLocaleString()} g</Text>
+                <Text style={styles.statL}>bought</Text>
+                {(item.quantity ?? 1) > 1 && (
+                  <Text style={styles.statSub}>{item.quantity} × {item.weightG.toLocaleString()} g</Text>
+                )}
+              </View>
               <View style={styles.stat}><Text style={styles.statV}>{days ? Math.round(cals / days).toLocaleString() : cals}</Text><Text style={styles.statL}>kcal / day</Text></View>
               <View style={styles.stat}><Text style={styles.statV}>{item.weightG ? Math.round((item.kcal / item.weightG) * 100) : 0}</Text><Text style={styles.statL}>kcal / 100g</Text></View>
             </View>
