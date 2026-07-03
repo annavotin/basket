@@ -1,5 +1,5 @@
 import { syncTable } from '../src/services/sync'
-import { InMemoryRemote } from '../src/services/remote'
+import { InMemoryRemote, SyncRecord } from '../src/services/remote'
 import { makeQueue } from '../src/services/sync-queue'
 
 function memStore() {
@@ -33,5 +33,52 @@ describe('syncTable', () => {
     const result = await syncTable('cycles', local, { remote: throwing as any, queue, getCursor: async () => null, setCursor: async () => {} })
     expect(result).toEqual(local)
     expect(await queue.dirtyIds('cycles')).toEqual(['c1'])
+  })
+
+  // Regression: a device's push must not blindly overwrite a remote row that is actually
+  // newer — e.g. a second device's first-sign-in "adopt local data" step marks its seed
+  // pantry row dirty before it has loaded its real (possibly deleted) local copy from disk.
+  // Pushing that stale, timestamp-less row must not resurrect a tombstone another device
+  // already wrote to the server.
+  it('does not resurrect a remote tombstone when the dirty local row is actually stale', async () => {
+    const remote = new InMemoryRemote()
+    // Device A already deleted this pantry item and pushed the tombstone.
+    await remote.upsert('pantry_items', [
+      { id: 'pantry-oats', name: 'Oats', updatedAt: '2026-07-01T00:00:00.000Z', deletedAt: '2026-07-01T00:00:00.000Z' },
+    ])
+
+    // Device B: still has the seed row in memory (no updatedAt), marked dirty by adoption.
+    const queue = makeQueue(memStore())
+    await queue.markDirty('pantry_items', 'pantry-oats')
+    const local: SyncRecord[] = [{ id: 'pantry-oats', name: 'Oats', kcalPer100g: 379, dailyG: 40 }]
+
+    const result = await syncTable('pantry_items', local, {
+      remote, queue, getCursor: async () => null, setCursor: async () => {},
+    })
+
+    const remoteRows = await remote.pullSince('pantry_items', null)
+    expect(remoteRows.find((r) => r.id === 'pantry-oats')!.deletedAt).toBe('2026-07-01T00:00:00.000Z')
+    expect(result.find((r) => r.id === 'pantry-oats')!.deletedAt).toBe('2026-07-01T00:00:00.000Z')
+    // The stale push was dropped, but the dirty flag still clears — the merge below already
+    // pulled the authoritative remote row, so there's nothing left to retry.
+    expect(await queue.dirtyIds('pantry_items')).toEqual([])
+  })
+
+  it('still pushes a dirty row that is genuinely newer than the remote copy', async () => {
+    const remote = new InMemoryRemote()
+    await remote.upsert('pantry_items', [
+      { id: 'p1', name: 'Oats', updatedAt: '2026-07-01T00:00:00.000Z', dailyG: 40 },
+    ])
+    const queue = makeQueue(memStore())
+    await queue.markDirty('pantry_items', 'p1')
+    const local = [{ id: 'p1', name: 'Oats', updatedAt: '2026-07-02T00:00:00.000Z', dailyG: 80 }]
+
+    const result = await syncTable('pantry_items', local, {
+      remote, queue, getCursor: async () => null, setCursor: async () => {},
+    })
+
+    const remoteRows = await remote.pullSince('pantry_items', null)
+    expect(remoteRows.find((r) => r.id === 'p1')!.dailyG).toBe(80)
+    expect(result.find((r) => r.id === 'p1')!.dailyG).toBe(80)
   })
 })

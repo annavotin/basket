@@ -18,11 +18,30 @@ export async function syncTable<T extends SyncRecord>(table: SyncTable, local: T
   try {
     const dirty = await deps.queue.dirtyIds(table)
     const toPush = local.filter((r) => dirty.includes(r.id))
-    if (toPush.length) await deps.remote.upsert(table, toPush)
+
+    // `upsert` is a blind overwrite (no server-side LWW guard — see supabase-remote.ts /
+    // the migration). A dirty row that is actually stale (e.g. a fresh install's seed data,
+    // marked dirty by first-sign-in adoption, racing a load from disk) would otherwise
+    // clobber a newer remote row — including a tombstone, resurrecting a deletion made on
+    // another device. So before pushing, fetch the *current* remote copy of exactly the
+    // dirty ids and only push the ones where the local row actually wins LWW.
+    let all: T[] = []
+    if (toPush.length) {
+      all = (await deps.remote.pullSince(table, null)) as T[]
+      const remoteById = new Map(all.map((r) => [r.id, r]))
+      const winners = toPush.filter((r) => {
+        const theirs = remoteById.get(r.id)
+        if (!theirs) return true
+        return mergeLWW([r], [theirs])[0] === r
+      })
+      if (winners.length) await deps.remote.upsert(table, winners)
+    }
     await deps.queue.clear(table, dirty)
 
     const since = await deps.getCursor(table)
-    const incoming = (await deps.remote.pullSince(table, since)) as T[]
+    // Reuse the just-fetched full snapshot instead of pulling twice when we already have it;
+    // otherwise do the normal incremental pull.
+    const incoming = toPush.length ? all : ((await deps.remote.pullSince(table, since)) as T[])
     const merged = mergeLWW(local, incoming)
 
     const newest = merged.reduce<string | null>((mx, r) => (r.updatedAt && (!mx || r.updatedAt > mx) ? r.updatedAt : mx), since)
