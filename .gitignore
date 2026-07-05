@@ -47,3 +47,6 @@ supabase/.branches/
 
 # Brainstorming visual companion scratch files
 .superpowers/
+
+# Git worktrees for isolated feature work
+.worktrees/
