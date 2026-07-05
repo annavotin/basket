@@ -49,6 +49,7 @@ import { FoodItem, ExtraMeal, ReceiptLine, PantryItem, WeeklyTab, Preferences, M
 import { Product } from './src/mockProducts'
 import { scanBarcodeWithCamera, scanReceipt } from './src/services/scan'
 import { lookupBarcode } from './src/services/foodApi'
+import { estimateExtra, EstimateResult } from './src/services/extra-estimate'
 import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll, loadCustomFoods, saveCustomFoods, loadKeepScanning, saveKeepScanning } from './src/services/storage'
 import { customFoodFromItem, upsertCustomFood, findCustomByBarcode, customFoodToProduct } from './src/services/customFoods'
 import CustomFoodsScreen from './src/components/CustomFoodsScreen'
@@ -569,12 +570,22 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     openExtraSheet(inRange ? today : activeCycle.startDate)
   }
 
-  function handleSaveExtra(draft: { name: string; kcal: number }) {
+  async function handleEstimateExtra(description: string): Promise<EstimateResult | null> {
+    if (!supabase) return null
+    const sb = supabase
+    return estimateExtra(description, async (body) => {
+      const { data, error } = await sb.functions.invoke('estimate-extra', { body })
+      if (error) throw error
+      return data
+    })
+  }
+
+  function handleSaveExtra(draft: { name: string; kcal: number; macros?: Macros }) {
     if (!pendingExtraDate) return
     const id = newId()
     setExtraMeals((prev) => [
       ...prev,
-      touch({ id, date: pendingExtraDate, name: draft.name, kcal: draft.kcal }),
+      touch({ id, date: pendingExtraDate, name: draft.name, kcal: draft.kcal, macros: draft.macros }),
     ])
     markDirty('extra_meals', id)
     setExtraSheetVisible(false)
@@ -1077,6 +1088,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           visible={extraSheetVisible}
           onSave={handleSaveExtra}
           onClose={() => { setExtraSheetVisible(false); setPendingExtraDate(null) }}
+          signedIn={account != null}
+          onEstimate={isSupabaseConfigured ? handleEstimateExtra : undefined}
         />
         <SettingsScreen
           visible={settingsVisible}
