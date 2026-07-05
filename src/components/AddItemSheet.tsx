@@ -220,8 +220,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       flexDirection: 'row', alignItems: 'center', gap: 13,
       backgroundColor: colors.white, borderRadius: 18,
       padding: 12, marginBottom: 10,
-      shadowColor: colors.forest, shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+      // Stronger + zIndex'd so its shadow reads on top of the nutrition card tucked
+      // in behind it, making the seam between the two obvious despite no gap.
+      shadowColor: colors.forest, shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.14, shadowRadius: 10, elevation: 4, zIndex: 2,
     },
     productAv: {
       width: 52, height: 52, borderRadius: 16,
@@ -255,11 +257,13 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     // corner radius and this reads as "attached from the top"). ──
     nutritionRevealClip: {
       overflow: 'hidden',
-      backgroundColor: colors.white,
+      // Subtly tinted vs. the tile's pure white so the seam reads even where the two
+      // cards touch with no gap between them.
+      backgroundColor: colors.sageBg2,
       borderRadius: 16,
       marginTop: -16,
       shadowColor: colors.forest, shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+      shadowOpacity: 0.06, shadowRadius: 5, elevation: 1, zIndex: 1,
     },
     nutritionRevealInner: {
       padding: 12, paddingTop: 12 + 16,
@@ -665,8 +669,45 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                     </View>
                   )}
 
+                  {/* ── NUTRITION (manual after a pick, or found scan — both once editing) ──
+                       Slides out attached directly beneath the food tile above, rather than
+                       snapping in; see resetNutritionReveal/enterEdit. Rendered right after the
+                       tile (before pack size/name) so the tuck-under seam lands on the tile's
+                       rounded bottom edge, not on whatever editable field happens to sit below. ── */}
+                  {editing && (isManual ? pickedSuggestion : true) && (
+                    <Animated.View
+                      style={[
+                        styles.nutritionRevealClip,
+                        !nutritionFullyOpen && {
+                          height: nutritionReveal.interpolate({ inputRange: [0, 1], outputRange: [0, NUTRITION_REVEAL_ESTIMATE] }),
+                        },
+                      ]}
+                    >
+                      <Animated.View
+                        style={[
+                          styles.nutritionRevealInner,
+                          !nutritionFullyOpen && {
+                            transform: [{ translateY: nutritionReveal.interpolate({ inputRange: [0, 1], outputRange: [-NUTRITION_REVEAL_ESTIMATE, 0] }) }],
+                          },
+                        ]}
+                      >
+                        <NutritionFields
+                          basis={basis}
+                          onBasisChange={onBasisChange}
+                          G={weightNum * qty}
+                          kcalPer100g={effectivePer100g}
+                          macrosPer100g={macrosPer100g}
+                          onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
+                          editable={isManual || editing}
+                        />
+                      </Animated.View>
+                    </Animated.View>
+                  )}
+
                   {/* ── 5a. PACK SIZE — always visible and editable once a food is chosen; never
-                       gated behind Edit, since "how much did I actually buy" isn't a macro edit. ── */}
+                       gated behind Edit, since "how much did I actually buy" isn't a macro edit.
+                       Rendered below the nutrition reveal (rather than between tile and reveal) so
+                       it stays its own separate box, not part of the tile/nutrition seam. ── */}
                   {(!isManual || pickedSuggestion) && (
                     <View style={styles.packSizeWrap}>
                       {servings.length > 0 && (
@@ -725,39 +766,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                         placeholderTextColor={colors.mossFaint}
                       />
                     </>
-                  )}
-
-                  {/* ── NUTRITION (manual after a pick, or found scan — both once editing) ──
-                       Slides out from behind whatever's above it rather than snapping in;
-                       see resetNutritionReveal/enterEdit. ── */}
-                  {editing && (isManual ? pickedSuggestion : true) && (
-                    <Animated.View
-                      style={[
-                        styles.nutritionRevealClip,
-                        !nutritionFullyOpen && {
-                          height: nutritionReveal.interpolate({ inputRange: [0, 1], outputRange: [0, NUTRITION_REVEAL_ESTIMATE] }),
-                        },
-                      ]}
-                    >
-                      <Animated.View
-                        style={[
-                          styles.nutritionRevealInner,
-                          !nutritionFullyOpen && {
-                            transform: [{ translateY: nutritionReveal.interpolate({ inputRange: [0, 1], outputRange: [-NUTRITION_REVEAL_ESTIMATE, 0] }) }],
-                          },
-                        ]}
-                      >
-                        <NutritionFields
-                          basis={basis}
-                          onBasisChange={onBasisChange}
-                          G={weightNum * qty}
-                          kcalPer100g={effectivePer100g}
-                          macrosPer100g={macrosPer100g}
-                          onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
-                          editable={isManual || editing}
-                        />
-                      </Animated.View>
-                    </Animated.View>
                   )}
                 </View>
 
