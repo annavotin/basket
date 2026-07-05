@@ -1,21 +1,35 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
-  Modal, View, Text, TextInput, TouchableOpacity,
+  Modal, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert,
   KeyboardAvoidingView, Keyboard, Platform, StyleSheet,
 } from 'react-native'
 import DismissArea from './DismissArea'
 import { useColors } from '../styles/ThemeProvider'
+import { Macros } from '../types'
+import { EstimateResult } from '../services/extra-estimate'
 
 type Props = {
   visible: boolean
-  onSave: (draft: { name: string; kcal: number }) => void
+  onSave: (draft: { name: string; kcal: number; macros?: Macros }) => void
   onClose: () => void
+  /** Whether the current device has a signed-in account. Gates the Estimate button's tap
+   *  behavior (not its visibility) — see onEstimate for visibility. */
+  signedIn?: boolean
+  /** Present only when a backend is configured (App.tsx passes undefined otherwise), which
+   *  also controls whether the Estimate button renders at all — same convention as
+   *  AddItemSheet's onScanBarcode/onScanReceipt optional props. */
+  onEstimate?: (description: string) => Promise<EstimateResult | null>
 }
 
-export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
+export default function ExtraMealSheet({ visible, onSave, onClose, signedIn = false, onEstimate }: Props) {
   const colors = useColors()
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
+  const [protein, setProtein] = useState('')
+  const [carbs, setCarbs] = useState('')
+  const [fat, setFat] = useState('')
+  const [macrosRevealed, setMacrosRevealed] = useState(false)
+  const [estimating, setEstimating] = useState(false)
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
@@ -31,6 +45,12 @@ export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
       width: '100%', borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 10,
       paddingHorizontal: 12, paddingVertical: 10, fontSize: 16,
     },
+    estimateBtn: {
+      borderWidth: 1, borderColor: colors.selectedDay, borderRadius: 10,
+      paddingVertical: 10, alignItems: 'center', marginTop: 8,
+    },
+    estimateBtnDisabled: { opacity: 0.4 },
+    estimateBtnText: { color: colors.selectedDay, fontSize: 14, fontWeight: '600' },
     saveBtn: {
       backgroundColor: colors.selectedDay, borderRadius: 12,
       paddingVertical: 14, alignItems: 'center', marginTop: 24,
@@ -44,14 +64,43 @@ export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
   useEffect(() => {
     setName('')
     setKcal('')
+    setProtein('')
+    setCarbs('')
+    setFat('')
+    setMacrosRevealed(false)
+    setEstimating(false)
   }, [visible])
 
   const kcalNum = Math.round(parseFloat(kcal)) || 0
   const canSave = name.trim().length > 0 && kcalNum > 0
+  const canEstimate = onEstimate != null && name.trim().length > 0 && !estimating
+
+  async function handleEstimate() {
+    if (!signedIn) {
+      Alert.alert('Sign in to use AI estimates', 'Create an account or sign in from Settings to use AI-estimated calories.')
+      return
+    }
+    if (!onEstimate) return
+    setEstimating(true)
+    const result = await onEstimate(name.trim())
+    setEstimating(false)
+    if (!result) {
+      Alert.alert("Couldn't estimate that", 'Try a more specific description, or enter calories manually.')
+      return
+    }
+    setKcal(String(result.kcal))
+    setProtein(String(result.protein))
+    setCarbs(String(result.carbs))
+    setFat(String(result.fat))
+    setMacrosRevealed(true)
+  }
 
   function handleSave() {
     if (!canSave) return
-    onSave({ name: name.trim(), kcal: kcalNum })
+    const macros: Macros | undefined = macrosRevealed
+      ? { protein: parseFloat(protein) || 0, carbs: parseFloat(carbs) || 0, fat: parseFloat(fat) || 0 }
+      : undefined
+    onSave({ name: name.trim(), kcal: kcalNum, macros })
     Keyboard.dismiss()
     onClose()
   }
@@ -77,6 +126,19 @@ export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
                 returnKeyType="done"
               />
 
+              {onEstimate != null && (
+                <TouchableOpacity
+                  testID="estimate-extra-button"
+                  style={[styles.estimateBtn, !canEstimate && styles.estimateBtnDisabled]}
+                  onPress={handleEstimate}
+                  disabled={!canEstimate}
+                >
+                  {estimating
+                    ? <ActivityIndicator testID="estimate-extra-spinner" color={colors.selectedDay} />
+                    : <Text style={styles.estimateBtnText}>Estimate with AI</Text>}
+                </TouchableOpacity>
+              )}
+
               <Text style={styles.fieldLabel}>Estimated calories</Text>
               <TextInput
                 testID="extra-kcal-input"
@@ -86,6 +148,38 @@ export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
                 onChangeText={setKcal}
                 returnKeyType="done"
               />
+
+              {macrosRevealed && (
+                <>
+                  <Text style={styles.fieldLabel}>Protein (g)</Text>
+                  <TextInput
+                    testID="extra-protein-input"
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={protein}
+                    onChangeText={setProtein}
+                    returnKeyType="done"
+                  />
+                  <Text style={styles.fieldLabel}>Carbs (g)</Text>
+                  <TextInput
+                    testID="extra-carbs-input"
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={carbs}
+                    onChangeText={setCarbs}
+                    returnKeyType="done"
+                  />
+                  <Text style={styles.fieldLabel}>Fat (g)</Text>
+                  <TextInput
+                    testID="extra-fat-input"
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={fat}
+                    onChangeText={setFat}
+                    returnKeyType="done"
+                  />
+                </>
+              )}
 
               <TouchableOpacity
                 testID="save-extra-button"
