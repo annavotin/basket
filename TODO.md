@@ -36,6 +36,7 @@ Details + status in `docs/CODE-REVIEW-2026-07-01.md`.
 - [ ] Run `alter table public.extra_meals add column macros jsonb;` if the DB already exists
 - [ ] Set server secret: `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
 - [ ] Deploy receipt-scan edge function: `supabase functions deploy scan-receipt`
+- [ ] Deploy extras-estimate edge function: `supabase functions deploy estimate-extra`
 - [ ] Add `EXPO_PUBLIC_USDA_API_KEY` to `.env.local` (free key from api.data.gov — falls back to rate-limited DEMO_KEY without it)
 
 ## 📱 On-device verification (can't test camera/native scroll in simulator/jest)
