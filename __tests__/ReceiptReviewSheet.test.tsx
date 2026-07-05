@@ -57,4 +57,17 @@ describe('ReceiptReviewSheet', () => {
     const rice = items.find((i: any) => i.name === 'Jasmine Rice')
     expect(rice).toMatchObject({ weightG: 500, kcal: 650, source: 'receipt' })
   })
+
+  // Regression: parseInt truncated decimal weight/kcal input (e.g. "127.5" -> 127),
+  // same bug class fixed elsewhere on 2026-07-01. Use parseFloat (kcal rounded).
+  it('does not truncate decimal weight/kcal input', () => {
+    const { props, getByTestId } = setup()
+    fireEvent.changeText(getByTestId('name-r2'), 'Jasmine Rice')
+    fireEvent.changeText(getByTestId('weight-r2'), '127.5')
+    fireEvent.changeText(getByTestId('kcal-r2'), '164.6')
+    fireEvent.press(getByTestId('confirm-receipt'))
+    const items = props.onConfirm.mock.calls[0][0]
+    const rice = items.find((i: any) => i.name === 'Jasmine Rice')
+    expect(rice).toMatchObject({ weightG: 127.5, kcal: 165 })
+  })
 })

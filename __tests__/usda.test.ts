@@ -78,4 +78,30 @@ describe('usdaSearchByName', () => {
   it('returns [] on error', async () => {
     expect(await usdaSearchByName('x', { fetch: fakeFetch({}, false) })).toEqual([])
   })
+
+  // Regression: usdaSearchByName used raw fetch with no timeout, so a hung request never
+  // resolved and useFoodSearch.loading stuck true forever. It must route through
+  // fetchWithRetry (http.ts) like usdaLookupByBarcode, which aborts via an AbortSignal after
+  // a bounded timeout.
+  it('aborts a hung request instead of waiting forever (routed through fetchWithRetry)', async () => {
+    jest.useFakeTimers()
+    const fetchMock = jest.fn((_url: string, opts?: any) => new Promise((_resolve, reject) => {
+      opts?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+    })) as unknown as typeof fetch
+
+    const pending = usdaSearchByName('x', { fetch: fetchMock })
+    let settled = false
+    pending.then(() => { settled = true })
+
+    await Promise.resolve()
+    expect(settled).toBe(false)
+
+    await jest.advanceTimersByTimeAsync(20000)
+    const out = await pending
+    expect(out).toEqual([])
+    expect(fetchMock).toHaveBeenCalled()
+    const opts = (fetchMock as jest.Mock).mock.calls[0][1]
+    expect(opts.signal).toBeInstanceOf(AbortSignal)
+    jest.useRealTimers()
+  })
 })

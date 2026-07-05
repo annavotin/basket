@@ -46,7 +46,7 @@ export default function ExtraMealSheet({ visible, onSave, onClose }: Props) {
     setKcal('')
   }, [visible])
 
-  const kcalNum = parseInt(kcal, 10) || 0
+  const kcalNum = Math.round(parseFloat(kcal)) || 0
   const canSave = name.trim().length > 0 && kcalNum > 0
 
   function handleSave() {

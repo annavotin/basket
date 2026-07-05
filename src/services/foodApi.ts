@@ -119,7 +119,7 @@ export async function searchProductsByName(
     const url =
       `https://search.openfoodfacts.org/search?q=${encodeURIComponent(query)}` +
       `&fields=product_name,nutriments,product_quantity,serving_quantity,serving_size&page_size=15`
-    const res = await deps.fetch(url, { headers: offHeaders })
+    const res = await fetchWithRetry(url, { headers: offHeaders }, deps.fetch)
     if (!res || !res.ok) return []
     const json: any = await res.json()
     const hits: any[] = Array.isArray(json?.hits) ? json.hits : []

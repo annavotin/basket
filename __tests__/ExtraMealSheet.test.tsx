@@ -21,4 +21,15 @@ describe('ExtraMealSheet', () => {
     fireEvent.press(getByTestId('save-extra-button'))
     expect(onSave).toHaveBeenCalledWith({ name: 'Sushi with friends', kcal: 850 })
   })
+
+  // Regression: parseInt truncated decimal kcal input (e.g. "164.6" -> 164), same bug
+  // class fixed elsewhere on 2026-07-01. Use parseFloat + round.
+  it('does not truncate decimal kcal input', () => {
+    const onSave = jest.fn()
+    const { getByTestId } = render(<ExtraMealSheet visible onSave={onSave} onClose={() => {}} />)
+    fireEvent.changeText(getByTestId('extra-desc-input'), 'Sushi with friends')
+    fireEvent.changeText(getByTestId('extra-kcal-input'), '164.6')
+    fireEvent.press(getByTestId('save-extra-button'))
+    expect(onSave).toHaveBeenCalledWith({ name: 'Sushi with friends', kcal: 165 })
+  })
 })

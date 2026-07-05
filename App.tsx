@@ -71,6 +71,16 @@ const WINDOW_OFFSET = 7  // days before today the window starts
 const syncQueue = makeQueue(AsyncStorage)
 const SYNC_DEBOUNCE_MS = 1500
 
+// Cheap replacement for a full-array JSON.stringify diff: mergeLWW reuses the same object
+// references for untouched rows, so a shallow (length + per-element reference) compare is
+// sufficient to detect "nothing actually changed" without walking the whole dataset twice.
+function sameRecords<T>(a: T[], b: T[]): boolean {
+  if (a === b) return true
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
 function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dispatch<React.SetStateAction<Preferences>> }) {
   const colors = useColors()
   const [today, setToday] = useState(todayISO)
@@ -364,9 +374,9 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           pass<PantryItem>('pantry_items', pantryRef.current),
         ])
         console.log('[sync] done', { cycles: c.length, extraMeals: e.length, pantry: p.length })
-        if (JSON.stringify(c) !== JSON.stringify(cyclesRef.current)) setCycles(c)
-        if (JSON.stringify(e) !== JSON.stringify(extraMealsRef.current)) setExtraMeals(e)
-        if (JSON.stringify(p) !== JSON.stringify(pantryRef.current)) setPantry(p)
+        if (!sameRecords(c, cyclesRef.current)) setCycles(c)
+        if (!sameRecords(e, extraMealsRef.current)) setExtraMeals(e)
+        if (!sameRecords(p, pantryRef.current)) setPantry(p)
       } while (syncAgainRef.current)
     } finally {
       syncingRef.current = false
@@ -803,7 +813,14 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     } catch {}
   }
 
+  // Clearing all data while signed in would otherwise leave the account connected with an
+  // empty local dataset, which then partially resurrects from remote on the next sync (the
+  // dirty queue/cursors still point at the old account). So sign out first, then wipe.
   function handleClearAll() {
+    if (account) {
+      authService.signOut()
+      setAccount(null)
+    }
     setCycles([])
     setActiveCycleId(null)
     setExtraMeals([])
@@ -811,16 +828,22 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     setDailyGoal(DAILY_KCAL_GOAL)
     setPrefs(DEFAULT_PREFERENCES)
     clearAll()
+    void clearSyncMetadata(AsyncStorage)
     setSettingsVisible(false)
   }
 
   // Deleting the account removes it in the cloud, then resets this device to empty so no
-  // personal data or stale sync state is left behind.
-  function handleDeleteAccount() {
-    authService.deleteAccount()
+  // personal data or stale sync state is left behind. Only wipe local data once the cloud
+  // delete actually succeeds, so a failed request doesn't destroy data that's still live remotely.
+  async function handleDeleteAccount() {
+    try {
+      await authService.deleteAccount()
+    } catch {
+      Alert.alert("Couldn't delete account", 'Please check your connection and try again.')
+      return
+    }
     setAccount(null)
     handleClearAll()
-    void clearSyncMetadata(AsyncStorage)
   }
 
   const extraDates = liveExtraMeals.map((e) => e.date)
@@ -1066,7 +1089,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onClearAll={handleClearAll}
           account={account}
           onAuthed={(a) => setAccount(a)}
-          onSignOut={() => { authService.signOut(); setAccount(null) }}
+          onSignOut={() => { authService.signOut(); setAccount(null); void clearSyncMetadata(AsyncStorage) }}
           onDeleteAccount={handleDeleteAccount}
           authService={authService}
           sync={account ? 'synced' : 'offline'}

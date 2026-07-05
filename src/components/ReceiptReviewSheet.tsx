@@ -113,8 +113,8 @@ export default function ReceiptReviewSheet({ visible, lines, onConfirm, onClose 
         lineToFoodItem({
           id: r.id,
           name: r.name.trim() || 'Item',
-          weightG: parseInt(r.weight, 10) || 0,
-          kcal: parseInt(r.kcal, 10) || 0,
+          weightG: parseFloat(r.weight) || 0,
+          kcal: Math.round(parseFloat(r.kcal)) || 0,
           isFood: true,
         })
       )

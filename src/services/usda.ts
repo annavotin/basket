@@ -82,8 +82,8 @@ export async function usdaSearchByName(
     const url =
       `${SEARCH}?query=${encodeURIComponent(query)}` +
       `&dataType=Foundation,SR%20Legacy,Branded&pageSize=20&api_key=${API_KEY}`
-    const res = await deps.fetch(url)
-    if (!res.ok) return []
+    const res = await fetchWithRetry(url, {}, deps.fetch)
+    if (!res || !res.ok) return []
     const json: any = await res.json()
     const foods: any[] = Array.isArray(json?.foods) ? json.foods : []
     const out: FoodSuggestion[] = []
