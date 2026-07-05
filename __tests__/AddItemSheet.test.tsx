@@ -103,6 +103,23 @@ describe('AddItemSheet — manual mode', () => {
     )
   })
 
+  it('hides Quantity/Save/Link/Add while search results are still showing, before a suggestion is picked', async () => {
+    const { getByTestId, getByText, queryByTestId } = render(
+      <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('manual-name-input'), 'banana')
+    await waitFor(() => getByText('Banana'))
+    // The suggestion is visible, but nothing has been picked yet — the bottom controls
+    // belong to a chosen/entered item, not to a still-open search.
+    expect(queryByTestId('qty')).toBeNull()
+    expect(queryByTestId('toggle-save-to-foods')).toBeNull()
+    expect(queryByTestId('link-barcode-button')).toBeNull()
+    expect(queryByTestId('add-item-button')).toBeNull()
+    fireEvent.press(getByText('Banana'))
+    expect(getByTestId('qty')).toBeTruthy()
+    expect(getByTestId('add-item-button')).toBeTruthy()
+  })
+
   it('prefills macros from a tapped suggestion, editable after tapping Edit', async () => {
     const onAdd = jest.fn()
     const { getByTestId, getByText } = render(
@@ -177,11 +194,12 @@ describe('AddItemSheet — manual mode', () => {
     expect(queryByTestId('nf-kcal')).toBeNull()
   })
 
-  it('reveals quantity, toggles, and the add button once a name is typed', () => {
-    const { getByTestId } = render(
+  it('reveals quantity, toggles, and the add button once search settles with no match', async () => {
+    const { getByTestId, findByTestId } = render(
       <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Mystery Soup')
+    await findByTestId('nf-kcal') // search settled with zero matches -> custom-add card shown
     expect(getByTestId('qty')).toBeTruthy()
     expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
     expect(getByTestId('add-item-button')).toBeTruthy()
@@ -264,11 +282,12 @@ describe('AddItemSheet — scan toggles', () => {
     expect(queryByTestId('edit-product-button')).toBeNull()
   })
 
-  it('shows Save to My Foods (default on) but hides Keep-scanning + Edit on a manual add (not scanned)', () => {
-    const { getByTestId, queryByTestId } = render(
+  it('shows Save to My Foods (default on) but hides Keep-scanning + Edit on a manual add (not scanned)', async () => {
+    const { getByTestId, queryByTestId, findByTestId } = render(
       <AddItemSheet visible product={null} onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
-    fireEvent.changeText(getByTestId('manual-name-input'), 'Something') // reveal the toggle group
+    fireEvent.changeText(getByTestId('manual-name-input'), 'Something')
+    await findByTestId('nf-kcal') // search settled with zero matches -> reveal the toggle group
     expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
     expect(queryByTestId('toggle-keep-scanning')).toBeNull()
     expect(queryByTestId('edit-product-button')).toBeNull()
@@ -311,23 +330,26 @@ describe('AddItemSheet — scan toggles', () => {
 })
 
 describe('AddItemSheet — Save to My Foods', () => {
-  it('reads "Update <name>" when the food already exists in My Foods', () => {
+  it('reads "Update <name>" when the food already exists in My Foods', async () => {
     const custom = [{ id: 'cf1', name: 'Kale', emoji: '🥬', kcalPer100g: 33, createdAt: 1, updatedAt: 1 }]
     const { getByTestId, getByText } = render(
       <AddItemSheet visible product={null} customFoods={custom} onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Kale')
+    await waitFor(() => getByText('Kale')) // suggestion for the existing custom food
+    fireEvent.press(getByText('Kale'))
+    fireEvent.changeText(getByTestId('weight-input'), '200') // edit -> dirty -> toggle appears
     expect(getByText(/Update .Kale./)).toBeTruthy()
   })
 
   it('links a scanned barcode to the food being saved', async () => {
     const onAdd = jest.fn()
     const onScanForBarcode = jest.fn(() => Promise.resolve('50000001'))
-    const { getByTestId, getByText, findByText } = render(
+    const { getByTestId, findByText } = render(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} onScanForBarcode={onScanForBarcode} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Home Hummus')
-    fireEvent.press(getByText('Link a barcode'))
+    fireEvent.press(await findByText('Link a barcode')) // search settled with no match
     expect(await findByText('Barcode linked ✓')).toBeTruthy()
   })
 
@@ -339,7 +361,8 @@ describe('AddItemSheet — Save to My Foods', () => {
     rerender(
       <AddItemSheet visible product={null} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
-    fireEvent.changeText(getByTestId('manual-name-input'), 'placeholder') // reveal the toggle group
+    fireEvent.changeText(getByTestId('manual-name-input'), 'placeholder')
+    await waitFor(() => getByTestId('toggle-save-to-foods')) // search settled -> toggle group revealed
     fireEvent.press(getByTestId('toggle-save-to-foods')) // true -> false
     // Close, then reopen fresh (as App.tsx does between adds) — should default back to on.
     rerender(
@@ -385,11 +408,12 @@ describe('AddItemSheet — Save to My Foods only when new or edited', () => {
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Oatly' }), { save: false })
   })
 
-  it('always shows the save toggle for a fully-custom typed item', () => {
-    const { getByTestId } = render(
+  it('always shows the save toggle for a fully-custom typed item', async () => {
+    const { getByTestId, findByTestId } = render(
       <AddItemSheet visible product={null} onAdd={jest.fn()} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     )
     fireEvent.changeText(getByTestId('manual-name-input'), 'Home Hummus')
+    await findByTestId('nf-kcal') // search settled with zero matches -> custom-add card shown
     expect(getByTestId('toggle-save-to-foods')).toBeTruthy()
   })
 })
