@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert,
-  KeyboardAvoidingView, Keyboard, Platform, StyleSheet,
+  KeyboardAvoidingView, Keyboard, Platform, ScrollView, StyleSheet,
 } from 'react-native'
 import DismissArea from './DismissArea'
 import { useColors } from '../styles/ThemeProvider'
@@ -37,6 +37,9 @@ export default function ExtraMealSheet({ visible, onSave, onClose, signedIn = fa
     sheet: {
       backgroundColor: colors.surface,
       borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      maxHeight: '90%',
+    },
+    sheetContent: {
       padding: 24, paddingBottom: 36,
     },
     title: { fontSize: 20, fontWeight: '700', color: colors.kcalText, alignSelf: 'center' },
@@ -84,6 +87,7 @@ export default function ExtraMealSheet({ visible, onSave, onClose, signedIn = fa
     setEstimating(true)
     const result = await onEstimate(name.trim())
     setEstimating(false)
+    Keyboard.dismiss()
     if (!result) {
       Alert.alert("Couldn't estimate that", 'Try a more specific description, or enter calories manually.')
       return
@@ -114,6 +118,11 @@ export default function ExtraMealSheet({ visible, onSave, onClose, signedIn = fa
         <DismissArea>
           <View style={styles.backdrop}>
             <View style={styles.sheet} testID="extra-meal-sheet">
+              <ScrollView
+                contentContainerStyle={styles.sheetContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
               <Text style={styles.title}>Add extra meal</Text>
 
               <Text style={styles.fieldLabel}>Description</Text>
@@ -192,6 +201,7 @@ export default function ExtraMealSheet({ visible, onSave, onClose, signedIn = fa
               <TouchableOpacity testID="cancel-button" style={styles.cancelBtn} onPress={onClose}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
+              </ScrollView>
             </View>
           </View>
         </DismissArea>
