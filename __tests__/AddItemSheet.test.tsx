@@ -237,12 +237,12 @@ describe('AddItemSheet — validation guard', () => {
 it('passes the product macrosPer100g onto the added item', () => {
   const onAdd = jest.fn()
   const product = { name: 'Yogurt', emoji: '🥛', packageWeightG: 500, kcalPer100g: 59, macrosPer100g: { protein: 10, carbs: 4, fat: 0.4 } }
-  const { getByText } = render(
+  const { getByTestId } = render(
     <ThemeProvider theme="light" accent={['#7CC96E','#5FB152','#3E8F38']}>
       <AddItemSheet visible product={product} onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
     </ThemeProvider>
   )
-  fireEvent.press(getByText('Add to period'))
+  fireEvent.press(getByTestId('add-item-button'))
   expect(onAdd.mock.calls[0][0].macrosPer100g).toEqual({ protein: 10, carbs: 4, fat: 0.4 })
 })
 

@@ -83,15 +83,22 @@ export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, 
     onChange({ kcalPer100g: k, macrosPer100g: macros })
   }
 
-  const unit = effectiveBasis === 'per100g' ? '/ 100g' : 'total'
+  const unit = effectiveBasis === 'per100g' ? '/ 100g' : 'per pack'
   const styles = useMemo(() => StyleSheet.create({
     head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     lbl: { fontFamily: fonts.bodyExtra, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.mossFaint },
-    seg: { flexDirection: 'row', backgroundColor: colors.sageBg2, borderRadius: 10, padding: 2 },
+    // Styled to match the quantity Stepper: recessed track + raised white active pill.
+    // Track uses `line` (not sageBg2) so it stays visible on sageBg2 card backgrounds.
+    seg: { flexDirection: 'row', backgroundColor: colors.line, borderRadius: 11, padding: 3 },
     segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-    segOn: { backgroundColor: colors.white },
+    segOn: {
+      backgroundColor: colors.white,
+      shadowColor: '#2C3A1E', shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1, shadowRadius: 2, elevation: 1,
+    },
     segDisabled: { opacity: 0.4 },
     segTxt: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.moss },
+    segTxtOn: { color: colors.forest },
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
     name: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.moss },
     input: {
@@ -117,7 +124,7 @@ export default function NutritionFields({ basis, onBasisChange, G, kcalPer100g, 
                 style={[styles.segBtn, effectiveBasis === b && styles.segOn, disabled && styles.segDisabled]}
                 onPress={() => onBasisChange(b)}
               >
-                <Text style={styles.segTxt}>{b === 'per100g' ? 'per 100g' : 'total'}</Text>
+                <Text style={[styles.segTxt, effectiveBasis === b && styles.segTxtOn]}>{b === 'per100g' ? 'per 100g' : 'per pack'}</Text>
               </TouchableOpacity>
             )
           })}

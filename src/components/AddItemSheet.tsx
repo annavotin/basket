@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Keyboard, Platform, ScrollView, StyleSheet, Animated,
+  KeyboardAvoidingView, Keyboard, LayoutAnimation, Platform, ScrollView, StyleSheet,
 } from 'react-native'
 import DismissArea from './DismissArea'
 import Stepper from './settings/Stepper'
@@ -36,11 +36,6 @@ type Props = {
   onBasisChange: (b: NutritionBasis) => void
 }
 
-// Height used only for the reveal transition's clip/slide interpolation — a slight over/under
-// estimate just means the transient frame is a hair off, since the container switches to
-// natural (auto) height the moment the animation finishes (see nutritionFullyOpen).
-const NUTRITION_REVEAL_ESTIMATE = 240
-
 function macrosEqual(a?: Macros, b?: Macros): boolean {
   if (a == null && b == null) return true
   if (a == null || b == null) return false
@@ -66,10 +61,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const [servingIdx, setServingIdx] = useState<number | null>(null) // null = custom g input
   // Found scans open as a read-only summary; tapping Edit reveals the editable fields.
   const [editing, setEditing] = useState(false)
-  // Drives the NutritionFields reveal: animates in on Edit, then settles to natural height
-  // (see nutritionFullyOpen) so a hardcoded estimate only has to hold for the transition.
-  const nutritionReveal = useRef(new Animated.Value(0)).current
-  const [nutritionFullyOpen, setNutritionFullyOpen] = useState(false)
   // Always-visible "Save to My Foods" toggle, default on.
   const [saveToFoods, setSaveToFoods] = useState(true)
   // Barcode linked to a manual/custom item via the "Link a barcode" flow (distinct from
@@ -252,21 +243,19 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       marginBottom: 8,
     },
 
-    // ── Nutrition reveal — a distinct card that slides out from behind whatever sits
-    // above it (tucked under by the negative marginTop, so that element keeps its full
-    // corner radius and this reads as "attached from the top"). ──
-    nutritionRevealClip: {
-      overflow: 'hidden',
+    // ── Nutrition card — tucked under the tile above by the negative marginTop, so the
+    // tile keeps its full corner radius and this reads as "attached from the top". ──
+    nutritionCard: {
       // Subtly tinted vs. the tile's pure white so the seam reads even where the two
       // cards touch with no gap between them.
       backgroundColor: colors.sageBg2,
       borderRadius: 16,
       marginTop: -16,
+      // 16 clears the tuck under the tile (matches marginTop above); the rest matches the
+      // horizontal/bottom padding so all four sides read as evenly spaced.
+      paddingHorizontal: 18, paddingBottom: 18, paddingTop: 16 + 10,
       shadowColor: colors.forest, shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.06, shadowRadius: 5, elevation: 1, zIndex: 1,
-    },
-    nutritionRevealInner: {
-      padding: 12, paddingTop: 12 + 16,
     },
 
     // ── Weight + qty section ──────────────────────────────────────────────────
@@ -286,12 +275,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     qtyRow: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       marginTop: 10, marginBottom: 6,
-    },
-
-    // ── Kcal preview ──────────────────────────────────────────────────────────
-    kcalPreview: {
-      fontFamily: fonts.display, fontSize: 14, color: colors.matchaDeep,
-      fontWeight: '600', textAlign: 'center', marginVertical: 6,
     },
 
     // ── Scan toggles (scanned mode only) ──────────────────────────────────────
@@ -354,13 +337,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     unitPillTextActive: { color: colors.matchaDeep, fontWeight: '700' as const },
   }), [colors])
 
-  // Collapse the nutrition reveal back to its starting point — called everywhere `editing`
-  // resets to false, so the next Edit tap animates in fresh instead of snapping open.
-  function resetNutritionReveal() {
-    nutritionReveal.setValue(0)
-    setNutritionFullyOpen(false)
-  }
-
   useEffect(() => {
     if (product) {
       const unknownWeight = product.packageWeightG <= 0
@@ -371,7 +347,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setEmoji(product.emoji)
       setMacrosPer100g(product.macrosPer100g)
       setEditing(false)
-      resetNutritionReveal()
       setKcalPer100g(product.kcalPer100g)
       setServings(srvs)
       setServingIdx(srvs.length > 0 ? 0 : null)
@@ -383,7 +358,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setMacrosPer100g(undefined)
       setEmoji('🛒')
       setEditing(false)
-      resetNutritionReveal()
       setServings([])
       setServingIdx(null)
       setOriginal(null)
@@ -395,10 +369,13 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setLinkedBarcode(null)
   }, [product, visible])
 
+  // LayoutAnimation (native-driven, no height estimate needed) expands the nutrition card
+  // and shifts everything below it in one smooth pass; the card itself fades in.
   function enterEdit() {
+    LayoutAnimation.configureNext(
+      LayoutAnimation.create(260, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity)
+    )
     setEditing(true)
-    Animated.timing(nutritionReveal, { toValue: 1, duration: 320, useNativeDriver: false })
-      .start(({ finished }) => { if (finished) setNutritionFullyOpen(true) })
   }
 
   const { suggestions, loading } = useFoodSearch(isManual && dropdownOpen ? name : '', customFoods)
@@ -419,7 +396,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setMacrosPer100g(s.macrosPer100g)
     setPickedSuggestion(true)
     setEditing(false)
-    resetNutritionReveal()
     const srvs = s.servings ?? []
     setServings(srvs)
     const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (s.packageWeightG || 0)
@@ -658,50 +634,34 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                           <EditIcon size={13} color={colors.forest} />
                           <Text style={styles.editBtnText}>Edit</Text>
                         </TouchableOpacity>
-                      ) : (
+                      ) : perUnitKcal > 0 ? (
                         <View>
                           <Text style={styles.productKcal}>
-                            {perUnitKcal > 0 ? formatEnergy(perUnitKcal, units) : ''}
+                            {formatEnergy(perUnitKcal, units)}
                           </Text>
                           <Text style={styles.productKcalSmall}>KCAL</Text>
                         </View>
-                      )}
+                      ) : null}
                     </View>
                   )}
 
                   {/* ── NUTRITION (manual after a pick, or found scan — both once editing) ──
-                       Slides out attached directly beneath the food tile above, rather than
-                       snapping in; see resetNutritionReveal/enterEdit. Rendered right after the
-                       tile (before pack size/name) so the tuck-under seam lands on the tile's
-                       rounded bottom edge, not on whatever editable field happens to sit below. ── */}
+                       Expands in via the LayoutAnimation configured in enterEdit. Rendered right
+                       after the tile (before pack size/name) so the tuck-under seam lands on the
+                       tile's rounded bottom edge, not on whatever editable field happens to sit
+                       below. ── */}
                   {editing && (isManual ? pickedSuggestion : true) && (
-                    <Animated.View
-                      style={[
-                        styles.nutritionRevealClip,
-                        !nutritionFullyOpen && {
-                          height: nutritionReveal.interpolate({ inputRange: [0, 1], outputRange: [0, NUTRITION_REVEAL_ESTIMATE] }),
-                        },
-                      ]}
-                    >
-                      <Animated.View
-                        style={[
-                          styles.nutritionRevealInner,
-                          !nutritionFullyOpen && {
-                            transform: [{ translateY: nutritionReveal.interpolate({ inputRange: [0, 1], outputRange: [-NUTRITION_REVEAL_ESTIMATE, 0] }) }],
-                          },
-                        ]}
-                      >
-                        <NutritionFields
-                          basis={basis}
-                          onBasisChange={onBasisChange}
-                          G={weightNum * qty}
-                          kcalPer100g={effectivePer100g}
-                          macrosPer100g={macrosPer100g}
-                          onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
-                          editable={isManual || editing}
-                        />
-                      </Animated.View>
-                    </Animated.View>
+                    <View style={styles.nutritionCard}>
+                      <NutritionFields
+                        basis={basis}
+                        onBasisChange={onBasisChange}
+                        G={weightNum * qty}
+                        kcalPer100g={effectivePer100g}
+                        macrosPer100g={macrosPer100g}
+                        onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
+                        editable={isManual || editing}
+                      />
+                    </View>
                   )}
 
                   {/* ── 5a. PACK SIZE — always visible and editable once a food is chosen; never
@@ -777,15 +737,6 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       <Stepper value={qty} min={1} max={99} onChange={setQty} testID="qty" />
                     </View>
 
-                    {/* ── KCAL PREVIEW (only once there's something to total) ── */}
-                    {perUnitKcal > 0 && (
-                      <Text style={styles.kcalPreview} testID="kcal-preview">
-                        {qty > 1
-                          ? `${formatEnergy(perUnitKcal, units)} × ${qty} = ${formatEnergy(perUnitKcal * qty, units)}`
-                          : formatEnergy(perUnitKcal, units)}
-                      </Text>
-                    )}
-
                     {/* ── TOGGLES (Save to My Foods only for new/edited items; Keep scanning on scan-opened sheets) ── */}
                     {(showSaveToggle || isManual || scanned) && (
                       <View style={styles.toggleGroup}>
@@ -856,7 +807,9 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       onPress={handleAdd}
                       disabled={!canAdd}
                     >
-                      <Text style={styles.addBtnText}>Add to period</Text>
+                      <Text style={styles.addBtnText}>
+                        Add to period{perUnitKcal > 0 ? ` · ${formatEnergy(perUnitKcal * qty, units)}` : ''}
+                      </Text>
                     </TouchableOpacity>
                   </>
                 )}
