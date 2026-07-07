@@ -1,7 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import * as Crypto from 'expo-crypto'
 
 export type Account = { name: string; email: string }
-export type AuthResult = { ok: true; account: Account } | { ok: false; error: string }
+export type AuthResult = { ok: true; account: Account } | { ok: false; error: string; cancelled?: boolean }
 
 export interface AuthService {
   signIn(email: string, password: string): Promise<AuthResult>
@@ -32,7 +33,69 @@ function friendlyError(error: any): string {
   return error?.message || 'Something went wrong. Try again.'
 }
 
-export function createSupabaseAuth(client: any): AuthService {
+/** Result of a native Apple identity-token request, injected so it's mockable in tests. */
+export type AppleTokenResult = {
+  identityToken: string
+  nonce: string
+  fullName?: string | null
+}
+
+/** Generates a random nonce, hashes it, runs the native Apple sign-in sheet, and returns the
+ * identity token + raw nonce for the supabase exchange. Throws with code `ERR_REQUEST_CANCELED`
+ * if the user dismisses the sheet (matches expo-apple-authentication's error shape). */
+async function requestAppleToken(): Promise<AppleTokenResult> {
+  const AppleAuthentication = require('expo-apple-authentication')
+  const rawNonce = Crypto.randomUUID()
+  const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce)
+
+  const credential = await AppleAuthentication.signInAsync({
+    requestedScopes: [
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+    ],
+    nonce: hashedNonce,
+  })
+
+  const fullName = credential.fullName
+    ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
+    : undefined
+
+  return {
+    identityToken: credential.identityToken,
+    nonce: rawNonce,
+    fullName: fullName || undefined,
+  }
+}
+
+/** Result of a native Google identity-token request, injected so it's mockable in tests. */
+export type GoogleTokenResult = { idToken: string }
+
+/** Configures Google Sign-In from env-provided client IDs and runs the native flow. */
+async function requestGoogleToken(): Promise<GoogleTokenResult> {
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+  if (!iosClientId || !webClientId) {
+    throw new Error('Google sign-in is not configured.')
+  }
+
+  const { GoogleSignin } = require('@react-native-google-signin/google-signin')
+  GoogleSignin.configure({ iosClientId, webClientId })
+  await GoogleSignin.hasPlayServices()
+  const result = await GoogleSignin.signIn()
+  const idToken = result?.data?.idToken ?? result?.idToken
+  if (!idToken) {
+    throw new Error('Google sign-in did not return a token.')
+  }
+  return { idToken }
+}
+
+export function createSupabaseAuth(
+  client: any,
+  deps: { getAppleToken?: () => Promise<AppleTokenResult>; getGoogleToken?: () => Promise<GoogleTokenResult> } = {}
+): AuthService {
+  const getAppleToken = deps.getAppleToken ?? requestAppleToken
+  const getGoogleToken = deps.getGoogleToken ?? requestGoogleToken
+
   return {
     async signIn(email: string, password: string): Promise<AuthResult> {
       const { data, error } = await client.auth.signInWithPassword({ email, password })
@@ -47,11 +110,51 @@ export function createSupabaseAuth(client: any): AuthService {
     },
 
     async signInWithApple(): Promise<AuthResult> {
-      return { ok: false, error: 'Use email sign-in for now. Apple/Google coming soon.' }
+      let token: AppleTokenResult
+      try {
+        token = await getAppleToken()
+      } catch (err: any) {
+        if (err?.code === 'ERR_REQUEST_CANCELED') {
+          return { ok: false, error: '', cancelled: true }
+        }
+        return { ok: false, error: friendlyError(err) }
+      }
+
+      const { data, error } = await client.auth.signInWithIdToken({
+        provider: 'apple',
+        token: token.identityToken,
+        nonce: token.nonce,
+      })
+      if (error) return { ok: false, error: friendlyError(error) }
+
+      // Apple only sends the name on first sign-in; persist it into user metadata so
+      // toAccount() can read it back on later sessions.
+      if (token.fullName) {
+        await client.auth.updateUser({ data: { name: token.fullName } })
+      }
+
+      const user = data.user
+      const name = token.fullName || user?.user_metadata?.name
+      return { ok: true, account: { email: user?.email ?? '', name: name || capitalize(user?.email ?? '') } }
     },
 
     async signInWithGoogle(): Promise<AuthResult> {
-      return { ok: false, error: 'Use email sign-in for now. Apple/Google coming soon.' }
+      let token: GoogleTokenResult
+      try {
+        token = await getGoogleToken()
+      } catch (err: any) {
+        if (err?.code === 'SIGN_IN_CANCELLED' || err?.code === '-5') {
+          return { ok: false, error: '', cancelled: true }
+        }
+        return { ok: false, error: friendlyError(err) }
+      }
+
+      const { data, error } = await client.auth.signInWithIdToken({
+        provider: 'google',
+        token: token.idToken,
+      })
+      if (error) return { ok: false, error: friendlyError(error) }
+      return { ok: true, account: toAccount(data.user) }
     },
 
     async resetPassword(email: string): Promise<{ ok: boolean; error?: string }> {

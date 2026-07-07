@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet,
-  SafeAreaView, Image, KeyboardAvoidingView, Platform, ScrollView,
+  SafeAreaView, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { fonts } from '../styles/fonts'
@@ -27,6 +27,10 @@ export type OnboardingResult = {
 type Props = {
   onComplete: (result: OnboardingResult) => void
   onSignIn: () => void
+  /** Real Apple sign-in. Resolves true on success (drop into app signed-in), false on cancel/error. */
+  onApple: () => Promise<boolean>
+  /** Real Google sign-in. Resolves true on success, false on cancel/error. */
+  onGoogle: () => Promise<boolean>
 }
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -40,7 +44,7 @@ const goalFromV = (v: number) => 800 + (v - 1) * 20
 const vFromGoal = (kcal: number) => Math.round((kcal - 800) / 20) + 1
 
 // ─── root ─────────────────────────────────────────────────────────────────────
-export default function OnboardingScreen({ onComplete, onSignIn }: Props) {
+export default function OnboardingScreen({ onComplete, onSignIn, onApple, onGoogle }: Props) {
   const [phase, setPhase] = useState<'splash' | 'slides' | 'setup' | 'complete'>('splash')
   const [slideIdx, setSlideIdx] = useState(0)
   const [step, setStep] = useState(0)
@@ -88,7 +92,8 @@ export default function OnboardingScreen({ onComplete, onSignIn }: Props) {
       weightUnit={weightUnit} onWeightUnit={setWeightUnit}
       onBack={setupBack}
       onContinue={advanceSetup}
-      onSignIn={onSignIn}
+      onApple={onApple}
+      onGoogle={onGoogle}
     />
   )
 }
@@ -257,7 +262,8 @@ type SetupProps = {
   weightUnit: 'g' | 'oz'; onWeightUnit: (v: 'g' | 'oz') => void
   onBack: () => void
   onContinue: () => void
-  onSignIn: () => void
+  onApple: () => Promise<boolean>
+  onGoogle: () => Promise<boolean>
 }
 
 function Setup(p: SetupProps) {
@@ -283,7 +289,7 @@ function Setup(p: SetupProps) {
       {p.step === 0 && <StepName name={p.name} onChange={p.onName} onContinue={p.onContinue} />}
       {p.step === 1 && <StepGoal goal={p.dailyGoal} onChange={p.onDailyGoal} defaultDays={p.defaultDays} onContinue={p.onContinue} />}
       {p.step === 2 && <StepSettings defaultDays={p.defaultDays} onDefaultDays={p.onDefaultDays} weightUnit={p.weightUnit} onWeightUnit={p.onWeightUnit} onContinue={p.onContinue} />}
-      {p.step === 3 && <StepAccount onContinue={p.onContinue} onSignIn={p.onSignIn} />}
+      {p.step === 3 && <StepAccount onContinue={p.onContinue} onApple={p.onApple} onGoogle={p.onGoogle} />}
     </SafeAreaView>
   )
 }
@@ -444,7 +450,22 @@ function StepSettings({ defaultDays, onDefaultDays, weightUnit, onWeightUnit, on
 }
 
 // step 3: account / sync upsell
-function StepAccount({ onContinue, onSignIn }: { onContinue: () => void; onSignIn: () => void }) {
+function StepAccount({ onContinue, onApple, onGoogle }: {
+  onContinue: () => void
+  onApple: () => Promise<boolean>
+  onGoogle: () => Promise<boolean>
+}) {
+  const [busy, setBusy] = useState<null | 'apple' | 'google'>(null)
+  const [error, setError] = useState('')
+
+  async function run(which: 'apple' | 'google') {
+    setError('')
+    setBusy(which)
+    const ok = which === 'apple' ? await onApple() : await onGoogle()
+    setBusy(null)
+    if (!ok) setError("That didn't complete. You can try again or continue without syncing.")
+  }
+
   const features = [
     { e: '📱', l: 'Sync across all your devices' },
     { e: '💾', l: 'Automatic backups, always' },
@@ -476,13 +497,20 @@ function StepAccount({ onContinue, onSignIn }: { onContinue: () => void; onSignI
       </ScrollView>
 
       <View style={[su.footer, { gap: 10 }]}>
-        <TouchableOpacity style={su.oauthBtn} onPress={onSignIn} activeOpacity={0.85}>
-          <Text style={su.oauthBtnText}>Continue with Apple</Text>
+        {error ? <Text style={su.oauthError}>{error}</Text> : null}
+        {Platform.OS === 'ios' && (
+          <TouchableOpacity style={su.oauthBtn} onPress={() => run('apple')} disabled={busy !== null} activeOpacity={0.85}>
+            {busy === 'apple'
+              ? <ActivityIndicator color={F} />
+              : <Text style={su.oauthBtnText}>Continue with Apple</Text>}
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={su.oauthBtn} onPress={() => run('google')} disabled={busy !== null} activeOpacity={0.85}>
+          {busy === 'google'
+            ? <ActivityIndicator color={F} />
+            : <Text style={su.oauthBtnText}>🎨  Continue with Google</Text>}
         </TouchableOpacity>
-        <TouchableOpacity style={su.oauthBtn} onPress={onSignIn} activeOpacity={0.85}>
-          <Text style={su.oauthBtnText}>🎨  Continue with Google</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={su.skipRow} onPress={onContinue} activeOpacity={0.7}>
+        <TouchableOpacity style={su.skipRow} onPress={onContinue} disabled={busy !== null} activeOpacity={0.7}>
           <Text style={su.skipRowText}>Continue without syncing</Text>
         </TouchableOpacity>
       </View>
@@ -644,6 +672,7 @@ const su = StyleSheet.create({
   bulletText: { fontSize: 16, fontWeight: '500', color: MF, flex: 1 },
   oauthBtn: { borderWidth: 1.5, borderColor: LN, borderRadius: 18, paddingVertical: 17, alignItems: 'center', backgroundColor: '#FFFFFF' },
   oauthBtnText: { fontSize: 16, fontWeight: '600', color: F },
+  oauthError: { fontSize: 13, fontWeight: '600', color: RO, textAlign: 'center', marginBottom: 2 },
 })
 
 // completion

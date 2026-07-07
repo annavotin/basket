@@ -172,7 +172,28 @@ jest.mock(
   }),
 );
 
-jest.mock('expo-crypto', () => ({ randomUUID: () => '00000000-0000-4000-8000-' + Date.now().toString().padStart(12, '0') }))
+jest.mock('expo-crypto', () => ({
+  randomUUID: () => '00000000-0000-4000-8000-' + Date.now().toString().padStart(12, '0'),
+  digestStringAsync: async (_algorithm, data) => `hashed-${data}`,
+  CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+}))
+
+// Native auth modules — auth.ts's createSupabaseAuth() injects mock token providers in tests,
+// but these mocks keep the modules loadable if a test imports auth.ts's default require() path.
+jest.mock('expo-apple-authentication', () => ({
+  signInAsync: jest.fn(async () => ({
+    identityToken: 'mock-apple-identity-token',
+    fullName: null,
+  })),
+  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+}))
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(async () => true),
+    signIn: jest.fn(async () => ({ data: { idToken: 'mock-google-id-token' } })),
+  },
+}))
 
 // Prevent native Supabase/SecureStore modules from loading in Jest.
 // createSupabaseAuth() takes the client as a param so tests bypass this.
