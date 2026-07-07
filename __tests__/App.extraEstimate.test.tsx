@@ -9,12 +9,18 @@ jest.mock('../src/services/auth', () => ({
   auth: { getCurrentAccount: jest.fn().mockResolvedValue({ name: 'Test', email: 'test@example.com' }) },
 }))
 const mockInvoke = jest.fn().mockResolvedValue({
-  data: { kcal: 550, protein: 20, carbs: 60, fat: 15 },
+  data: { items: [{ item: 'cheeseburger', grams: 220, kcal: 550, protein: 20, carbs: 60, fat: 15 }] },
   error: null,
 })
 jest.mock('../src/services/supabase', () => ({
   isSupabaseConfigured: true,
   supabase: { functions: { invoke: (...args: any[]) => mockInvoke(...args) } },
+}))
+// estimateExtra grounds each decomposed item in USDA FoodData Central; keep this test hermetic
+// (no real network call) by making the "lookup" miss, so the AI's own per-item guess is used
+// as-is — the same numbers the pre-decomposition test asserted on.
+jest.mock('../src/services/usda', () => ({
+  usdaSearchByName: jest.fn().mockResolvedValue([]),
 }))
 import App from '../App'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -23,7 +29,10 @@ beforeEach(async () => {
   jest.useFakeTimers().setSystemTime(new Date('2026-06-02'))
   await AsyncStorage.clear()
   jest.clearAllMocks()
-  mockInvoke.mockResolvedValue({ data: { kcal: 550, protein: 20, carbs: 60, fat: 15 }, error: null })
+  mockInvoke.mockResolvedValue({
+    data: { items: [{ item: 'cheeseburger', grams: 220, kcal: 550, protein: 20, carbs: 60, fat: 15 }] },
+    error: null,
+  })
   await AsyncStorage.setItem('basket:v1:onboarded', '1')
 })
 afterEach(() => jest.useRealTimers())

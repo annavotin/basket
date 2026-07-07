@@ -32,11 +32,11 @@ Details + status in `docs/CODE-REVIEW-2026-07-01.md`.
 - [ ] (deferred) `foodApi` partial-macros, USDA barcode fallback, remove `@react-native-community/slider`, relocate mock data, delete dead `BasketOptionsSheet` + `ExtraMealDetail`
 
 ## ☁️ Supabase / backend
-- [ ] Run SQL migration in Supabase dashboard (`supabase/migrations/0001_init.sql`)
-- [ ] Run `alter table public.extra_meals add column macros jsonb;` if the DB already exists
-- [ ] Set server secret: `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
-- [ ] Deploy receipt-scan edge function: `supabase functions deploy scan-receipt`
-- [ ] Deploy extras-estimate edge function: `supabase functions deploy estimate-extra`
+- [x] Run SQL migration in Supabase dashboard (`supabase/migrations/0001_init.sql`)
+- [x] Run `alter table public.extra_meals add column macros jsonb;` if the DB already exists
+- [x] Set server secret: `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
+- [x] Deploy receipt-scan edge function: `supabase functions deploy scan-receipt`
+- [x] Deploy extras-estimate edge function: `supabase functions deploy estimate-extra`
 - [ ] Add `EXPO_PUBLIC_USDA_API_KEY` to `.env.local` (free key from api.data.gov — falls back to rate-limited DEMO_KEY without it)
 
 ## 📱 On-device verification (can't test camera/native scroll in simulator/jest)
