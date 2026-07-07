@@ -71,19 +71,135 @@ describe('createSupabaseAuth', () => {
     })
   })
 
-  it('signInWithApple returns deferred message', async () => {
-    const a = createSupabaseAuth(mockClient())
-    expect(await a.signInWithApple()).toEqual({
-      ok: false,
-      error: 'Use email sign-in for now. Apple/Google coming soon.',
+  describe('signInWithApple', () => {
+    const appleClient = (over: any = {}) => {
+      const client = mockClient()
+      client.auth.signInWithIdToken = jest.fn(async () => ({
+        data: { user: { email: 'a@icloud.com', user_metadata: {} } },
+        error: null,
+      }))
+      Object.assign(client.auth, over)
+      return client
+    }
+
+    it('exchanges the identity token and returns the account', async () => {
+      const client = appleClient()
+      const getAppleToken = jest.fn(async () => ({ identityToken: 'id-tok', nonce: 'raw-nonce' }))
+      const a = createSupabaseAuth(client, { getAppleToken })
+      const r = await a.signInWithApple()
+      expect(client.auth.signInWithIdToken).toHaveBeenCalledWith({
+        provider: 'apple',
+        token: 'id-tok',
+        nonce: 'raw-nonce',
+      })
+      expect(r).toEqual({ ok: true, account: { email: 'a@icloud.com', name: 'A' } })
+    })
+
+    it('persists the full name into user metadata on first sign-in', async () => {
+      const client = appleClient()
+      const getAppleToken = jest.fn(async () => ({
+        identityToken: 'id-tok',
+        nonce: 'raw-nonce',
+        fullName: 'Jamie Rivers',
+      }))
+      const a = createSupabaseAuth(client, { getAppleToken })
+      const r = await a.signInWithApple()
+      expect(client.auth.updateUser).toHaveBeenCalledWith({ data: { name: 'Jamie Rivers' } })
+      expect(r).toEqual({ ok: true, account: { email: 'a@icloud.com', name: 'Jamie Rivers' } })
+    })
+
+    it('does not call updateUser when no name is returned', async () => {
+      const client = appleClient()
+      const getAppleToken = jest.fn(async () => ({ identityToken: 'id-tok', nonce: 'raw-nonce' }))
+      await createSupabaseAuth(client, { getAppleToken }).signInWithApple()
+      expect(client.auth.updateUser).not.toHaveBeenCalled()
+    })
+
+    it('surfaces the supabase error', async () => {
+      const client = appleClient({
+        signInWithIdToken: jest.fn(async () => ({ data: {}, error: { message: 'Bad token' } })),
+      })
+      const getAppleToken = jest.fn(async () => ({ identityToken: 'id-tok', nonce: 'raw-nonce' }))
+      expect(await createSupabaseAuth(client, { getAppleToken }).signInWithApple()).toEqual({
+        ok: false,
+        error: 'Bad token',
+      })
+    })
+
+    it('treats a cancelled sheet as a silent no-op', async () => {
+      const client = appleClient()
+      const getAppleToken = jest.fn(async () => {
+        throw { code: 'ERR_REQUEST_CANCELED' }
+      })
+      const r = await createSupabaseAuth(client, { getAppleToken }).signInWithApple()
+      expect(r).toEqual({ ok: false, error: '', cancelled: true })
+      expect(client.auth.signInWithIdToken).not.toHaveBeenCalled()
+    })
+
+    it('returns a friendly error when the native flow throws', async () => {
+      const client = appleClient()
+      const getAppleToken = jest.fn(async () => {
+        throw new Error('Native crash')
+      })
+      expect(await createSupabaseAuth(client, { getAppleToken }).signInWithApple()).toEqual({
+        ok: false,
+        error: 'Native crash',
+      })
     })
   })
 
-  it('signInWithGoogle returns deferred message', async () => {
-    const a = createSupabaseAuth(mockClient())
-    expect(await a.signInWithGoogle()).toEqual({
-      ok: false,
-      error: 'Use email sign-in for now. Apple/Google coming soon.',
+  describe('signInWithGoogle', () => {
+    const googleClient = (over: any = {}) => {
+      const client = mockClient()
+      client.auth.signInWithIdToken = jest.fn(async () => ({
+        data: { user: { email: 'a@gmail.com', user_metadata: { name: 'Ann' } } },
+        error: null,
+      }))
+      Object.assign(client.auth, over)
+      return client
+    }
+
+    it('exchanges the id token and returns the account', async () => {
+      const client = googleClient()
+      const getGoogleToken = jest.fn(async () => ({ idToken: 'g-tok' }))
+      const r = await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()
+      expect(client.auth.signInWithIdToken).toHaveBeenCalledWith({
+        provider: 'google',
+        token: 'g-tok',
+      })
+      expect(r).toEqual({ ok: true, account: { email: 'a@gmail.com', name: 'Ann' } })
+    })
+
+    it('surfaces the supabase error', async () => {
+      const client = googleClient({
+        signInWithIdToken: jest.fn(async () => ({ data: {}, error: { message: 'Bad token' } })),
+      })
+      const getGoogleToken = jest.fn(async () => ({ idToken: 'g-tok' }))
+      expect(await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()).toEqual({
+        ok: false,
+        error: 'Bad token',
+      })
+    })
+
+    it('treats a cancelled flow as a silent no-op', async () => {
+      const client = googleClient()
+      const getGoogleToken = jest.fn(async () => {
+        throw { code: 'SIGN_IN_CANCELLED' }
+      })
+      const r = await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()
+      expect(r).toEqual({ ok: false, error: '', cancelled: true })
+      expect(client.auth.signInWithIdToken).not.toHaveBeenCalled()
+    })
+
+    it('returns a friendly error when the native flow throws', async () => {
+      const client = googleClient()
+      const getGoogleToken = jest.fn(async () => {
+        throw new Error('Not configured')
+      })
+      expect(await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()).toEqual({
+        ok: false,
+        error: 'Not configured',
+      })
     })
   })
 

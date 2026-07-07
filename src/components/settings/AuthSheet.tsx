@@ -94,17 +94,21 @@ export default function AuthSheet({
   }
 
   async function handleApple() {
+    setError('')
     setBusy(true)
     const result = await auth.signInWithApple()
     setBusy(false)
     if (result.ok) onAuthed(result.account)
+    else if (!result.cancelled) setError(result.error || 'Apple sign-in failed. Try again.')
   }
 
   async function handleGoogle() {
+    setError('')
     setBusy(true)
     const result = await auth.signInWithGoogle()
     setBusy(false)
     if (result.ok) onAuthed(result.account)
+    else if (!result.cancelled) setError(result.error || 'Google sign-in failed. Try again.')
   }
 
   const title = mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Reset password' : 'Sign in'
@@ -318,13 +322,15 @@ export default function AuthSheet({
                   <>
                     {mode !== 'forgot' && (
                       <>
-                        <TouchableOpacity
-                          testID="auth-apple"
-                          style={styles.socialBtn}
-                          onPress={handleApple}
-                        >
-                          <Text style={styles.socialBtnText}> Continue with Apple</Text>
-                        </TouchableOpacity>
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity
+                            testID="auth-apple"
+                            style={styles.socialBtn}
+                            onPress={handleApple}
+                          >
+                            <Text style={styles.socialBtnText}> Continue with Apple</Text>
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                           testID="auth-google"
                           style={styles.socialBtn}

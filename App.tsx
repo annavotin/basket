@@ -1202,6 +1202,21 @@ export default function App() {
               void AsyncStorage.setItem(ONBOARDED_KEY, '1')
               setOnboarded(true)
             }}
+            onApple={async () => {
+              const result = await authService.signInWithApple()
+              if (!result.ok) return false
+              // Supabase persists the session; AppInner restores the account on mount.
+              await AsyncStorage.setItem(ONBOARDED_KEY, '1')
+              setOnboarded(true)
+              return true
+            }}
+            onGoogle={async () => {
+              const result = await authService.signInWithGoogle()
+              if (!result.ok) return false
+              await AsyncStorage.setItem(ONBOARDED_KEY, '1')
+              setOnboarded(true)
+              return true
+            }}
           />
         ) : (
           <AppInner prefs={prefs} setPrefs={setPrefs} />

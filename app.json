@@ -6,10 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "batch",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.annavotin.batchapp",
-      "buildNumber": "2"
+      "buildNumber": "2",
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -42,6 +44,13 @@
           "imageWidth": 260,
           "resizeMode": "contain",
           "backgroundColor": "#2C3A1E"
+        }
+      ],
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID_REVERSED"
         }
       ]
     ]
