@@ -10,7 +10,8 @@ The live task list. Deeper backlogs live in:
 ## 🚀 App Store / release
 - [ ] Submit build to App Store (TestFlight first)
 - [ ] App Store listing: name collision on "Batch: …" — using `Batch` as name + subtitle for keywords
-- [ ] Verify privacy + terms pages load: https://annavotin.github.io/batch-app/privacy.html and .../terms.html
+- [x] Verify privacy + terms pages load: https://annavotin.github.io/batch-app/privacy.html and .../terms.html
+- [x] Export compliance: `ITSAppUsesNonExemptEncryption: false` set in `app.json` (standard HTTPS only, no custom encryption)
 - [ ] Deep-link email confirmation flow (Supabase email confirmation is OFF for testing; needs a real redirect URL before launch)
 - [ ] Primary language: add English (U.S.) localization fully, then switch primary, then remove English (Australia)
 - [ ] **Apple sign-in resubmit** (fixes App Review rejection — dead social buttons; Google sign-in was scrapped, not shipped):
@@ -42,8 +43,9 @@ Details + status in `docs/CODE-REVIEW-2026-07-01.md`.
 - [x] Run `alter table public.extra_meals add column macros jsonb;` if the DB already exists
 - [x] Set server secret: `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
 - [x] Deploy receipt-scan edge function: `supabase functions deploy scan-receipt`
-- [x] Deploy extras-estimate edge function: `supabase functions deploy estimate-extra`
-- [ ] Add `EXPO_PUBLIC_USDA_API_KEY` to `.env.local` (free key from api.data.gov — falls back to rate-limited DEMO_KEY without it)
+- [x] Deploy extras-estimate edge function: `supabase functions deploy estimate-extra` (redeployed 2026-07-07 to pick up the USDA-grounding response shape — the previous deploy was stale and every AI estimate was silently failing)
+- [ ] Add `EXPO_PUBLIC_USDA_API_KEY` to `.env.local` (free key from api.data.gov — falls back to rate-limited DEMO_KEY without it; DEMO_KEY is shared across everyone using it from the same IP, so this is worth doing before App Review tests the Extras/food-search flow)
+- [ ] Apple Sign in with Apple secret key (JWT) expires in ~6 months from whenever it was generated — regenerate with `/tmp/generate-apple-secret.js` (or wherever it's saved) and update Supabase's Apple provider before it lapses
 
 ## 📱 On-device verification (can't test camera/native scroll in simulator/jest)
 - [ ] Onboarding "You're all set" — logo/circle sizing after the latest tweak
