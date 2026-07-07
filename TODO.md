@@ -13,17 +13,17 @@ The live task list. Deeper backlogs live in:
 - [ ] Verify privacy + terms pages load: https://annavotin.github.io/batch-app/privacy.html and .../terms.html
 - [ ] Deep-link email confirmation flow (Supabase email confirmation is OFF for testing; needs a real redirect URL before launch)
 - [ ] Primary language: add English (U.S.) localization fully, then switch primary, then remove English (Australia)
-- [ ] **Apple/Google sign-in resubmit** (fixes App Review rejection — dead social buttons):
-  - [ ] Complete the manual setup in `docs/APPLE-GOOGLE-SIGNIN-SETUP.md` (Apple Developer, Google Cloud, Supabase providers, `.env.local` vars, `iosUrlScheme` in `app.json`)
+- [ ] **Apple sign-in resubmit** (fixes App Review rejection — dead social buttons; Google sign-in was scrapped, not shipped):
+  - [ ] Complete the manual setup in `docs/APPLE-SIGNIN-SETUP.md` (Apple Developer, Supabase provider)
   - [ ] Bump `ios.buildNumber` in `app.json` (currently `"2"`)
-  - [ ] Native rebuild so the new native modules activate: `npx expo run:ios --configuration Release`
-  - [ ] Smoke-test both flows on device (sign in, cancel, error), then resubmit to App Review
+  - [ ] Native rebuild so the new native module activates: `npx expo run:ios --configuration Release`
+  - [ ] Smoke-test on device (sign in, cancel, error), then resubmit to App Review
 
 ## 🔨 Native rebuild needed
 One `npx expo run:ios --configuration Release` clears all of these:
 - [ ] Frosted nav blur (`expo-blur` — currently a plain translucent View; reverted after a hot-reload crash)
 - [ ] Receipt image downscaling (`expo-image-manipulator` — installed, native module needs a rebuild to activate)
-- [ ] Apple/Google sign-in (`expo-apple-authentication` + `@react-native-google-signin/google-signin` — installed, native modules need a rebuild to activate)
+- [ ] Apple sign-in (`expo-apple-authentication` — installed, native module needs a rebuild to activate)
 
 ## 🐛 Code-review fixes (2026-07-01)
 Details + status in `docs/CODE-REVIEW-2026-07-01.md`.

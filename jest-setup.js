@@ -187,13 +187,6 @@ jest.mock('expo-apple-authentication', () => ({
   })),
   AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
 }))
-jest.mock('@react-native-google-signin/google-signin', () => ({
-  GoogleSignin: {
-    configure: jest.fn(),
-    hasPlayServices: jest.fn(async () => true),
-    signIn: jest.fn(async () => ({ data: { idToken: 'mock-google-id-token' } })),
-  },
-}))
 
 // Prevent native Supabase/SecureStore modules from loading in Jest.
 // createSupabaseAuth() takes the client as a param so tests bypass this.

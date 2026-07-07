@@ -9,7 +9,6 @@ function makeFakeAuth(overrides?: Partial<AuthService>): AuthService {
     signIn: jest.fn().mockResolvedValue({ ok: true, account: { name: 'Test', email: 'test@example.com' } }),
     signUp: jest.fn().mockResolvedValue({ ok: true, account: { name: 'Test', email: 'test@example.com' } }),
     signInWithApple: jest.fn().mockResolvedValue({ ok: true, account: { name: 'Anna', email: 'anna@icloud.com' } }),
-    signInWithGoogle: jest.fn().mockResolvedValue({ ok: true, account: { name: 'Anna', email: 'anna@gmail.com' } }),
     resetPassword: jest.fn().mockResolvedValue({ ok: true }),
     signOut: jest.fn().mockResolvedValue(undefined),
     deleteAccount: jest.fn().mockResolvedValue(undefined),
@@ -107,13 +106,6 @@ describe('AuthSheet', () => {
       fireEvent.press(getByTestId('auth-apple'))
       await waitFor(() => expect(onAuthed).toHaveBeenCalledWith({ name: 'Anna', email: 'anna@icloud.com' }))
     })
-
-    it('tapping auth-google calls onAuthed with Google account', async () => {
-      const onAuthed = jest.fn()
-      const { getByTestId } = renderSheet({ onAuthed })
-      fireEvent.press(getByTestId('auth-google'))
-      await waitFor(() => expect(onAuthed).toHaveBeenCalledWith({ name: 'Anna', email: 'anna@gmail.com' }))
-    })
   })
 
   describe('forgot password mode', () => {
@@ -141,10 +133,9 @@ describe('AuthSheet', () => {
   })
 
   describe('signup mode', () => {
-    it('shows Apple and Google buttons in signup mode', () => {
+    it('shows the Apple button in signup mode', () => {
       const { getByTestId } = renderSheet({ initialMode: 'signup' })
       expect(getByTestId('auth-apple')).toBeTruthy()
-      expect(getByTestId('auth-google')).toBeTruthy()
     })
 
     it('calls signUp on submit in signup mode', async () => {

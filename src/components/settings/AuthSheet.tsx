@@ -102,15 +102,6 @@ export default function AuthSheet({
     else if (!result.cancelled) setError(result.error || 'Apple sign-in failed. Try again.')
   }
 
-  async function handleGoogle() {
-    setError('')
-    setBusy(true)
-    const result = await auth.signInWithGoogle()
-    setBusy(false)
-    if (result.ok) onAuthed(result.account)
-    else if (!result.cancelled) setError(result.error || 'Google sign-in failed. Try again.')
-  }
-
   const title = mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Reset password' : 'Sign in'
   const submitLabel = mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'
 
@@ -320,23 +311,14 @@ export default function AuthSheet({
                   </View>
                 ) : (
                   <>
-                    {mode !== 'forgot' && (
+                    {mode !== 'forgot' && Platform.OS === 'ios' && (
                       <>
-                        {Platform.OS === 'ios' && (
-                          <TouchableOpacity
-                            testID="auth-apple"
-                            style={styles.socialBtn}
-                            onPress={handleApple}
-                          >
-                            <Text style={styles.socialBtnText}> Continue with Apple</Text>
-                          </TouchableOpacity>
-                        )}
                         <TouchableOpacity
-                          testID="auth-google"
+                          testID="auth-apple"
                           style={styles.socialBtn}
-                          onPress={handleGoogle}
+                          onPress={handleApple}
                         >
-                          <Text style={styles.socialBtnText}>Continue with Google</Text>
+                          <Text style={styles.socialBtnText}> Continue with Apple</Text>
                         </TouchableOpacity>
                         <View style={styles.divider}>
                           <View style={styles.dividerLine} />

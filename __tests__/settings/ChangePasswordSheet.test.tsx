@@ -8,7 +8,6 @@ function makeAuth(overrides?: Partial<AuthService>): AuthService {
     signIn: jest.fn(),
     signUp: jest.fn(),
     signInWithApple: jest.fn(),
-    signInWithGoogle: jest.fn(),
     resetPassword: jest.fn(),
     signOut: jest.fn(),
     deleteAccount: jest.fn(),

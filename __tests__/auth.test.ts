@@ -148,61 +148,6 @@ describe('createSupabaseAuth', () => {
     })
   })
 
-  describe('signInWithGoogle', () => {
-    const googleClient = (over: any = {}) => {
-      const client = mockClient()
-      client.auth.signInWithIdToken = jest.fn(async () => ({
-        data: { user: { email: 'a@gmail.com', user_metadata: { name: 'Ann' } } },
-        error: null,
-      }))
-      Object.assign(client.auth, over)
-      return client
-    }
-
-    it('exchanges the id token and returns the account', async () => {
-      const client = googleClient()
-      const getGoogleToken = jest.fn(async () => ({ idToken: 'g-tok' }))
-      const r = await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()
-      expect(client.auth.signInWithIdToken).toHaveBeenCalledWith({
-        provider: 'google',
-        token: 'g-tok',
-      })
-      expect(r).toEqual({ ok: true, account: { email: 'a@gmail.com', name: 'Ann' } })
-    })
-
-    it('surfaces the supabase error', async () => {
-      const client = googleClient({
-        signInWithIdToken: jest.fn(async () => ({ data: {}, error: { message: 'Bad token' } })),
-      })
-      const getGoogleToken = jest.fn(async () => ({ idToken: 'g-tok' }))
-      expect(await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()).toEqual({
-        ok: false,
-        error: 'Bad token',
-      })
-    })
-
-    it('treats a cancelled flow as a silent no-op', async () => {
-      const client = googleClient()
-      const getGoogleToken = jest.fn(async () => {
-        throw { code: 'SIGN_IN_CANCELLED' }
-      })
-      const r = await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()
-      expect(r).toEqual({ ok: false, error: '', cancelled: true })
-      expect(client.auth.signInWithIdToken).not.toHaveBeenCalled()
-    })
-
-    it('returns a friendly error when the native flow throws', async () => {
-      const client = googleClient()
-      const getGoogleToken = jest.fn(async () => {
-        throw new Error('Not configured')
-      })
-      expect(await createSupabaseAuth(client, { getGoogleToken }).signInWithGoogle()).toEqual({
-        ok: false,
-        error: 'Not configured',
-      })
-    })
-  })
-
   it('resetPassword rejects an invalid email before calling supabase', async () => {
     const client = mockClient()
     const a = createSupabaseAuth(client)
@@ -336,17 +281,6 @@ describe('stubAuth', () => {
       if (result.ok) {
         expect(result.account.name).toBe('Anna')
         expect(result.account.email).toBe('anna@icloud.com')
-      }
-    })
-  })
-
-  describe('signInWithGoogle', () => {
-    it('returns ok with Anna and Gmail email', async () => {
-      const result = await stubAuth.signInWithGoogle()
-      expect(result.ok).toBe(true)
-      if (result.ok) {
-        expect(result.account.name).toBe('Anna')
-        expect(result.account.email).toBe('anna@gmail.com')
       }
     })
   })

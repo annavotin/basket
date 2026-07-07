@@ -8,7 +8,6 @@ export interface AuthService {
   signIn(email: string, password: string): Promise<AuthResult>
   signUp(email: string, password: string): Promise<AuthResult>
   signInWithApple(): Promise<AuthResult>
-  signInWithGoogle(): Promise<AuthResult>
   resetPassword(email: string): Promise<{ ok: boolean; error?: string }>
   signOut(): Promise<void>
   deleteAccount(): Promise<void>
@@ -67,34 +66,11 @@ async function requestAppleToken(): Promise<AppleTokenResult> {
   }
 }
 
-/** Result of a native Google identity-token request, injected so it's mockable in tests. */
-export type GoogleTokenResult = { idToken: string }
-
-/** Configures Google Sign-In from env-provided client IDs and runs the native flow. */
-async function requestGoogleToken(): Promise<GoogleTokenResult> {
-  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
-  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
-  if (!iosClientId || !webClientId) {
-    throw new Error('Google sign-in is not configured.')
-  }
-
-  const { GoogleSignin } = require('@react-native-google-signin/google-signin')
-  GoogleSignin.configure({ iosClientId, webClientId })
-  await GoogleSignin.hasPlayServices()
-  const result = await GoogleSignin.signIn()
-  const idToken = result?.data?.idToken ?? result?.idToken
-  if (!idToken) {
-    throw new Error('Google sign-in did not return a token.')
-  }
-  return { idToken }
-}
-
 export function createSupabaseAuth(
   client: any,
-  deps: { getAppleToken?: () => Promise<AppleTokenResult>; getGoogleToken?: () => Promise<GoogleTokenResult> } = {}
+  deps: { getAppleToken?: () => Promise<AppleTokenResult> } = {}
 ): AuthService {
   const getAppleToken = deps.getAppleToken ?? requestAppleToken
-  const getGoogleToken = deps.getGoogleToken ?? requestGoogleToken
 
   return {
     async signIn(email: string, password: string): Promise<AuthResult> {
@@ -136,25 +112,6 @@ export function createSupabaseAuth(
       const user = data.user
       const name = token.fullName || user?.user_metadata?.name
       return { ok: true, account: { email: user?.email ?? '', name: name || capitalize(user?.email ?? '') } }
-    },
-
-    async signInWithGoogle(): Promise<AuthResult> {
-      let token: GoogleTokenResult
-      try {
-        token = await getGoogleToken()
-      } catch (err: any) {
-        if (err?.code === 'SIGN_IN_CANCELLED' || err?.code === '-5') {
-          return { ok: false, error: '', cancelled: true }
-        }
-        return { ok: false, error: friendlyError(err) }
-      }
-
-      const { data, error } = await client.auth.signInWithIdToken({
-        provider: 'google',
-        token: token.idToken,
-      })
-      if (error) return { ok: false, error: friendlyError(error) }
-      return { ok: true, account: toAccount(data.user) }
     },
 
     async resetPassword(email: string): Promise<{ ok: boolean; error?: string }> {
@@ -204,10 +161,6 @@ export const stubAuth: AuthService = {
 
   async signInWithApple(): Promise<AuthResult> {
     return { ok: true, account: { name: 'Anna', email: 'anna@icloud.com' } }
-  },
-
-  async signInWithGoogle(): Promise<AuthResult> {
-    return { ok: true, account: { name: 'Anna', email: 'anna@gmail.com' } }
   },
 
   async resetPassword(email: string): Promise<{ ok: boolean; error?: string }> {

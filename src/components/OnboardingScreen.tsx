@@ -29,8 +29,6 @@ type Props = {
   onSignIn: () => void
   /** Real Apple sign-in. Resolves true on success (drop into app signed-in), false on cancel/error. */
   onApple: () => Promise<boolean>
-  /** Real Google sign-in. Resolves true on success, false on cancel/error. */
-  onGoogle: () => Promise<boolean>
 }
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -44,7 +42,7 @@ const goalFromV = (v: number) => 800 + (v - 1) * 20
 const vFromGoal = (kcal: number) => Math.round((kcal - 800) / 20) + 1
 
 // ─── root ─────────────────────────────────────────────────────────────────────
-export default function OnboardingScreen({ onComplete, onSignIn, onApple, onGoogle }: Props) {
+export default function OnboardingScreen({ onComplete, onSignIn, onApple }: Props) {
   const [phase, setPhase] = useState<'splash' | 'slides' | 'setup' | 'complete'>('splash')
   const [slideIdx, setSlideIdx] = useState(0)
   const [step, setStep] = useState(0)
@@ -93,7 +91,6 @@ export default function OnboardingScreen({ onComplete, onSignIn, onApple, onGoog
       onBack={setupBack}
       onContinue={advanceSetup}
       onApple={onApple}
-      onGoogle={onGoogle}
     />
   )
 }
@@ -263,7 +260,6 @@ type SetupProps = {
   onBack: () => void
   onContinue: () => void
   onApple: () => Promise<boolean>
-  onGoogle: () => Promise<boolean>
 }
 
 function Setup(p: SetupProps) {
@@ -289,7 +285,7 @@ function Setup(p: SetupProps) {
       {p.step === 0 && <StepName name={p.name} onChange={p.onName} onContinue={p.onContinue} />}
       {p.step === 1 && <StepGoal goal={p.dailyGoal} onChange={p.onDailyGoal} defaultDays={p.defaultDays} onContinue={p.onContinue} />}
       {p.step === 2 && <StepSettings defaultDays={p.defaultDays} onDefaultDays={p.onDefaultDays} weightUnit={p.weightUnit} onWeightUnit={p.onWeightUnit} onContinue={p.onContinue} />}
-      {p.step === 3 && <StepAccount onContinue={p.onContinue} onApple={p.onApple} onGoogle={p.onGoogle} />}
+      {p.step === 3 && <StepAccount onContinue={p.onContinue} onApple={p.onApple} />}
     </SafeAreaView>
   )
 }
@@ -450,19 +446,18 @@ function StepSettings({ defaultDays, onDefaultDays, weightUnit, onWeightUnit, on
 }
 
 // step 3: account / sync upsell
-function StepAccount({ onContinue, onApple, onGoogle }: {
+function StepAccount({ onContinue, onApple }: {
   onContinue: () => void
   onApple: () => Promise<boolean>
-  onGoogle: () => Promise<boolean>
 }) {
-  const [busy, setBusy] = useState<null | 'apple' | 'google'>(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  async function run(which: 'apple' | 'google') {
+  async function runApple() {
     setError('')
-    setBusy(which)
-    const ok = which === 'apple' ? await onApple() : await onGoogle()
-    setBusy(null)
+    setBusy(true)
+    const ok = await onApple()
+    setBusy(false)
     if (!ok) setError("That didn't complete. You can try again or continue without syncing.")
   }
 
@@ -499,18 +494,13 @@ function StepAccount({ onContinue, onApple, onGoogle }: {
       <View style={[su.footer, { gap: 10 }]}>
         {error ? <Text style={su.oauthError}>{error}</Text> : null}
         {Platform.OS === 'ios' && (
-          <TouchableOpacity style={su.oauthBtn} onPress={() => run('apple')} disabled={busy !== null} activeOpacity={0.85}>
-            {busy === 'apple'
+          <TouchableOpacity style={su.oauthBtn} onPress={runApple} disabled={busy} activeOpacity={0.85}>
+            {busy
               ? <ActivityIndicator color={F} />
               : <Text style={su.oauthBtnText}>Continue with Apple</Text>}
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={su.oauthBtn} onPress={() => run('google')} disabled={busy !== null} activeOpacity={0.85}>
-          {busy === 'google'
-            ? <ActivityIndicator color={F} />
-            : <Text style={su.oauthBtnText}>🎨  Continue with Google</Text>}
-        </TouchableOpacity>
-        <TouchableOpacity style={su.skipRow} onPress={onContinue} disabled={busy !== null} activeOpacity={0.7}>
+        <TouchableOpacity style={su.skipRow} onPress={onContinue} disabled={busy} activeOpacity={0.7}>
           <Text style={su.skipRowText}>Continue without syncing</Text>
         </TouchableOpacity>
       </View>
