@@ -8,7 +8,10 @@ function mockClient(over: any = {}) {
         error: null,
       })),
       signUp: jest.fn(async () => ({
-        data: { user: { email: 'anna@x.com', user_metadata: {} } },
+        data: {
+          user: { email: 'anna@x.com', user_metadata: {} },
+          session: { access_token: 'tok' },
+        },
         error: null,
       })),
       resetPasswordForEmail: jest.fn(async () => ({ error: null })),
@@ -68,6 +71,54 @@ describe('createSupabaseAuth', () => {
     expect(await a.signUp('x@y.com', 'pw')).toEqual({
       ok: false,
       error: 'Email already in use',
+    })
+  })
+
+  it('signUp passes emailRedirectTo and returns pending when there is no session', async () => {
+    const signUp = jest.fn(async () => ({
+      data: { user: { email: 'anna@x.com', user_metadata: {} }, session: null },
+      error: null,
+    }))
+    const a = createSupabaseAuth(mockClient({ auth: { signUp } }))
+    const r = await a.signUp('anna@x.com', 'pw')
+    expect(signUp).toHaveBeenCalledWith({
+      email: 'anna@x.com',
+      password: 'pw',
+      options: { emailRedirectTo: 'batch://auth-callback' },
+    })
+    expect(r).toEqual({ ok: true, pending: true, email: 'anna@x.com' })
+  })
+
+  describe('completeFromUrl', () => {
+    it('exchanges the code and returns the account on success', async () => {
+      const exchangeCodeForSession = jest.fn(async () => ({
+        data: { user: { email: 'anna@x.com', user_metadata: { name: 'Anna' } } },
+        error: null,
+      }))
+      const a = createSupabaseAuth(mockClient({ auth: { exchangeCodeForSession } }))
+      const r = await a.completeFromUrl('batch://auth-callback?code=abc123')
+      expect(exchangeCodeForSession).toHaveBeenCalledWith('abc123')
+      expect(r).toEqual({ ok: true, account: { email: 'anna@x.com', name: 'Anna' } })
+    })
+
+    it('returns an error when the url has no code param', async () => {
+      const a = createSupabaseAuth(mockClient())
+      expect(await a.completeFromUrl('batch://auth-callback')).toEqual({
+        ok: false,
+        error: 'Invalid confirmation link.',
+      })
+    })
+
+    it('surfaces the supabase error on exchange failure', async () => {
+      const exchangeCodeForSession = jest.fn(async () => ({
+        data: {},
+        error: { message: 'Code expired' },
+      }))
+      const a = createSupabaseAuth(mockClient({ auth: { exchangeCodeForSession } }))
+      expect(await a.completeFromUrl('batch://auth-callback?code=abc123')).toEqual({
+        ok: false,
+        error: 'Code expired',
+      })
     })
   })
 
@@ -232,7 +283,7 @@ describe('stubAuth', () => {
     it('resolves ok with capitalized name and email on success', async () => {
       const result = await stubAuth.signIn('anna@example.com', 'password123')
       expect(result.ok).toBe(true)
-      if (result.ok) {
+      if (result.ok && 'account' in result) {
         expect(result.account.name).toBe('Anna')
         expect(result.account.email).toBe('anna@example.com')
       }
@@ -241,7 +292,7 @@ describe('stubAuth', () => {
     it('derives name from local part of email', async () => {
       const result = await stubAuth.signIn('john.doe@example.com', 'pass123')
       expect(result.ok).toBe(true)
-      if (result.ok) {
+      if (result.ok && 'account' in result) {
         expect(result.account.name).toBe('John.doe')
       }
     })
@@ -256,13 +307,9 @@ describe('stubAuth', () => {
   })
 
   describe('signUp', () => {
-    it('resolves ok with capitalized name and email on success', async () => {
+    it('resolves ok with pending and the email on success', async () => {
       const result = await stubAuth.signUp('newuser@example.com', 'password123')
-      expect(result.ok).toBe(true)
-      if (result.ok) {
-        expect(result.account.name).toBe('Newuser')
-        expect(result.account.email).toBe('newuser@example.com')
-      }
+      expect(result).toEqual({ ok: true, pending: true, email: 'newuser@example.com' })
     })
 
     it('returns error for fail@ email', async () => {
@@ -278,7 +325,7 @@ describe('stubAuth', () => {
     it('returns ok with Anna and iCloud email', async () => {
       const result = await stubAuth.signInWithApple()
       expect(result.ok).toBe(true)
-      if (result.ok) {
+      if (result.ok && 'account' in result) {
         expect(result.account.name).toBe('Anna')
         expect(result.account.email).toBe('anna@icloud.com')
       }
@@ -324,6 +371,18 @@ describe('stubAuth', () => {
   describe('changePassword', () => {
     it('resolves ok in local-only mode', async () => {
       await expect(stubAuth.changePassword('whatever123')).resolves.toEqual({ ok: true })
+    })
+  })
+
+  describe('completeFromUrl', () => {
+    it('returns the account for a url with a code param', async () => {
+      const result = await stubAuth.completeFromUrl('batch://auth-callback?code=abc123')
+      expect(result).toEqual({ ok: true, account: { name: 'Anna', email: 'anna@icloud.com' } })
+    })
+
+    it('returns an error for a url without a code param', async () => {
+      const result = await stubAuth.completeFromUrl('batch://auth-callback')
+      expect(result).toEqual({ ok: false, error: 'Invalid confirmation link.' })
     })
   })
 })

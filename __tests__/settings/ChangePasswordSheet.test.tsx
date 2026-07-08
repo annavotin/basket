@@ -13,6 +13,7 @@ function makeAuth(overrides?: Partial<AuthService>): AuthService {
     deleteAccount: jest.fn(),
     getCurrentAccount: jest.fn().mockResolvedValue(null),
     changePassword: jest.fn().mockResolvedValue({ ok: true }),
+    completeFromUrl: jest.fn(),
     ...overrides,
   }
 }

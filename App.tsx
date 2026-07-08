@@ -6,6 +6,7 @@ const APP_VERSION: string = (appJson as { expo?: { version?: string } }).expo?.v
 import {
   Alert,
   AppState,
+  Linking,
   View,
   ScrollView,
   Text,
@@ -502,6 +503,40 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     })
     return () => {
       cancelled = true
+    }
+  }, [])
+
+  // Email-confirmation deep link (batch://auth-callback?code=...): exchange the code
+  // for a session and set the account once the user taps the link from their inbox.
+  useEffect(() => {
+    let cancelled = false
+
+    async function handleUrl(url: string | null) {
+      if (!url || !url.includes('auth-callback')) return
+      const result = await authService.completeFromUrl(url)
+      if (!cancelled && result.ok && 'account' in result) setAccount(result.account)
+    }
+
+    Linking.getInitialURL().then(handleUrl)
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url))
+
+    return () => {
+      cancelled = true
+      sub.remove()
+    }
+  }, [])
+
+  // Keep account in sync when a session appears via any path (e.g. confirmation completes
+  // in the background). No-op in local-only mode where supabase is null.
+  useEffect(() => {
+    if (!supabase?.auth?.onAuthStateChange) return
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      authService.getCurrentAccount().then((a) => {
+        if (a) setAccount(a)
+      })
+    })
+    return () => {
+      sub.subscription.unsubscribe()
     }
   }, [])
 

@@ -2,7 +2,10 @@ import { supabase, isSupabaseConfigured } from './supabase'
 import * as Crypto from 'expo-crypto'
 
 export type Account = { name: string; email: string }
-export type AuthResult = { ok: true; account: Account } | { ok: false; error: string; cancelled?: boolean }
+export type AuthResult =
+  | { ok: true; account: Account }
+  | { ok: true; pending: true; email: string }
+  | { ok: false; error: string; cancelled?: boolean }
 
 export interface AuthService {
   signIn(email: string, password: string): Promise<AuthResult>
@@ -15,6 +18,8 @@ export interface AuthService {
   getCurrentAccount(): Promise<Account | null>
   /** Set a new password for the signed-in user (no current password needed). */
   changePassword(newPassword: string): Promise<{ ok: boolean; error?: string }>
+  /** Complete an email-confirmation deep link (batch://auth-callback?code=...). */
+  completeFromUrl(url: string): Promise<AuthResult>
 }
 
 export function capitalize(email: string): string {
@@ -80,8 +85,13 @@ export function createSupabaseAuth(
     },
 
     async signUp(email: string, password: string): Promise<AuthResult> {
-      const { data, error } = await client.auth.signUp({ email, password })
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: 'batch://auth-callback' },
+      })
       if (error) return { ok: false, error: friendlyError(error) }
+      if (!data.session) return { ok: true, pending: true, email }
       return { ok: true, account: toAccount(data.user) }
     },
 
@@ -141,6 +151,15 @@ export function createSupabaseAuth(
       const { error } = await client.auth.updateUser({ password: newPassword })
       return { ok: !error, error: error ? friendlyError(error) : undefined }
     },
+
+    async completeFromUrl(url: string): Promise<AuthResult> {
+      const query = url.split('?')[1] ?? ''
+      const code = new URLSearchParams(query).get('code')
+      if (!code) return { ok: false, error: 'Invalid confirmation link.' }
+      const { data, error } = await client.auth.exchangeCodeForSession(code)
+      if (error) return { ok: false, error: friendlyError(error) }
+      return { ok: true, account: toAccount(data.user ?? data.session?.user) }
+    },
   }
 }
 
@@ -156,7 +175,7 @@ export const stubAuth: AuthService = {
     if (/fail@/.test(email)) {
       return { ok: false, error: "Those credentials didn't match. Try again." }
     }
-    return { ok: true, account: { name: capitalize(email), email } }
+    return { ok: true, pending: true, email }
   },
 
   async signInWithApple(): Promise<AuthResult> {
@@ -185,6 +204,13 @@ export const stubAuth: AuthService = {
 
   async changePassword(_newPassword: string): Promise<{ ok: boolean; error?: string }> {
     return { ok: true }
+  },
+
+  async completeFromUrl(url: string): Promise<AuthResult> {
+    if (url.includes('code=')) {
+      return { ok: true, account: { name: 'Anna', email: 'anna@icloud.com' } }
+    }
+    return { ok: false, error: 'Invalid confirmation link.' }
   },
 }
 

@@ -14,6 +14,7 @@ function makeFakeAuth(overrides?: Partial<AuthService>): AuthService {
     deleteAccount: jest.fn().mockResolvedValue(undefined),
     getCurrentAccount: jest.fn().mockResolvedValue(null),
     changePassword: jest.fn().mockResolvedValue({ ok: true }),
+    completeFromUrl: jest.fn().mockResolvedValue({ ok: false, error: 'Invalid confirmation link.' }),
     ...overrides,
   }
 }
