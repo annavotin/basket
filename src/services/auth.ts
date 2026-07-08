@@ -93,6 +93,12 @@ export function createSupabaseAuth(
         options: { emailRedirectTo: 'https://annavotin.github.io/batch-app/confirm.html' },
       })
       if (error) return { ok: false, error: friendlyError(error) }
+      // Enumeration protection: when confirmation is on and the email already exists,
+      // Supabase returns a fake "success" with a user whose identities array is empty
+      // and no session. Surface a clear error instead of a phantom "check your email".
+      if (data.user?.identities?.length === 0) {
+        return { ok: false, error: 'That email is already registered. Sign in instead.' }
+      }
       if (!data.session) return { ok: true, pending: true, email }
       return { ok: true, account: toAccount(data.user) }
     },
@@ -176,6 +182,9 @@ export const stubAuth: AuthService = {
   async signUp(email: string, _password: string): Promise<AuthResult> {
     if (/fail@/.test(email)) {
       return { ok: false, error: "Those credentials didn't match. Try again." }
+    }
+    if (/taken@/.test(email)) {
+      return { ok: false, error: 'That email is already registered. Sign in instead.' }
     }
     return { ok: true, pending: true, email }
   },

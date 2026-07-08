@@ -89,6 +89,20 @@ describe('createSupabaseAuth', () => {
     expect(r).toEqual({ ok: true, pending: true, email: 'anna@x.com' })
   })
 
+  it('signUp reports an already-registered email (empty identities, no session)', async () => {
+    // Supabase's enumeration protection returns a fake success with an empty
+    // identities array when the email already exists.
+    const signUp = jest.fn(async () => ({
+      data: { user: { email: 'taken@x.com', identities: [] }, session: null },
+      error: null,
+    }))
+    const a = createSupabaseAuth(mockClient({ auth: { signUp } }))
+    expect(await a.signUp('taken@x.com', 'pw')).toEqual({
+      ok: false,
+      error: 'That email is already registered. Sign in instead.',
+    })
+  })
+
   describe('completeFromUrl', () => {
     it('exchanges the code and returns the account on success', async () => {
       const exchangeCodeForSession = jest.fn(async () => ({
