@@ -84,7 +84,7 @@ describe('createSupabaseAuth', () => {
     expect(signUp).toHaveBeenCalledWith({
       email: 'anna@x.com',
       password: 'pw',
-      options: { emailRedirectTo: 'batch://auth-callback' },
+      options: { emailRedirectTo: 'https://annavotin.github.io/batch-app/confirm.html' },
     })
     expect(r).toEqual({ ok: true, pending: true, email: 'anna@x.com' })
   })

@@ -88,7 +88,9 @@ export function createSupabaseAuth(
       const { data, error } = await client.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: 'batch://auth-callback' },
+        // Confirmation emails route through an HTTPS interstitial (Safari refuses to open
+        // a custom scheme directly from a redirect); confirm.html bounces to batch://.
+        options: { emailRedirectTo: 'https://annavotin.github.io/batch-app/confirm.html' },
       })
       if (error) return { ok: false, error: friendlyError(error) }
       if (!data.session) return { ok: true, pending: true, email }
