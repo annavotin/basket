@@ -959,7 +959,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           <View style={styles.calendarSection}>
             <View testID="app-header" style={styles.header}>
               <View>
-                <Text style={styles.greeting}>{`Hi, ${prefs.name || 'friend'}`} 👋</Text>
+                <Text style={styles.greeting}>{prefs.name ? `Hi, ${prefs.name}` : 'Hello!'} 👋</Text>
                 <Text style={styles.subtitle}>{formatLong(today)}</Text>
               </View>
               <View style={styles.headerButtons}>
