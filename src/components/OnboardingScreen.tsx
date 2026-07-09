@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { fonts } from '../styles/fonts'
+import { EMAIL_AUTH_ENABLED } from '../config/features'
 import RadialDrumPicker from './RadialDrumPicker'
 
 // ─── design tokens (hardcoded — renders before ThemeProvider is settled) ──────
@@ -505,9 +506,11 @@ function StepAccount({ onContinue, onApple, onEmailSignup }: {
               : <Text style={su.oauthBtnText}>Continue with Apple</Text>}
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={su.oauthBtn} onPress={onEmailSignup} disabled={busy} activeOpacity={0.85}>
-          <Text style={su.oauthBtnText}>Sign up with email</Text>
-        </TouchableOpacity>
+        {EMAIL_AUTH_ENABLED && (
+          <TouchableOpacity style={su.oauthBtn} onPress={onEmailSignup} disabled={busy} activeOpacity={0.85}>
+            <Text style={su.oauthBtnText}>Sign up with email</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={su.skipRow} onPress={onContinue} disabled={busy} activeOpacity={0.7}>
           <Text style={su.skipRowText}>Continue without syncing</Text>
         </TouchableOpacity>

@@ -1,5 +1,8 @@
 import React from 'react'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
+// Email auth is flag-gated off for the Apple-only resubmit; force it on here so these
+// tests keep exercising the (dormant but intact) email sign-in/sign-up logic.
+jest.mock('../../src/config/features', () => ({ EMAIL_AUTH_ENABLED: true }))
 import AuthSheet from '../../src/components/settings/AuthSheet'
 import { AuthService, Account } from '../../src/services/auth'
 

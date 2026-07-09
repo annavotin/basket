@@ -14,6 +14,7 @@ import {
 import { useColors } from '../../styles/ThemeProvider'
 import { fonts } from '../../styles/fonts'
 import { Account, AuthService, stubAuth } from '../../services/auth'
+import { EMAIL_AUTH_ENABLED } from '../../config/features'
 
 type Mode = 'signin' | 'signup' | 'forgot'
 
@@ -329,14 +330,18 @@ export default function AuthSheet({
                         >
                           <Text style={styles.socialBtnText}> Continue with Apple</Text>
                         </TouchableOpacity>
-                        <View style={styles.divider}>
-                          <View style={styles.dividerLine} />
-                          <Text style={styles.dividerText}>or</Text>
-                          <View style={styles.dividerLine} />
-                        </View>
+                        {EMAIL_AUTH_ENABLED && (
+                          <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>or</Text>
+                            <View style={styles.dividerLine} />
+                          </View>
+                        )}
                       </>
                     )}
 
+                    {EMAIL_AUTH_ENABLED && (
+                    <>
                     <Text style={styles.fieldLabel}>Email</Text>
                     <TextInput
                       testID="auth-email"
@@ -412,6 +417,8 @@ export default function AuthSheet({
                         </TouchableOpacity>
                       )}
                     </View>
+                    </>
+                    )}
                   </>
                 )}
               </ScrollView>

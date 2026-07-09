@@ -5,6 +5,9 @@ jest.mock('../src/services/scan', () => ({
   scanBarcodeWithCamera: jest.fn(),
   scanReceipt: jest.fn(),
 }))
+// These tests sign in via the email UI to reach a signed-in state; email auth is
+// flag-gated off for the Apple-only build, so force it on for the test harness.
+jest.mock('../src/config/features', () => ({ EMAIL_AUTH_ENABLED: true }))
 import App from '../App'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { auth as authService } from '../src/services/auth'
