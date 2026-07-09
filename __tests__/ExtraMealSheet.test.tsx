@@ -3,6 +3,8 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import ExtraMealSheet from '../src/components/ExtraMealSheet'
 
+jest.mock('../src/config/features', () => ({ EMAIL_AUTH_ENABLED: true, EXTRAS_AI_ENABLED: true }))
+
 describe('ExtraMealSheet', () => {
   it('does not save until description and calories are valid', () => {
     const onSave = jest.fn()

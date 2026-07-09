@@ -58,7 +58,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   const [emoji, setEmoji] = useState('🛒')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [servings, setServings] = useState<Serving[]>([])
-  const [servingIdx, setServingIdx] = useState<number | null>(null) // null = custom g input
+  // Which unit pill is selected: a serving index, 'pack' for "Whole pack", or null for
+  // custom g input.
+  const [servingIdx, setServingIdx] = useState<number | 'pack' | null>(null)
+  const [packWeightG, setPackWeightG] = useState(0) // 0 = unknown pack size
   // Found scans open as a read-only summary; tapping Edit reveals the editable fields.
   const [editing, setEditing] = useState(false)
   // Always-visible "Save to My Foods" toggle, default on.
@@ -70,6 +73,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
   // there's no prior version to compare against — this is a brand-new (fully custom) food.
   const [original, setOriginal] = useState<{ weightG: number; kcalPer100g: number | null; macrosPer100g?: Macros } | null>(null)
   const nameInputRef = useRef<TextInput>(null)
+  const weightInputRef = useRef<TextInput>(null)
 
   const styles = useMemo(() => StyleSheet.create({
     flex: { flex: 1 },
@@ -87,6 +91,11 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     sheetTitle: {
       fontFamily: fonts.head,
       fontSize: 21, color: colors.forest, marginBottom: 2,
+    },
+    sheetTitleInput: {
+      fontFamily: fonts.head,
+      fontSize: 21, color: colors.forest, marginBottom: 2,
+      padding: 0,
     },
     sheetDesc: {
       fontFamily: fonts.display,
@@ -339,9 +348,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
 
   useEffect(() => {
     if (product) {
-      const unknownWeight = product.packageWeightG <= 0
       const srvs = product.servings ?? []
-      const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (unknownWeight ? 0 : product.packageWeightG)
+      const packG = product.packageWeightG > 0 ? product.packageWeightG : 0
+      // Pack size takes priority over servings as the default pick: users buy whole packs.
+      const initialWeightG = packG
       setName(product.name)
       setWeight(initialWeightG > 0 ? String(initialWeightG) : '')
       setEmoji(product.emoji)
@@ -349,7 +359,8 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setEditing(false)
       setKcalPer100g(product.kcalPer100g)
       setServings(srvs)
-      setServingIdx(srvs.length > 0 ? 0 : null)
+      setPackWeightG(packG)
+      setServingIdx('pack')
       setOriginal({ weightG: initialWeightG, kcalPer100g: product.kcalPer100g, macrosPer100g: product.macrosPer100g })
     } else {
       setName('')
@@ -359,6 +370,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
       setEmoji('🛒')
       setEditing(false)
       setServings([])
+      setPackWeightG(0)
       setServingIdx(null)
       setOriginal(null)
     }
@@ -367,6 +379,10 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setDropdownOpen(false)
     setSaveToFoods(true)
     setLinkedBarcode(null)
+    // Unknown pack size: focus the weight field so the user can type it right away.
+    if (visible && product && product.packageWeightG <= 0) {
+      setTimeout(() => weightInputRef.current?.focus(), 0)
+    }
   }, [product, visible])
 
   // LayoutAnimation (native-driven, no height estimate needed) expands the nutrition card
@@ -400,6 +416,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
     setServings(srvs)
     const initialWeightG = srvs.length > 0 ? srvs[0].weightG : (s.packageWeightG || 0)
     setWeight(initialWeightG > 0 ? String(initialWeightG) : '')
+    setPackWeightG(0)
     setServingIdx(srvs.length > 0 ? 0 : null)
     setOriginal({ weightG: initialWeightG, kcalPer100g: s.kcalPer100g, macrosPer100g: s.macrosPer100g })
     setDropdownOpen(false)
@@ -498,9 +515,18 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
 
                 <View>
                   {/* Sheet header */}
-                  <Text style={styles.sheetTitle}>
-                    {isManual ? 'Add to batch' : name}
-                  </Text>
+                  {isManual ? (
+                    <Text style={styles.sheetTitle}>Add to batch</Text>
+                  ) : (
+                    <TextInput
+                      testID="scanned-name-input"
+                      style={styles.sheetTitleInput}
+                      value={name}
+                      onChangeText={setName}
+                      returnKeyType="done"
+                      placeholderTextColor={colors.mossFaint}
+                    />
+                  )}
                   <Text style={styles.sheetDesc}>
                     {isManual
                       ? 'Scan, search a staple, or enter it yourself.'
@@ -670,8 +696,19 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                        it stays its own separate box, not part of the tile/nutrition seam. ── */}
                   {(!isManual || pickedSuggestion) && (
                     <View style={styles.packSizeWrap}>
-                      {servings.length > 0 && (
+                      {(servings.length > 0 || packWeightG > 0 || servingIdx === 'pack') && (
                         <View style={styles.unitRow}>
+                          {(packWeightG > 0 || servingIdx === 'pack') && (
+                            <TouchableOpacity
+                              style={[styles.unitPill, servingIdx === 'pack' && styles.unitPillActive]}
+                              onPress={() => { setServingIdx('pack'); setWeight(packWeightG > 0 ? String(packWeightG) : '') }}
+                              activeOpacity={0.75}
+                            >
+                              <Text style={[styles.unitPillText, servingIdx === 'pack' && styles.unitPillTextActive]}>
+                                {packWeightG > 0 ? `Whole pack · ${packWeightG} g` : 'Whole pack'}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
                           {servings.map((s, i) => (
                             <TouchableOpacity
                               key={i}
@@ -695,11 +732,12 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                           </TouchableOpacity>
                         </View>
                       )}
-                      {servingIdx === null && (
+                      {(servingIdx === null || servingIdx === 'pack') && (
                         <>
                           <Text style={styles.sectionLabel}>{weightLabel}</Text>
                           <TextInput
                             testID="weight-input"
+                            ref={weightInputRef}
                             style={styles.weightInput}
                             keyboardType="decimal-pad"
                             value={weightToDisplay(weight)}
@@ -708,25 +746,14 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                             placeholderTextColor={colors.mossFaint}
                             placeholder={weightPlaceholder}
                           />
+                          {servingIdx === 'pack' && packWeightG === 0 && (
+                            <Text style={styles.toggleHint} testID="pack-size-hint">Enter the pack size</Text>
+                          )}
                         </>
                       )}
                     </View>
                   )}
 
-                  {/* ── 5b. EDIT FORM — Name (found scan, after tapping Edit) ── */}
-                  {!isManual && editing && (
-                    <>
-                      <Text style={styles.sectionLabel}>Name</Text>
-                      <TextInput
-                        testID="edit-name-input"
-                        style={styles.weightInput}
-                        value={name}
-                        onChangeText={setName}
-                        returnKeyType="done"
-                        placeholderTextColor={colors.mossFaint}
-                      />
-                    </>
-                  )}
                 </View>
 
                 {hasTypedOrChosen && (

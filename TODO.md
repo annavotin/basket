@@ -12,7 +12,8 @@ The live task list. Deeper backlogs live in:
 - [ ] App Store listing: name collision on "Batch: …" — using `Batch` as name + subtitle for keywords
 - [x] Verify privacy + terms pages load: https://annavotin.github.io/batch-app/privacy.html and .../terms.html
 - [x] Export compliance: `ITSAppUsesNonExemptEncryption: false` set in `app.json` (standard HTTPS only, no custom encryption)
-- [ ] Deep-link email confirmation flow (Supabase email confirmation is OFF for testing; needs a real redirect URL before launch)
+- [ ] **Custom SMTP before enabling email signup in production** — Supabase's built-in email sender is capped (~few/hour, "not for production"); real users would hit "email rate limit exceeded". Set up Resend (or SendGrid/Postmark/SES) in Auth → Emails → SMTP Settings and verify a sending domain (SPF/DKIM) so confirmations don't land in spam. Apple sign-in is unaffected (sends no email), so shipping Apple-only is the fallback.
+- [x] Deep-link email confirmation flow — implemented (PKCE + `batch://auth-callback`, HTTPS interstitial at `.../batch-app/confirm.html`). Requires `https://annavotin.github.io/batch-app/confirm.html` in Supabase redirect allow-list.
 - [ ] Primary language: add English (U.S.) localization fully, then switch primary, then remove English (Australia)
 - [ ] **Apple sign-in resubmit** (fixes App Review rejection — dead social buttons; Google sign-in was scrapped, not shipped):
   - [ ] Complete the manual setup in `docs/APPLE-SIGNIN-SETUP.md` (Apple Developer, Supabase provider)

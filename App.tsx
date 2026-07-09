@@ -6,6 +6,7 @@ const APP_VERSION: string = (appJson as { expo?: { version?: string } }).expo?.v
 import {
   Alert,
   AppState,
+  Linking,
   View,
   ScrollView,
   Text,
@@ -54,6 +55,7 @@ import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDail
 import { customFoodFromItem, upsertCustomFood, findCustomByBarcode, customFoodToProduct } from './src/services/customFoods'
 import CustomFoodsScreen from './src/components/CustomFoodsScreen'
 import OnboardingScreen, { OnboardingResult } from './src/components/OnboardingScreen'
+import AuthSheet from './src/components/settings/AuthSheet'
 import { auth as authService, Account } from './src/services/auth'
 import { supabase, isSupabaseConfigured } from './src/services/supabase'
 import { createSupabaseRemote } from './src/services/supabase-remote'
@@ -505,6 +507,40 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     }
   }, [])
 
+  // Email-confirmation deep link (batch://auth-callback?code=...): exchange the code
+  // for a session and set the account once the user taps the link from their inbox.
+  useEffect(() => {
+    let cancelled = false
+
+    async function handleUrl(url: string | null) {
+      if (!url || !url.includes('auth-callback')) return
+      const result = await authService.completeFromUrl(url)
+      if (!cancelled && result.ok && 'account' in result) setAccount(result.account)
+    }
+
+    Linking.getInitialURL().then(handleUrl)
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url))
+
+    return () => {
+      cancelled = true
+      sub.remove()
+    }
+  }, [])
+
+  // Keep account in sync when a session appears via any path (e.g. confirmation completes
+  // in the background). No-op in local-only mode where supabase is null.
+  useEffect(() => {
+    if (!supabase?.auth?.onAuthStateChange) return
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      authService.getCurrentAccount().then((a) => {
+        if (a) setAccount(a)
+      })
+    })
+    return () => {
+      sub.subscription.unsubscribe()
+    }
+  }, [])
+
   useEffect(() => {
     if (hydrated) saveCycles(cycles)
   }, [cycles, hydrated])
@@ -923,7 +959,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           <View style={styles.calendarSection}>
             <View testID="app-header" style={styles.header}>
               <View>
-                <Text style={styles.greeting}>{`Hi, ${prefs.name || 'friend'}`} 👋</Text>
+                <Text style={styles.greeting}>{prefs.name ? `Hi, ${prefs.name}` : 'Hello!'} 👋</Text>
                 <Text style={styles.subtitle}>{formatLong(today)}</Text>
               </View>
               <View style={styles.headerButtons}>
@@ -1196,6 +1232,7 @@ export default function App() {
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES)
   const [prefsHydrated, setPrefsHydrated] = useState(false)
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
+  const [onboardEmailAuth, setOnboardEmailAuth] = useState(false)
 
   useEffect(() => {
     loadPrefs().then((p) => { setPrefs(p); setPrefsHydrated(true) })
@@ -1231,22 +1268,39 @@ export default function App() {
     <ThemeProvider theme={prefs.theme} accent={prefs.accent}>
       <UnitsProvider units={prefs.units}>
         {!onboarded ? (
-          <OnboardingScreen
-            onComplete={handleOnboardingComplete}
-            onSignIn={() => {
-              // Mark onboarded and drop into the main app; AuthSheet opens from Settings.
-              void AsyncStorage.setItem(ONBOARDED_KEY, '1')
-              setOnboarded(true)
-            }}
-            onApple={async () => {
-              const result = await authService.signInWithApple()
-              if (!result.ok) return false
-              // Supabase persists the session; AppInner restores the account on mount.
-              await AsyncStorage.setItem(ONBOARDED_KEY, '1')
-              setOnboarded(true)
-              return true
-            }}
-          />
+          <>
+            <OnboardingScreen
+              onComplete={handleOnboardingComplete}
+              onSignIn={() => {
+                // Mark onboarded and drop into the main app; AuthSheet opens from Settings.
+                void AsyncStorage.setItem(ONBOARDED_KEY, '1')
+                setOnboarded(true)
+              }}
+              onApple={async () => {
+                const result = await authService.signInWithApple()
+                if (!result.ok) return false
+                // Supabase persists the session; AppInner restores the account on mount.
+                await AsyncStorage.setItem(ONBOARDED_KEY, '1')
+                setOnboarded(true)
+                return true
+              }}
+              onEmailSignup={() => setOnboardEmailAuth(true)}
+            />
+            <AuthSheet
+              visible={onboardEmailAuth}
+              initialMode="signup"
+              auth={authService}
+              onClose={() => setOnboardEmailAuth(false)}
+              onAuthed={() => {
+                // Only fires when a session exists (confirmation disabled). With email
+                // confirmation on, signUp returns pending and the sheet shows "check your
+                // email" instead. Session-backed accounts drop straight into the app.
+                setOnboardEmailAuth(false)
+                void AsyncStorage.setItem(ONBOARDED_KEY, '1')
+                setOnboarded(true)
+              }}
+            />
+          </>
         ) : (
           <AppInner prefs={prefs} setPrefs={setPrefs} />
         )}

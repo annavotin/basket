@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { fonts } from '../styles/fonts'
+import { EMAIL_AUTH_ENABLED } from '../config/features'
 import RadialDrumPicker from './RadialDrumPicker'
 
 // ─── design tokens (hardcoded — renders before ThemeProvider is settled) ──────
@@ -29,6 +30,8 @@ type Props = {
   onSignIn: () => void
   /** Real Apple sign-in. Resolves true on success (drop into app signed-in), false on cancel/error. */
   onApple: () => Promise<boolean>
+  /** Opens the email sign-up sheet (create account with email + password). */
+  onEmailSignup: () => void
 }
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -42,7 +45,7 @@ const goalFromV = (v: number) => 800 + (v - 1) * 20
 const vFromGoal = (kcal: number) => Math.round((kcal - 800) / 20) + 1
 
 // ─── root ─────────────────────────────────────────────────────────────────────
-export default function OnboardingScreen({ onComplete, onSignIn, onApple }: Props) {
+export default function OnboardingScreen({ onComplete, onSignIn, onApple, onEmailSignup }: Props) {
   const [phase, setPhase] = useState<'splash' | 'slides' | 'setup' | 'complete'>('splash')
   const [slideIdx, setSlideIdx] = useState(0)
   const [step, setStep] = useState(0)
@@ -91,6 +94,7 @@ export default function OnboardingScreen({ onComplete, onSignIn, onApple }: Prop
       onBack={setupBack}
       onContinue={advanceSetup}
       onApple={onApple}
+      onEmailSignup={onEmailSignup}
     />
   )
 }
@@ -260,6 +264,7 @@ type SetupProps = {
   onBack: () => void
   onContinue: () => void
   onApple: () => Promise<boolean>
+  onEmailSignup: () => void
 }
 
 function Setup(p: SetupProps) {
@@ -285,7 +290,7 @@ function Setup(p: SetupProps) {
       {p.step === 0 && <StepName name={p.name} onChange={p.onName} onContinue={p.onContinue} />}
       {p.step === 1 && <StepGoal goal={p.dailyGoal} onChange={p.onDailyGoal} defaultDays={p.defaultDays} onContinue={p.onContinue} />}
       {p.step === 2 && <StepSettings defaultDays={p.defaultDays} onDefaultDays={p.onDefaultDays} weightUnit={p.weightUnit} onWeightUnit={p.onWeightUnit} onContinue={p.onContinue} />}
-      {p.step === 3 && <StepAccount onContinue={p.onContinue} onApple={p.onApple} />}
+      {p.step === 3 && <StepAccount onContinue={p.onContinue} onApple={p.onApple} onEmailSignup={p.onEmailSignup} />}
     </SafeAreaView>
   )
 }
@@ -446,9 +451,10 @@ function StepSettings({ defaultDays, onDefaultDays, weightUnit, onWeightUnit, on
 }
 
 // step 3: account / sync upsell
-function StepAccount({ onContinue, onApple }: {
+function StepAccount({ onContinue, onApple, onEmailSignup }: {
   onContinue: () => void
   onApple: () => Promise<boolean>
+  onEmailSignup: () => void
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -498,6 +504,11 @@ function StepAccount({ onContinue, onApple }: {
             {busy
               ? <ActivityIndicator color={F} />
               : <Text style={su.oauthBtnText}>Continue with Apple</Text>}
+          </TouchableOpacity>
+        )}
+        {EMAIL_AUTH_ENABLED && (
+          <TouchableOpacity style={su.oauthBtn} onPress={onEmailSignup} disabled={busy} activeOpacity={0.85}>
+            <Text style={su.oauthBtnText}>Sign up with email</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity style={su.skipRow} onPress={onContinue} disabled={busy} activeOpacity={0.7}>

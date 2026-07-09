@@ -14,6 +14,7 @@ import {
 import { useColors } from '../../styles/ThemeProvider'
 import { fonts } from '../../styles/fonts'
 import { Account, AuthService, stubAuth } from '../../services/auth'
+import { EMAIL_AUTH_ENABLED } from '../../config/features'
 
 type Mode = 'signin' | 'signup' | 'forgot'
 
@@ -39,6 +40,7 @@ export default function AuthSheet({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState(false)
 
   // Reset state when visibility changes
   React.useEffect(() => {
@@ -49,6 +51,7 @@ export default function AuthSheet({
       setBusy(false)
       setError('')
       setSent(false)
+      setPendingConfirm(false)
     }
   }, [visible]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -86,7 +89,10 @@ export default function AuthSheet({
       : await auth.signIn(email, password)
     setBusy(false)
 
-    if (result.ok) {
+    if (result.ok && 'pending' in result) {
+      setPendingConfirm(true)
+      setSent(true)
+    } else if (result.ok) {
       onAuthed(result.account)
     } else {
       setError(result.error)
@@ -98,8 +104,8 @@ export default function AuthSheet({
     setBusy(true)
     const result = await auth.signInWithApple()
     setBusy(false)
-    if (result.ok) onAuthed(result.account)
-    else if (!result.cancelled) setError(result.error || 'Apple sign-in failed. Try again.')
+    if (result.ok && 'account' in result) onAuthed(result.account)
+    else if (!result.ok && !result.cancelled) setError(result.error || 'Apple sign-in failed. Try again.')
   }
 
   const title = mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Reset password' : 'Sign in'
@@ -300,11 +306,15 @@ export default function AuthSheet({
                   <View style={styles.sentContainer}>
                     <Text style={styles.sentIcon}>📬</Text>
                     <Text style={styles.sentText}>
-                      Check <Text style={{ fontWeight: '700' }}>{email}</Text> for a reset link.
+                      {pendingConfirm ? (
+                        <>Check <Text style={{ fontWeight: '700' }}>{email}</Text> to confirm your account.</>
+                      ) : (
+                        <>Check <Text style={{ fontWeight: '700' }}>{email}</Text> for a reset link.</>
+                      )}
                     </Text>
                     <TouchableOpacity
                       style={styles.sentBtn}
-                      onPress={() => { setMode('signin'); setSent(false) }}
+                      onPress={() => { setMode('signin'); setSent(false); setPendingConfirm(false) }}
                     >
                       <Text style={styles.sentBtnText}>Back to sign in</Text>
                     </TouchableOpacity>
@@ -320,14 +330,18 @@ export default function AuthSheet({
                         >
                           <Text style={styles.socialBtnText}> Continue with Apple</Text>
                         </TouchableOpacity>
-                        <View style={styles.divider}>
-                          <View style={styles.dividerLine} />
-                          <Text style={styles.dividerText}>or</Text>
-                          <View style={styles.dividerLine} />
-                        </View>
+                        {EMAIL_AUTH_ENABLED && (
+                          <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>or</Text>
+                            <View style={styles.dividerLine} />
+                          </View>
+                        )}
                       </>
                     )}
 
+                    {EMAIL_AUTH_ENABLED && (
+                    <>
                     <Text style={styles.fieldLabel}>Email</Text>
                     <TextInput
                       testID="auth-email"
@@ -403,6 +417,8 @@ export default function AuthSheet({
                         </TouchableOpacity>
                       )}
                     </View>
+                    </>
+                    )}
                   </>
                 )}
               </ScrollView>

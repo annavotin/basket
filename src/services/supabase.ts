@@ -25,6 +25,7 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        flowType: 'pkce',
       },
       // Retry transient iOS connection drops (-1005) so sync/auth don't fail on a blip.
       global: { fetch: (input, init) => retryingFetch(input, init) },

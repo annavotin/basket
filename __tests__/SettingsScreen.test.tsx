@@ -196,9 +196,9 @@ describe('SettingsScreen', () => {
       expect(getByTestId('account-signin')).toBeTruthy()
     })
 
-    it('renders account-signup button when account is null', () => {
-      const { getByTestId } = renderSettings({ account: null })
-      expect(getByTestId('account-signup')).toBeTruthy()
+    it('hides the account-signup button (email auth gated off for Apple-only build)', () => {
+      const { queryByTestId } = renderSettings({ account: null })
+      expect(queryByTestId('account-signup')).toBeNull()
     })
 
     it('does not render account-signout when signed out', () => {

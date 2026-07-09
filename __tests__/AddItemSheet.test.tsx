@@ -48,6 +48,45 @@ describe('AddItemSheet — scanned mode', () => {
       { save: true }
     )
   })
+
+  it('defaults to the "Whole pack" pill at the package weight when packageWeightG is known', () => {
+    const { getByText } = render(
+      <AddItemSheet visible product={product} scanned onAdd={() => {}} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    expect(getByText('Whole pack · 400 g')).toBeTruthy()
+  })
+
+  it('selects "Whole pack" with an empty weight and disables Add when packageWeightG is unknown', () => {
+    const unknownPack: Product = { name: 'Mystery Snack', emoji: '🍫', packageWeightG: 0, kcalPer100g: 400 }
+    const onAdd = jest.fn()
+    const { getByTestId, getByText } = render(
+      <AddItemSheet visible product={unknownPack} scanned onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    expect(getByText('Whole pack')).toBeTruthy()
+    expect(getByTestId('weight-input').props.value).toBe('')
+    expect(getByText('Enter the pack size')).toBeTruthy()
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).not.toHaveBeenCalled()
+    fireEvent.changeText(getByTestId('weight-input'), '150')
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Mystery Snack', weightG: 150 }),
+      { save: true }
+    )
+  })
+
+  it('edits the scanned name and uses the edited name on Add', () => {
+    const onAdd = jest.fn()
+    const { getByTestId } = render(
+      <AddItemSheet visible product={product} scanned onAdd={onAdd} onClose={() => {}} basis="per100g" onBasisChange={() => {}} />
+    )
+    fireEvent.changeText(getByTestId('scanned-name-input'), 'Nutella (family size)')
+    fireEvent.press(getByTestId('add-item-button'))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Nutella (family size)' }),
+      { save: false }
+    )
+  })
 })
 
 describe('AddItemSheet — manual mode', () => {
@@ -265,7 +304,7 @@ describe('AddItemSheet — scan toggles', () => {
     expect(queryByTestId('toggle-save-to-foods')).toBeNull()
     fireEvent.press(getByTestId('edit-product-button'))
     expect(queryByTestId('toggle-save-to-foods')).toBeNull() // still unedited
-    expect(getByTestId('edit-name-input')).toBeTruthy()
+    expect(getByTestId('scanned-name-input')).toBeTruthy()
     expect(getByTestId('weight-input')).toBeTruthy()
     expect(getByTestId('nf-kcal')).toBeTruthy()
     expect(queryByTestId('edit-product-button')).toBeNull() // Edit hides once editing

@@ -8,6 +8,7 @@ import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { Preferences } from '../types'
 import { Account, AuthService } from '../services/auth'
+import { EMAIL_AUTH_ENABLED } from '../config/features'
 import SettingsSection from './settings/SettingsSection'
 import SettingsRow from './settings/SettingsRow'
 import CustomFoodsScreen from './CustomFoodsScreen'
@@ -326,13 +327,15 @@ export default function SettingsScreen({
                 >
                   <Text style={styles.btnPrimaryText}>Sign in</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  testID="account-signup"
-                  style={styles.btnGhost}
-                  onPress={openSignUp}
-                >
-                  <Text style={styles.btnGhostText}>Create account</Text>
-                </TouchableOpacity>
+                {EMAIL_AUTH_ENABLED && (
+                  <TouchableOpacity
+                    testID="account-signup"
+                    style={styles.btnGhost}
+                    onPress={openSignUp}
+                  >
+                    <Text style={styles.btnGhostText}>Create account</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           )}
