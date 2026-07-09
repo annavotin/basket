@@ -5,6 +5,8 @@ jest.mock('../src/services/scan', () => ({
   scanBarcodeWithCamera: jest.fn(),
   scanReceipt: jest.fn(),
 }))
+// Extras AI is flag-gated off by default; this test exercises the estimate flow, so force it on.
+jest.mock('../src/config/features', () => ({ EMAIL_AUTH_ENABLED: true, EXTRAS_AI_ENABLED: true }))
 jest.mock('../src/services/auth', () => ({
   auth: { getCurrentAccount: jest.fn().mockResolvedValue({ name: 'Test', email: 'test@example.com' }) },
 }))

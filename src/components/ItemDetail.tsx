@@ -6,6 +6,7 @@ import { FoodItem, ExtraMeal, PantryItem, Macros, NutritionBasis } from '../type
 import { itemMacros, kcalDerivedMacros, kcalForWeight, roundTenth } from '../utils/nutrition'
 import { EditIcon } from './icons'
 import NutritionFields from './NutritionFields'
+import Stepper from './settings/Stepper'
 
 type Kind = 'item' | 'extra' | 'pantry'
 const SRC_LABELS: Record<string, string> = { barcode: 'Scanned', receipt: 'Receipt', manual: 'Manual', carry: 'Carried over' }
@@ -52,7 +53,7 @@ export default function ItemDetail(props: Props) {
   const [name, setName] = useState('')
   const [weightStr, setWeightStr] = useState('')
   const [kcalStr, setKcalStr] = useState('')
-  const [qtyStr, setQtyStr] = useState('1')
+  const [qty, setQty] = useState(1)
   const [pStr, setPStr] = useState('0')
   const [cStr, setCStr] = useState('0')
   const [fStr, setFStr] = useState('0')
@@ -69,7 +70,7 @@ export default function ItemDetail(props: Props) {
       setName(item.name)
       setWeightStr(String(item.weightG))
       setKcalStr(String(item.kcal))
-      setQtyStr(String(item.quantity ?? 1))
+      setQty(Math.max(1, Math.round(item.quantity ?? 1)))
       setPStr(String(Math.round(m.protein)))
       setCStr(String(Math.round(m.carbs)))
       setFStr(String(Math.round(m.fat)))
@@ -105,7 +106,7 @@ export default function ItemDetail(props: Props) {
       name: name.trim() || item?.name || 'Item',
       weightG: w,
       kcal: perUnitKcal,
-      quantity: Math.max(1, Math.round(num(qtyStr))),
+      quantity: Math.max(1, qty),
       macrosPer100g,
     })
     setEditing(false)
@@ -269,14 +270,17 @@ export default function ItemDetail(props: Props) {
               <NutritionFields
                 basis={basis ?? 'per100g'}
                 onBasisChange={onBasisChange ?? (() => {})}
-                G={num(weightStr) * num(qtyStr)}
+                G={num(weightStr) * qty}
                 kcalPer100g={kcalPer100g}
                 macrosPer100g={macrosPer100g}
                 onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
                 editable
               />
               {renderField('Weight (g)', weightStr, onWeight, 'id-weight')}
-              {renderField('Quantity', qtyStr, setQtyStr, 'id-qty')}
+              <View style={styles.field}>
+                <Text style={styles.fieldL}>Quantity</Text>
+                <Stepper value={qty} min={1} max={99} onChange={setQty} testID="id-qty" />
+              </View>
             </View>
           )}
           {editing && kind === 'extra' && (

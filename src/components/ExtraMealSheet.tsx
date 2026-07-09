@@ -7,6 +7,7 @@ import DismissArea from './DismissArea'
 import { useColors } from '../styles/ThemeProvider'
 import { Macros } from '../types'
 import { EstimateResult } from '../services/extra-estimate'
+import { EXTRAS_AI_ENABLED } from '../config/features'
 
 type Props = {
   visible: boolean
@@ -76,9 +77,10 @@ export default function ExtraMealSheet({ visible, onSave, onClose, signedIn = fa
 
   const kcalNum = Math.round(parseFloat(kcal)) || 0
   const canSave = name.trim().length > 0 && kcalNum > 0
-  const canEstimate = onEstimate != null && name.trim().length > 0 && !estimating
+  const canEstimate = EXTRAS_AI_ENABLED && onEstimate != null && name.trim().length > 0 && !estimating
 
   async function handleEstimate() {
+    if (!EXTRAS_AI_ENABLED) return
     if (!signedIn) {
       Alert.alert('Sign in to use AI estimates', 'Create an account or sign in from Settings to use AI-estimated calories.')
       return
@@ -135,7 +137,7 @@ export default function ExtraMealSheet({ visible, onSave, onClose, signedIn = fa
                 returnKeyType="done"
               />
 
-              {onEstimate != null && (
+              {EXTRAS_AI_ENABLED && onEstimate != null && (
                 <TouchableOpacity
                   testID="estimate-extra-button"
                   style={[styles.estimateBtn, !canEstimate && styles.estimateBtnDisabled]}
