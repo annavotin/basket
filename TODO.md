@@ -15,11 +15,12 @@ The live task list. Deeper backlogs live in:
 - [ ] **Custom SMTP before enabling email signup in production** — Supabase's built-in email sender is capped (~few/hour, "not for production"); real users would hit "email rate limit exceeded". Set up Resend (or SendGrid/Postmark/SES) in Auth → Emails → SMTP Settings and verify a sending domain (SPF/DKIM) so confirmations don't land in spam. Apple sign-in is unaffected (sends no email), so shipping Apple-only is the fallback.
 - [x] Deep-link email confirmation flow — implemented (PKCE + `batch://auth-callback`, HTTPS interstitial at `.../batch-app/confirm.html`). Requires `https://annavotin.github.io/batch-app/confirm.html` in Supabase redirect allow-list.
 - [ ] Primary language: add English (U.S.) localization fully, then switch primary, then remove English (Australia)
-- [ ] **Apple sign-in resubmit** (fixes App Review rejection — dead social buttons; Google sign-in was scrapped, not shipped):
-  - [ ] Complete the manual setup in `docs/APPLE-SIGNIN-SETUP.md` (Apple Developer, Supabase provider)
-  - [ ] Bump `ios.buildNumber` in `app.json` (currently `"2"`)
-  - [ ] Native rebuild so the new native module activates: `npx expo run:ios --configuration Release`
-  - [ ] Smoke-test on device (sign in, cancel, error), then resubmit to App Review
+- [ ] **Apple sign-in resubmit** (fixes App Review rejection — dead social buttons; Google sign-in was scrapped, not shipped). This build ships **Apple-only**: email auth + Extras AI are gated off via `src/config/features.ts` (`EMAIL_AUTH_ENABLED`, `EXTRAS_AI_ENABLED`).
+  - [x] Native entitlement + `batch` URL scheme fixed in `ios/` (stale prebuild); Apple sign-in builds + signs. Verified on simulator.
+  - [x] Bump `ios.buildNumber` in `app.json` (now `"3"`)
+  - [ ] Confirm Supabase Apple provider (Services ID + key) is configured per `docs/APPLE-SIGNIN-SETUP.md`
+  - [ ] Native **Release** rebuild on a physical device: `npx expo run:ios --configuration Release --device`
+  - [ ] Smoke-test on device (sign in, cancel, error) + new scan flow (whole-pack default, unknown-pack prompt, rename), then resubmit to App Review
 
 ## 🔨 Native rebuild needed
 One `npx expo run:ios --configuration Release` clears all of these:
