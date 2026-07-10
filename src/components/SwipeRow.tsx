@@ -16,6 +16,11 @@ export default function SwipeRow({ children, onDelete, deleteTestID }: Props) {
   const translateX = useRef(new Animated.Value(0)).current
   const openRef = useRef(false)
   const [open, setOpen] = useState(false)
+  // The rows sit on a gradient background, so we can't make the sliding layer opaque to
+  // hide the action. Instead keep the action invisible until a swipe begins (or it's open),
+  // so nothing shows through the transparent row at rest. It stays mounted (opacity, not
+  // conditional render) so it remains reachable in tests.
+  const [revealed, setRevealed] = useState(false)
 
   const styles = useMemo(() => StyleSheet.create({
     container: { overflow: 'hidden' },
@@ -29,17 +34,19 @@ export default function SwipeRow({ children, onDelete, deleteTestID }: Props) {
   function snapTo(toOpen: boolean) {
     openRef.current = toOpen
     setOpen(toOpen)
+    if (toOpen) setRevealed(true)
     Animated.spring(translateX, {
       toValue: toOpen ? -ACTION_WIDTH : 0,
       useNativeDriver: true,
       bounciness: 0,
-    }).start()
+    }).start(() => { if (!toOpen) setRevealed(false) })
   }
 
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_evt, gesture) =>
         Math.abs(gesture.dx) > Math.abs(gesture.dy) && gesture.dx < -6,
+      onPanResponderGrant: () => setRevealed(true),
       onPanResponderMove: (_evt, gesture) => {
         const base = openRef.current ? -ACTION_WIDTH : 0
         const next = Math.min(0, Math.max(-ACTION_WIDTH, base + gesture.dx))
@@ -62,7 +69,7 @@ export default function SwipeRow({ children, onDelete, deleteTestID }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.action}>
+      <View style={[styles.action, { opacity: revealed ? 1 : 0 }]}>
         <TouchableOpacity testID={deleteTestID} onPress={onDelete} style={StyleSheet.absoluteFill} activeOpacity={0.7}>
           <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
             <Text style={styles.actionText}>Delete</Text>
