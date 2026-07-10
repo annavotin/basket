@@ -7,7 +7,7 @@ module.exports = {
     '^.+\\.(bmp|gif|jpg|jpeg|mp4|png|psd|svg|webp)$': require.resolve('react-native/jest/assetFileTransformer.js'),
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@testing-library/react-native|expo|expo-status-bar|@expo-google-fonts)/)',
+    'node_modules/(?!(react-native|@react-native|@testing-library/react-native|react-native-gesture-handler|expo|expo-status-bar|@expo-google-fonts)/)',
   ],
   setupFiles: ['./jest-setup.js'],
   // App integration tests render the full tree with fake timers; under full-suite

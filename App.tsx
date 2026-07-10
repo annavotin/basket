@@ -55,6 +55,7 @@ import { estimateExtra, EstimateResult } from './src/services/extra-estimate'
 import { loadCycles, saveCycles, loadExtras, saveExtras, loadDailyGoal, saveDailyGoal, loadPantry, savePantry, loadPrefs, savePrefs, exportAll, clearAll, loadCustomFoods, saveCustomFoods, loadKeepScanning, saveKeepScanning } from './src/services/storage'
 import { customFoodFromItem, upsertCustomFood, findCustomByBarcode, customFoodToProduct } from './src/services/customFoods'
 import CustomFoodsScreen from './src/components/CustomFoodsScreen'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import OnboardingScreen, { OnboardingResult } from './src/components/OnboardingScreen'
 import AuthSheet from './src/components/settings/AuthSheet'
 import { auth as authService, Account } from './src/services/auth'
@@ -1279,6 +1280,7 @@ export default function App() {
   if (!fontsLoaded || onboarded === null) return null
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider theme={prefs.theme} accent={prefs.accent}>
       <UnitsProvider units={prefs.units}>
         {!onboarded ? (
@@ -1320,5 +1322,6 @@ export default function App() {
         )}
       </UnitsProvider>
     </ThemeProvider>
+    </GestureHandlerRootView>
   )
 }

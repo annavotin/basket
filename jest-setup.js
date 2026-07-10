@@ -14,6 +14,19 @@ global.__fbBatchedBridgeConfig = {
   localModulesConfig: [],
 };
 
+// gesture-handler's real entry pulls in the RN renderer chain, which breaks under this custom
+// jest env. Mock it with lightweight stubs: GestureHandlerRootView is a passthrough, and
+// Swipeable renders its children plus its right-actions so delete wiring stays testable.
+jest.mock('react-native-gesture-handler', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    GestureHandlerRootView: ({ children, ...props }) => React.createElement(View, props, children),
+    Swipeable: ({ children, renderRightActions }) =>
+      React.createElement(React.Fragment, null, children, renderRightActions ? renderRightActions() : null),
+  };
+});
+
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
