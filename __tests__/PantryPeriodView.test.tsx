@@ -15,12 +15,13 @@ describe('PantryPeriodView', () => {
   })
 
   it('renders grams (40×5=200) and kcal (758) for a staple with no override', () => {
-    const { getAllByTestId, getByText } = render(
+    const { getAllByTestId, getByText, getAllByText } = render(
       <PantryPeriodView cycle={cycle} pantry={[oats]} cycleDays={5} />
     )
     expect(getAllByTestId('pantry-detail-row')).toHaveLength(1)
     expect(getByText(/200 g/)).toBeTruthy()
-    expect(getByText(/758 kcal/)).toBeTruthy()
+    // "758 kcal" appears in both the row subtitle and the period header total (single item).
+    expect(getAllByText(/758 kcal/).length).toBeGreaterThan(0)
   })
 
   it('uses an override value from pantryOverrides', () => {

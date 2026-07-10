@@ -26,6 +26,7 @@ import FadeBackground from './src/components/FadeBackground'
 import CalendarStrip from './src/components/CalendarStrip'
 import TimelineView from './src/components/TimelineView'
 import MealPrepDetail from './src/components/MealPrepDetail'
+import PeriodHeader from './src/components/PeriodHeader'
 import SegmentedNav from './src/components/SegmentedNav'
 import ExtrasPeriodList from './src/components/ExtrasPeriodList'
 import PantryPeriodView from './src/components/PantryPeriodView'
@@ -245,23 +246,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
       textAlign: 'center',
       marginBottom: 12,
     },
-    expandedHead: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+    periodHeaderPad: {
       paddingHorizontal: 16,
-      marginBottom: 12,
-    },
-    expandedTitle: {
-      fontFamily: fonts.head,
-      fontWeight: '700',
-      fontSize: 18,
-      color: colors.forest,
-    },
-    expandedMeta: {
-      fontFamily: fonts.bodySemi,
-      fontSize: 13,
-      color: colors.mossFaint,
     },
     // The nav + add button float over the bottom of the page scroll. The bar itself
     // is the positioning context for the absolutely-placed SegmentedNav and AddFab,
@@ -1055,11 +1041,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   />
                 ) : (
                   <View style={styles.basketSheet}>
-                    <View style={styles.expandedHead}>
-                      <Text style={styles.expandedTitle}>This batch</Text>
-                      <Text style={styles.expandedMeta}>
-                        {viewedCycle.items.length} item{viewedCycle.items.length !== 1 ? 's' : ''}{barMealPrep > 0 ? ` · ${barMealPrep.toLocaleString()} kcal` : ''}
-                      </Text>
+                    <View style={styles.periodHeaderPad}>
+                      <PeriodHeader title="This batch" count={viewedCycle.items.length} kcal={barMealPrep} />
                     </View>
                     <MealPrepDetail activeCycle={viewedCycle} onEditItem={activeCycle ? handleEditItem : undefined} />
                   </View>

@@ -7,6 +7,7 @@ import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
 import { fonts } from '../styles/fonts'
 import ItemRow from './ItemRow'
+import PeriodHeader from './PeriodHeader'
 
 type Props = {
   extras: ExtraMeal[]
@@ -21,23 +22,14 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
     container: {
       paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32,
     },
-    seclbl: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      marginBottom: 12,
-    },
-    seclblTitle: { fontFamily: fonts.head, fontWeight: '700', fontSize: 18, color: colors.forest },
-    seclblCount: { fontFamily: fonts.display, fontSize: 12, fontWeight: '700', color: colors.moss },
     empty: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.mossFaint, marginTop: 8 },
   }), [colors])
 
+  const totalKcal = extras.reduce((sum, e) => sum + e.kcal, 0)
+
   return (
     <View style={styles.container}>
-      <View style={styles.seclbl}>
-        <Text style={styles.seclblTitle}>Extra meals</Text>
-        {extras.length > 0 && (
-          <Text style={styles.seclblCount}>{extras.length} {extras.length === 1 ? 'item' : 'items'}</Text>
-        )}
-      </View>
+      <PeriodHeader title="Extra meals" count={extras.length} kcal={totalKcal} />
       {extras.length === 0 ? (
         <Text style={styles.empty}>No extra meals in this period. Tap ＋ to add one.</Text>
       ) : (

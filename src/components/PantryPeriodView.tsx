@@ -7,6 +7,7 @@ import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
 import { fonts } from '../styles/fonts'
 import ItemRow from './ItemRow'
+import PeriodHeader from './PeriodHeader'
 
 type Props = {
   cycle: MealPrepCycle
@@ -23,27 +24,19 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantr
     container: {
       paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32,
     },
-    header: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      marginBottom: 12,
-    },
-    headerTitle: {
-      fontFamily: fonts.head, fontWeight: '700', fontSize: 18, color: colors.forest,
-    },
-    headerMeta: {
-      fontFamily: fonts.display, fontSize: 12, fontWeight: '700', color: colors.moss,
-    },
     empty: {
       fontFamily: fonts.bodySemi, fontSize: 14, color: colors.mossFaint, marginTop: 8,
     },
   }), [colors])
 
+  const totalKcal = pantry.reduce(
+    (sum, item) => sum + kcalForWeight(item.kcalPer100g, pantryGramsForCycle(item, cycle, cycleDays)),
+    0
+  )
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Pantry staples</Text>
-        <Text style={styles.headerMeta}>{cycleDays} days</Text>
-      </View>
+      <PeriodHeader title="Pantry staples" count={pantry.length} kcal={totalKcal} />
       {pantry.length === 0 ? (
         <Text style={styles.empty}>No pantry staples yet. Add them from the Pantry settings.</Text>
       ) : (
