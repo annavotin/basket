@@ -629,7 +629,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       <NutritionFields
                         basis={basis}
                         onBasisChange={onBasisChange}
-                        G={weightNum * qty}
+                        G={weightNum}
                         kcalPer100g={effectivePer100g}
                         macrosPer100g={macrosPer100g}
                         onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
@@ -681,7 +681,7 @@ export default function AddItemSheet({ visible, product, onAdd, onClose, onScanB
                       <NutritionFields
                         basis={basis}
                         onBasisChange={onBasisChange}
-                        G={weightNum * qty}
+                        G={weightNum}
                         kcalPer100g={effectivePer100g}
                         macrosPer100g={macrosPer100g}
                         onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}

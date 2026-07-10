@@ -59,6 +59,19 @@ describe('ItemDetail — basket item', () => {
     expect(onSaveItem).toHaveBeenCalledWith(expect.objectContaining({ kcal: 650 }))
   })
 
+  it('shows "per pack" nutrition for a single pack, not multiplied by quantity', () => {
+    // Regression: a 500g pack at 8.2 kcal/100g is 41 kcal per pack. With quantity 2 the
+    // "per pack" basis must still read 41 (the pack), not 82 (both packs) — quantity is a
+    // separate multiplier reflected in the header total, not in the per-pack nutrition.
+    const packItem: FoodItem = { name: 'Cherry tomatoes', weightG: 500, kcal: 41, quantity: 2, emoji: '🍅' }
+    const { getByText, getByTestId } = wrap(
+      <ItemDetail visible kind="item" item={packItem} days={5} basis="total" onBasisChange={jest.fn()}
+        onRemove={jest.fn()} onClose={jest.fn()} onSaveItem={jest.fn()} />
+    )
+    fireEvent.press(getByText('Edit'))
+    expect(getByTestId('nf-kcal').props.value).toBe('41')
+  })
+
   it('seeds the per-100g kcal rounded to the tenth, matching how NutritionFields displays it', () => {
     // 1000 kcal over 600g = 166.6666...7 per 100g — must round the same way NutritionFields
     // rounds its own displayed values, or editing without touching kcal silently changes it.

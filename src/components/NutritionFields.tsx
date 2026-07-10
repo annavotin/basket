@@ -8,7 +8,7 @@ import { toBasis, fromBasis, roundTenth } from '../utils/nutrition'
 type Props = {
   basis: NutritionBasis
   onBasisChange: (b: NutritionBasis) => void
-  G: number // weightG × quantity
+  G: number // per-unit weightG (one pack); the "per pack" basis scales by this, not by quantity
   kcalPer100g: number | null // canonical
   macrosPer100g?: Macros // canonical
   onChange: (next: { kcalPer100g: number | null; macrosPer100g?: Macros }) => void

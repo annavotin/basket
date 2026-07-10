@@ -270,7 +270,7 @@ export default function ItemDetail(props: Props) {
               <NutritionFields
                 basis={basis ?? 'per100g'}
                 onBasisChange={onBasisChange ?? (() => {})}
-                G={num(weightStr) * qty}
+                G={num(weightStr)}
                 kcalPer100g={kcalPer100g}
                 macrosPer100g={macrosPer100g}
                 onChange={({ kcalPer100g, macrosPer100g }) => { setKcalPer100g(kcalPer100g); setMacrosPer100g(macrosPer100g) }}
