@@ -28,4 +28,16 @@ describe('ExtrasPeriodList', () => {
     fireEvent.press(getAllByTestId('open-extra')[1])
     expect(onOpenExtra).toHaveBeenCalledWith('e2')
   })
+
+  it('calls onDeleteExtra with the extra id when the delete button is tapped', () => {
+    const onDeleteExtra = jest.fn()
+    const { getAllByTestId } = render(<ExtrasPeriodList extras={extras} onDeleteExtra={onDeleteExtra} />)
+    fireEvent.press(getAllByTestId('delete-extra')[1])
+    expect(onDeleteExtra).toHaveBeenCalledWith('e2')
+  })
+
+  it('does not render delete buttons when onDeleteExtra is not provided', () => {
+    const { queryAllByTestId } = render(<ExtrasPeriodList extras={extras} />)
+    expect(queryAllByTestId('delete-extra')).toHaveLength(0)
+  })
 })

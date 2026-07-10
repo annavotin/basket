@@ -18,7 +18,7 @@ afterEach(() => jest.useRealTimers())
 
 describe('delete confirmation', () => {
   it('keeps the item when cancelled and removes it when confirmed via ItemDetail', async () => {
-    const { getAllByTestId, findAllByTestId, getByText, queryAllByTestId } = render(<App />)
+    const { getAllByTestId, findAllByTestId, getByText, getByTestId, queryAllByTestId } = render(<App />)
     const rows = await findAllByTestId('food-item')
     const count = rows.length
 
@@ -36,7 +36,7 @@ describe('delete confirmation', () => {
     const freshRows = getAllByTestId('food-item')
     fireEvent.press(within(freshRows[0]).getByTestId('edit-item'))
     fireEvent.press(getByText('Remove from basket'))
-    fireEvent.press(getByText('Delete'))
+    fireEvent.press(getByTestId('confirm-delete'))
 
     await waitFor(() => expect(getAllByTestId('food-item')).toHaveLength(count - 1))
   })

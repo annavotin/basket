@@ -7,13 +7,15 @@ import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
 import { fonts } from '../styles/fonts'
 import ItemRow from './ItemRow'
+import SwipeRow from './SwipeRow'
 
 type Props = {
   extras: ExtraMeal[]
   onOpenExtra?: (id: string) => void
+  onDeleteExtra?: (id: string) => void
 }
 
-export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
+export default function ExtrasPeriodList({ extras, onOpenExtra, onDeleteExtra }: Props) {
   const colors = useColors()
   const units = useUnits()
 
@@ -44,18 +46,27 @@ export default function ExtrasPeriodList({ extras, onOpenExtra }: Props) {
         <View>
           {extras.map((e) => {
             const { day, month } = formatDay(e.date)
+            const row = (
+              <ItemRow
+                testID="open-extra"
+                emoji="🍴"
+                name={e.name}
+                subtitle={`${day} ${month} · ${formatEnergy(e.kcal, units)}`}
+                kcal={e.kcal}
+                tileColor={colors.extraPillFaint}
+                kcalColor={colors.roseDeep}
+                onPress={() => onOpenExtra?.(e.id)}
+              />
+            )
             return (
               <View key={e.id} testID="extra-item">
-                <ItemRow
-                  testID="open-extra"
-                  emoji="🍴"
-                  name={e.name}
-                  subtitle={`${day} ${month} · ${formatEnergy(e.kcal, units)}`}
-                  kcal={e.kcal}
-                  tileColor={colors.extraPillFaint}
-                  kcalColor={colors.roseDeep}
-                  onPress={() => onOpenExtra?.(e.id)}
-                />
+                {onDeleteExtra ? (
+                  <SwipeRow onDelete={() => onDeleteExtra(e.id)} deleteTestID="delete-extra">
+                    {row}
+                  </SwipeRow>
+                ) : (
+                  row
+                )}
               </View>
             )
           })}

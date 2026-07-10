@@ -312,7 +312,7 @@ export default function ItemDetail(props: Props) {
               <Text style={styles.confirmS}>This can't be undone.</Text>
               <View style={styles.row}>
                 <TouchableOpacity style={[styles.btn, styles.ghost, { flex: 0, width: 100, marginTop: 0 }]} onPress={() => setConfirmDel(false)}><Text style={styles.ghostTxt}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.danger, { flex: 1, marginTop: 0 }]} onPress={onRemove}><Text style={styles.btnTxt}>Delete</Text></TouchableOpacity>
+                <TouchableOpacity testID="confirm-delete" style={[styles.btn, styles.danger, { flex: 1, marginTop: 0 }]} onPress={onRemove}><Text style={styles.btnTxt}>Delete</Text></TouchableOpacity>
               </View>
             </View>
           ) : (

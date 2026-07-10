@@ -46,4 +46,20 @@ describe('MealPrepDetail', () => {
     fireEvent.press(editButtons[1])
     expect(onEditItem).toHaveBeenCalledWith(1)
   })
+
+  it('calls onDeleteItem with the index of the tapped delete button', () => {
+    const onDeleteItem = jest.fn()
+    const { getAllByTestId } = render(
+      <MealPrepDetail activeCycle={cycles[0]} onDeleteItem={onDeleteItem} />
+    )
+    const deleteButtons = getAllByTestId('delete-item')
+    expect(deleteButtons).toHaveLength(cycles[0].items.length)
+    fireEvent.press(deleteButtons[1])
+    expect(onDeleteItem).toHaveBeenCalledWith(1)
+  })
+
+  it('does not render delete buttons when onDeleteItem is not provided', () => {
+    const { queryAllByTestId } = render(<MealPrepDetail activeCycle={cycles[0]} />)
+    expect(queryAllByTestId('delete-item')).toHaveLength(0)
+  })
 })

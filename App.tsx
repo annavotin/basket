@@ -791,20 +791,32 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     markDirty('pantry_items', id)
   }
 
+  function deleteItemAt(index: number) {
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === activeCycleId ? touch({ ...c, items: c.items.filter((_, i) => i !== index) }) : c
+      )
+    )
+    if (activeCycleId) markDirty('cycles', activeCycleId)
+  }
+
+  function deleteExtra(id: string) {
+    setExtraMeals((prev) => prev.map((e) => (e.id === id ? tombstone(e) : e)))
+    markDirty('extra_meals', id)
+  }
+
+  function deletePantry(id: string) {
+    setPantry((prev) => prev.map((p) => (p.id === id ? tombstone(p) : p)))
+    markDirty('pantry_items', id)
+  }
+
   function handleDetailRemove(target: NonNullable<typeof detailTarget>) {
     if (target.kind === 'item') {
-      setCycles((prev) =>
-        prev.map((c) =>
-          c.id === activeCycleId ? touch({ ...c, items: c.items.filter((_, i) => i !== target.index) }) : c
-        )
-      )
-      if (activeCycleId) markDirty('cycles', activeCycleId)
+      deleteItemAt(target.index)
     } else if (target.kind === 'extra') {
-      setExtraMeals((prev) => prev.map((e) => (e.id === target.id ? tombstone(e) : e)))
-      markDirty('extra_meals', target.id)
+      deleteExtra(target.id)
     } else {
-      setPantry((prev) => prev.map((p) => (p.id === target.id ? tombstone(p) : p)))
-      markDirty('pantry_items', target.id)
+      deletePantry(target.id)
     }
     setDetailTarget(null)
   }
@@ -1035,6 +1047,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
               <ExtrasPeriodList
                 extras={extrasForPeriod}
                 onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
+                onDeleteExtra={deleteExtra}
               />
             </View>
           ) : (
@@ -1061,7 +1074,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                         {viewedCycle.items.length} item{viewedCycle.items.length !== 1 ? 's' : ''}{barMealPrep > 0 ? ` · ${barMealPrep.toLocaleString()} kcal` : ''}
                       </Text>
                     </View>
-                    <MealPrepDetail activeCycle={viewedCycle} onEditItem={activeCycle ? handleEditItem : undefined} />
+                    <MealPrepDetail
+                      activeCycle={viewedCycle}
+                      onEditItem={activeCycle ? handleEditItem : undefined}
+                      onDeleteItem={activeCycle ? deleteItemAt : undefined}
+                    />
                   </View>
                 )
               )}
@@ -1069,6 +1086,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                 <ExtrasPeriodList
                   extras={extrasForPeriod}
                   onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
+                  onDeleteExtra={deleteExtra}
                 />
               )}
               {weeklyTab === 'pantry' && (
@@ -1077,6 +1095,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                   pantry={livePantry}
                   cycleDays={activeDayCount}
                   onOpenPantry={(id) => setDetailTarget({ kind: 'pantry', id })}
+                  onDeletePantry={deletePantry}
                 />
               )}
             </View>

@@ -40,7 +40,7 @@ describe('extra meals', () => {
     await waitFor(() => expect(getAllByTestId('extra-item').length).toBe(1))
     fireEvent.press(getAllByTestId('open-extra')[0])   // open the detail sheet
     fireEvent.press(getByText('Delete this extra'))    // remove -> shows confirm step
-    fireEvent.press(getByText('Delete'))               // confirm deletion
+    fireEvent.press(getByTestId('confirm-delete'))      // confirm deletion
     await waitFor(() => expect(queryAllByTestId('extra-item').length).toBe(0))
   })
 })

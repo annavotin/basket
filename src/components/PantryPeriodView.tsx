@@ -7,15 +7,17 @@ import { useUnits } from '../styles/UnitsProvider'
 import { formatEnergy } from '../utils/units'
 import { fonts } from '../styles/fonts'
 import ItemRow from './ItemRow'
+import SwipeRow from './SwipeRow'
 
 type Props = {
   cycle: MealPrepCycle
   pantry: PantryItem[]
   cycleDays: number
   onOpenPantry?: (id: string) => void
+  onDeletePantry?: (id: string) => void
 }
 
-export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantry }: Props) {
+export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantry, onDeletePantry }: Props) {
   const colors = useColors()
   const units = useUnits()
 
@@ -51,16 +53,25 @@ export default function PantryPeriodView({ cycle, pantry, cycleDays, onOpenPantr
           {pantry.map((item) => {
             const grams = pantryGramsForCycle(item, cycle, cycleDays)
             const kcal = kcalForWeight(item.kcalPer100g, grams)
+            const row = (
+              <ItemRow
+                testID="open-pantry-item"
+                emoji={item.emoji}
+                name={item.name}
+                subtitle={`${grams} g · ${formatEnergy(kcal, units)}`}
+                kcal={kcal}
+                onPress={() => onOpenPantry?.(item.id)}
+              />
+            )
             return (
               <View key={item.id} testID="pantry-detail-row">
-                <ItemRow
-                  testID="open-pantry-item"
-                  emoji={item.emoji}
-                  name={item.name}
-                  subtitle={`${grams} g · ${formatEnergy(kcal, units)}`}
-                  kcal={kcal}
-                  onPress={() => onOpenPantry?.(item.id)}
-                />
+                {onDeletePantry ? (
+                  <SwipeRow onDelete={() => onDeletePantry(item.id)} deleteTestID="delete-pantry">
+                    {row}
+                  </SwipeRow>
+                ) : (
+                  row
+                )}
               </View>
             )
           })}

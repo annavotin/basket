@@ -39,4 +39,20 @@ describe('PantryPeriodView', () => {
     fireEvent.press(getByTestId('open-pantry-item'))
     expect(onOpenPantry).toHaveBeenCalledWith('pantry-oats')
   })
+
+  it('tapping the delete button fires onDeletePantry with the item id', () => {
+    const onDeletePantry = jest.fn()
+    const { getByTestId } = render(
+      <PantryPeriodView cycle={cycle} pantry={[oats]} cycleDays={5} onDeletePantry={onDeletePantry} />
+    )
+    fireEvent.press(getByTestId('delete-pantry'))
+    expect(onDeletePantry).toHaveBeenCalledWith('pantry-oats')
+  })
+
+  it('does not render a delete button when onDeletePantry is not provided', () => {
+    const { queryByTestId } = render(
+      <PantryPeriodView cycle={cycle} pantry={[oats]} cycleDays={5} />
+    )
+    expect(queryByTestId('delete-pantry')).toBeNull()
+  })
 })

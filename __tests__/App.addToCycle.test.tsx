@@ -98,7 +98,7 @@ describe('App scan -> add to active cycle', () => {
 
     // Tap "Remove from basket" then confirm deletion.
     fireEvent.press(screen.getByText('Remove from basket'))
-    fireEvent.press(screen.getByText('Delete'))
+    fireEvent.press(screen.getByTestId('confirm-delete'))
 
     await waitFor(() =>
       expect(screen.getAllByTestId('food-item')).toHaveLength(countWithNew - 1)
