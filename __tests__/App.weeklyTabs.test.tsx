@@ -42,4 +42,17 @@ describe('weekly tabs', () => {
     await waitFor(() => expect(getByTestId('add-fab')).toBeTruthy())
     expect(queryByTestId('food-item')).toBeNull()
   })
+
+  it('keeps the FAB after selecting a day (extras) then returning to the Batch tab', async () => {
+    // Regression: tapping a day inside a batch enters extra-day mode; switching back to the
+    // Batch tab must promote that batch so the "+" FAB and its items stay available.
+    const { findByTestId, getAllByTestId, getByTestId } = render(<App />)
+    await findByTestId('segmented-nav')
+    // day-cell[7] is today (2026-06-07), inside the active cycle (2026-06-05..09).
+    fireEvent.press(getAllByTestId('day-cell')[7])
+    await waitFor(() => expect(getByTestId('add-fab')).toBeTruthy()) // Extras tab FAB
+    fireEvent.press(getByTestId('tab-basket'))
+    await waitFor(() => expect(getAllByTestId('food-item').length).toBeGreaterThan(0))
+    expect(getByTestId('add-fab')).toBeTruthy()
+  })
 })

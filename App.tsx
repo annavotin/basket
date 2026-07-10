@@ -591,6 +591,18 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     changeSelection(null, activeExtraDate === date ? null : date)
   }
 
+  // Bottom-nav tab switch. When viewing a day that sits inside a batch (extra-day mode, no
+  // directly-selected cycle), switching to the Batch or Pantry tab promotes that batch to the
+  // active selection so those tabs are fully functional (add "+" and item editing) instead of a
+  // read-only view. Extras keeps its own day-focused mode.
+  function handleWeeklyTabChange(tab: WeeklyTab) {
+    if (tab !== 'extras' && !activeCycle && containingCycle) {
+      setActiveCycleId(containingCycle.id)
+      setActiveExtraDate(null)
+    }
+    setWeeklyTab(tab)
+  }
+
   function openExtraSheet(date: string) {
     setPendingExtraDate(date)
     setExtraSheetVisible(true)
@@ -1077,7 +1089,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           {(viewedCycle || activeExtraDate) ? (
             <>
               <View style={[styles.navWrap, weeklyTab === 'pantry' && styles.navWrapFull]}>
-                <SegmentedNav active={weeklyTab} onChange={setWeeklyTab} />
+                <SegmentedNav active={weeklyTab} onChange={handleWeeklyTabChange} />
               </View>
               {activeCycle ? (
                 // Directly-selected batch: full add options on Batch + Extras tabs.
