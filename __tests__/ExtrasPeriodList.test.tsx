@@ -28,4 +28,21 @@ describe('ExtrasPeriodList', () => {
     fireEvent.press(getAllByTestId('open-extra')[1])
     expect(onOpenExtra).toHaveBeenCalledWith('e2')
   })
+
+  it('splits the focused day into a "Today" section and the rest under "Rest of the prep"', () => {
+    // extras arrive pivot-first (the day's meals, then the rest); e1 is the focused day.
+    const { getByText } = render(
+      <ExtrasPeriodList extras={extras} pivotDate="2026-06-02" today="2026-06-02" />
+    )
+    expect(getByText('Today')).toBeTruthy()
+    expect(getByText('Rest of the prep')).toBeTruthy()
+  })
+
+  it('labels the focused day with its date when it is not today', () => {
+    const { getByText } = render(
+      <ExtrasPeriodList extras={extras} pivotDate="2026-06-02" today="2026-06-10" />
+    )
+    expect(getByText(/^\w{3} 2 Jun$/)).toBeTruthy() // e.g. "Tue 2 Jun" subheading
+    expect(getByText('Rest of the prep')).toBeTruthy()
+  })
 })

@@ -1052,6 +1052,8 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
                 <ExtrasPeriodList
                   extras={extrasForPeriod}
                   onOpenExtra={(id) => setDetailTarget({ kind: 'extra', id })}
+                  pivotDate={activeExtraDate ?? today}
+                  today={today}
                 />
               )}
               {weeklyTab === 'pantry' && (
