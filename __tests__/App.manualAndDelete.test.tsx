@@ -7,12 +7,19 @@ jest.mock('../src/services/scan', () => ({
 }))
 import App from '../App'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { cycles as seedCycles, extraMeals as seedExtraMeals, pantry as seedPantry } from '../src/data'
+import { STORAGE_KEY, STORAGE_KEY_EXTRAS, STORAGE_KEY_PANTRY } from '../src/services/storage'
 
+// Real accounts start empty (App.tsx no longer seeds from src/data.ts), so tests seed
+// storage explicitly with the same fixtures.
 beforeEach(async () => {
   jest.useFakeTimers().setSystemTime(new Date('2026-06-02'))
   await AsyncStorage.clear()
   jest.clearAllMocks()
   await AsyncStorage.setItem('basket:v1:onboarded', '1')
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seedCycles))
+  await AsyncStorage.setItem(STORAGE_KEY_EXTRAS, JSON.stringify(seedExtraMeals))
+  await AsyncStorage.setItem(STORAGE_KEY_PANTRY, JSON.stringify(seedPantry))
 })
 afterEach(() => jest.useRealTimers())
 

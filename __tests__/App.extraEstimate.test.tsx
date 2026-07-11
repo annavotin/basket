@@ -26,6 +26,8 @@ jest.mock('../src/services/usda', () => ({
 }))
 import App from '../App'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { cycles as seedCycles } from '../src/data'
+import { STORAGE_KEY } from '../src/services/storage'
 
 beforeEach(async () => {
   jest.useFakeTimers().setSystemTime(new Date('2026-06-02'))
@@ -36,6 +38,9 @@ beforeEach(async () => {
     error: null,
   })
   await AsyncStorage.setItem('basket:v1:onboarded', '1')
+  // Real accounts start empty (App.tsx no longer seeds from src/data.ts), so storage is
+  // seeded explicitly here instead.
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seedCycles))
 })
 afterEach(() => jest.useRealTimers())
 

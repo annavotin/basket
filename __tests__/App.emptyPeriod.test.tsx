@@ -6,13 +6,18 @@ jest.mock('../src/services/scan', () => ({
 }))
 import App from '../App'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { cycles as seedCycles } from '../src/data'
+import { STORAGE_KEY } from '../src/services/storage'
 
 beforeEach(async () => {
-  // Pick a date with NO seeded cycle active (seeds: 2026-05-31..06-04, 06-05..06-09).
+  // Pick a date with NO seeded cycle active (seeds: 2026-05-31..06-04, 06-05..06-09). Real
+  // accounts start empty (App.tsx no longer seeds from src/data.ts), so seed storage
+  // explicitly with the same fixture cycles this test's baseBars count expects to exist.
   jest.useFakeTimers().setSystemTime(new Date('2026-06-20'))
   await AsyncStorage.clear()
   jest.clearAllMocks()
   await AsyncStorage.setItem('basket:v1:onboarded', '1')
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seedCycles))
 })
 afterEach(() => jest.useRealTimers())
 

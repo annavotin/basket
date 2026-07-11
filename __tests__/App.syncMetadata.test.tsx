@@ -13,12 +13,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { auth as authService } from '../src/services/auth'
 import { SYNC_METADATA_KEYS } from '../src/services/sync-reset'
 import { MODAL_DISMISS_DELAY_MS } from '../src/components/settings/ConfirmDialog'
+import { cycles as seedCycles } from '../src/data'
+import { STORAGE_KEY } from '../src/services/storage'
 
 beforeEach(async () => {
   jest.useFakeTimers().setSystemTime(new Date('2026-06-02'))
   await AsyncStorage.clear()
   jest.clearAllMocks()
   await AsyncStorage.setItem('basket:v1:onboarded', '1')
+  // signIn() needs an active cycle for the FAB to render. Real accounts start empty (App.tsx
+  // no longer seeds from src/data.ts), so storage is seeded explicitly here instead.
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seedCycles))
   // Seed leftover sync metadata from a "previous session" so we can assert it gets cleared.
   await AsyncStorage.setItem('basket:syncQueue:v1', JSON.stringify({ cycles: ['stale-id'] }))
   await AsyncStorage.setItem('basket:syncCursors:v1', JSON.stringify({ cycles: '2020-01-01T00:00:00.000Z' }))

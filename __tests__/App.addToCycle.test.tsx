@@ -24,6 +24,8 @@ jest.mock('../src/services/foodApi', () => ({
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import App from '../App'
+import { cycles as seedCycles } from '../src/data'
+import { STORAGE_KEY } from '../src/services/storage'
 
 // Pin the clock so an existing cycle from src/data.ts is active regardless of
 // the real date the suite runs on. cycle-1 runs 2026-05-31..2026-06-04 and
@@ -33,11 +35,11 @@ const FIXED_NOW = new Date('2026-06-02T12:00:00Z')
 beforeEach(() => {
   jest.useFakeTimers()
   jest.setSystemTime(FIXED_NOW)
-  // Start each test from the demo seed: the persistence effect from a prior
-  // test would otherwise have written cycles into the in-memory AsyncStorage
-  // mock, which hydration would then restore.
+  // Start each test from the demo seed. Real accounts start empty (App.tsx no longer seeds
+  // from src/data.ts), so storage is seeded explicitly here instead.
   AsyncStorage.clear()
   AsyncStorage.setItem('basket:v1:onboarded', '1')
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seedCycles))
 })
 
 afterEach(() => {

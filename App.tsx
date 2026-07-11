@@ -41,7 +41,7 @@ import PantryScreen from './src/components/PantryScreen'
 import ItemDetail from './src/components/ItemDetail'
 import CarryOverSheet from './src/components/CarryOverSheet'
 import { CanIcon, SettingsIcon } from './src/components/icons'
-import { cycles as initialCycles, extraMeals as initialExtraMeals, DAILY_KCAL_GOAL, pantry as initialPantry, DEFAULT_PREFERENCES } from './src/data'
+import { DAILY_KCAL_GOAL, DEFAULT_PREFERENCES } from './src/data'
 import { todayISO, addDays, daysBetween, formatDay, formatLong } from './src/utils/dates'
 import { totalKcal, cycleBudget, extrasKcalInRange, extrasKcalOnDate, pantryKcalForCycle, pantryGramsForCycle, aggregateMacros } from './src/utils/nutrition'
 import { useColors, ThemeProvider } from './src/styles/ThemeProvider'
@@ -272,11 +272,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     },
   }), [colors])
 
-  const [cycles, setCycles] = useState(initialCycles)
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(
-    () => initialCycles.find((c) => today >= c.startDate && today <= c.endDate)?.id ?? null
-  )
-  const [extraMeals, setExtraMeals] = useState<ExtraMeal[]>(initialExtraMeals)
+  // Real accounts (new installs and post-"Clear all data") always start empty -- src/data.ts's
+  // sample cycles/extras/pantry are test fixtures only, not shown to real users.
+  const [cycles, setCycles] = useState<MealPrepCycle[]>([])
+  const [activeCycleId, setActiveCycleId] = useState<string | null>(null)
+  const [extraMeals, setExtraMeals] = useState<ExtraMeal[]>([])
   const [activeExtraDate, setActiveExtraDate] = useState<string | null>(null)
   const [extraSheetVisible, setExtraSheetVisible] = useState(false)
   const [sheetVisible, setSheetVisible] = useState(false)
@@ -293,7 +293,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   const [dailyGoal, setDailyGoal] = useState(DAILY_KCAL_GOAL)
   const [settingsVisible, setSettingsVisible] = useState(false)
   const [account, setAccount] = useState<Account | null>(null)
-  const [pantry, setPantry] = useState<PantryItem[]>(initialPantry)
+  const [pantry, setPantry] = useState<PantryItem[]>([])
   const [pantryVisible, setPantryVisible] = useState(false)
   const [weeklyTab, setWeeklyTab] = useState<WeeklyTab>('basket')
   const [pendingExtraDate, setPendingExtraDate] = useState<string | null>(null)
