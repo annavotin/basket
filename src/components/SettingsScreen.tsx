@@ -14,7 +14,7 @@ import SettingsRow from './settings/SettingsRow'
 import CustomFoodsScreen from './CustomFoodsScreen'
 import Stepper from './settings/Stepper'
 import Segmented from './settings/Segmented'
-import ConfirmDialog from './settings/ConfirmDialog'
+import ConfirmDialog, { MODAL_DISMISS_DELAY_MS } from './settings/ConfirmDialog'
 import AuthSheet from './settings/AuthSheet'
 import ChangePasswordSheet from './settings/ChangePasswordSheet'
 
@@ -522,8 +522,11 @@ export default function SettingsScreen({
         confirmLabel="Clear everything"
         danger
         onConfirm={() => {
-          onClearAll()
           setConfirmClear(false)
+          // Defer closing the whole Settings modal until this dialog has actually finished
+          // fading out. Dismissing two stacked Modals in the same tick can leave iOS's modal
+          // stack broken — an unresponsive black screen requiring a force-quit.
+          setTimeout(onClearAll, MODAL_DISMISS_DELAY_MS)
         }}
         onClose={() => setConfirmClear(false)}
       />

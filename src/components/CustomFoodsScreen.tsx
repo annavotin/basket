@@ -6,7 +6,7 @@ import {
 import { useColors } from '../styles/ThemeProvider'
 import { fonts } from '../styles/fonts'
 import { CustomFood, Macros } from '../types'
-import ConfirmDialog from './settings/ConfirmDialog'
+import ConfirmDialog, { MODAL_DISMISS_DELAY_MS } from './settings/ConfirmDialog'
 
 type Props = {
   visible: boolean
@@ -64,7 +64,10 @@ export default function CustomFoodsScreen({ visible, foods, onClose, onSave, onD
     if (!editing) return
     onDelete(editing.id)
     setConfirmDelete(false)
-    setEditing(null)
+    // Defer closing the editing sheet until the confirm dialog has actually finished fading
+    // out (see MODAL_DISMISS_DELAY_MS) — closing two stacked Modals in the same tick can leave
+    // iOS's modal stack broken (an unresponsive black screen).
+    setTimeout(() => setEditing(null), MODAL_DISMISS_DELAY_MS)
   }
 
   const styles = useMemo(() => StyleSheet.create({

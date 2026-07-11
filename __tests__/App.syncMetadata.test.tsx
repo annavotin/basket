@@ -12,6 +12,7 @@ import App from '../App'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { auth as authService } from '../src/services/auth'
 import { SYNC_METADATA_KEYS } from '../src/services/sync-reset'
+import { MODAL_DISMISS_DELAY_MS } from '../src/components/settings/ConfirmDialog'
 
 beforeEach(async () => {
   jest.useFakeTimers().setSystemTime(new Date('2026-06-02'))
@@ -57,6 +58,9 @@ describe('clear all data', () => {
 
     fireEvent.press(getByTestId('clear-data'))
     fireEvent.press(getByTestId('confirm-go'))
+    // Closing the Settings modal is deferred past the confirm dialog's own dismiss (see
+    // MODAL_DISMISS_DELAY_MS) so the two Modals don't close in the same tick.
+    jest.advanceTimersByTime(MODAL_DISMISS_DELAY_MS)
 
     await waitFor(async () => {
       expect(getByTestId('account-signin')).toBeTruthy() // back to signed-out UI

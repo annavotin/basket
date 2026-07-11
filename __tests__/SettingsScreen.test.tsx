@@ -181,12 +181,16 @@ describe('SettingsScreen', () => {
     expect(getByText('Clear all data?')).toBeTruthy()
   })
 
-  it('confirming clear-all calls onClearAll', () => {
+  it('confirming clear-all calls onClearAll', async () => {
+    // onClearAll (which closes the whole Settings modal) is deliberately deferred a beat past
+    // the confirm dialog's own dismiss — see MODAL_DISMISS_DELAY_MS — so it isn't called
+    // synchronously within this same press.
     const onClearAll = jest.fn()
     const { getByTestId } = renderSettings({ onClearAll })
     fireEvent.press(getByTestId('clear-data'))
     fireEvent.press(getByTestId('confirm-go'))
-    expect(onClearAll).toHaveBeenCalledTimes(1)
+    expect(onClearAll).not.toHaveBeenCalled()
+    await waitFor(() => expect(onClearAll).toHaveBeenCalledTimes(1))
   })
 
   // — Account section (signed-out) —

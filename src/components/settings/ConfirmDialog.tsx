@@ -3,6 +3,13 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useColors } from '../../styles/ThemeProvider'
 import { fonts } from '../../styles/fonts'
 
+/** If confirming here also closes ANOTHER Modal underneath this one (e.g. this dialog was
+ *  opened from within a full-screen sheet), defer that second close by at least this long
+ *  instead of doing it in the same tick. Dismissing two stacked Modals together can leave
+ *  iOS's modal stack broken — an unresponsive black screen requiring a force-quit. This
+ *  comfortably clears this dialog's own fade-out animation. */
+export const MODAL_DISMISS_DELAY_MS = 350
+
 interface ConfirmDialogProps {
   visible: boolean
   title: string

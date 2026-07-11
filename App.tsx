@@ -470,11 +470,17 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   // On launch, once cycles are available (from local storage or the first cloud pull),
   // auto-select the meal prep that covers today. Runs once, so it never overrides a
   // manual deselect made later in the session.
+  //
+  // The "once" guard is consumed as soon as hydration completes, regardless of whether any
+  // cycles exist yet — NOT gated on liveCycles.length > 0. Gating it on cycles existing meant
+  // that on a fresh (or just-cleared) account, this effect stayed armed indefinitely and fired
+  // later on the user's first-ever batch creation instead, yanking the timeline scroll to
+  // left-align that brand-new batch mid-interaction.
   const autoSelectedRef = useRef(false)
   useEffect(() => {
-    if (autoSelectedRef.current || !hydrated || liveCycles.length === 0) return
+    if (autoSelectedRef.current || !hydrated) return
     autoSelectedRef.current = true
-    if (activeExtraDate) return
+    if (activeExtraDate || liveCycles.length === 0) return
     const todays = liveCycles.find((c) => today >= c.startDate && today <= c.endDate)
     if (todays) {
       setActiveCycleId(todays.id)
