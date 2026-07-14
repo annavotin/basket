@@ -30,4 +30,20 @@ describe('lineToFoodItem', () => {
     const item = lineToFoodItem({ id: 'r1', name: 'Chicken Thighs', weightG: 1000, kcal: 1770, isFood: true })
     expect(item.macrosPer100g).toBeUndefined()
   })
+
+  it('forwards quantity when greater than 1', () => {
+    const item = lineToFoodItem(
+      { id: 'r1', name: 'Yogurt', weightG: 150, kcal: 90, isFood: true },
+      undefined,
+      2
+    )
+    expect(item.quantity).toBe(2)
+  })
+
+  it('omits quantity when 1 or not provided', () => {
+    const one = lineToFoodItem({ id: 'r1', name: 'Yogurt', weightG: 150, kcal: 90, isFood: true }, undefined, 1)
+    const none = lineToFoodItem({ id: 'r1', name: 'Yogurt', weightG: 150, kcal: 90, isFood: true })
+    expect(one.quantity).toBeUndefined()
+    expect(none.quantity).toBeUndefined()
+  })
 })

@@ -45,7 +45,7 @@ Baseline before starting: `npx tsc --noEmit` clean and `npm test` green (70 suit
 - Modify: `src/utils/receipt.ts`
 - Test: `__tests__/receipt.test.ts`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Append inside the existing `describe('lineToFoodItem', ...)` block in `__tests__/receipt.test.ts`:
 
@@ -67,12 +67,12 @@ Append inside the existing `describe('lineToFoodItem', ...)` block in `__tests__
   })
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx jest __tests__/receipt.test.ts`
 Expected: FAIL — "Expected: 2, Received: undefined" (extra args are ignored by the current 2-param signature).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace the function in `src/utils/receipt.ts` with:
 
@@ -93,12 +93,12 @@ export function lineToFoodItem(line: ReceiptLine, macrosPer100g?: Macros, quanti
 }
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `npx jest __tests__/receipt.test.ts`
 Expected: PASS (all 5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/utils/receipt.ts __tests__/receipt.test.ts
@@ -115,7 +115,7 @@ git commit -m "feat: lineToFoodItem forwards quantity multiplier"
 - Modify: `App.tsx` (~line 1120)
 - Test: `__tests__/ReceiptReviewSheet.test.tsx` (rewrite)
 
-- [ ] **Step 1: Add a testID to ItemDetail's edit-mode Cancel button**
+- [x] **Step 1: Add a testID to ItemDetail's edit-mode Cancel button**
 
 In `src/components/ItemDetail.tsx` (~line 305), the edit footer currently reads:
 
@@ -129,7 +129,7 @@ Change only by adding a testID (no other changes to this file):
 <TouchableOpacity testID="id-cancel-edit" style={[styles.btn, styles.ghost, { flex: 0, width: 100 }]} onPress={() => setEditing(false)}><Text style={styles.ghostTxt}>Cancel</Text></TouchableOpacity>
 ```
 
-- [ ] **Step 2: Rewrite the test file**
+- [x] **Step 2: Rewrite the test file**
 
 Replace the full contents of `__tests__/ReceiptReviewSheet.test.tsx` with:
 
@@ -285,12 +285,12 @@ describe('ReceiptReviewSheet', () => {
 })
 ```
 
-- [ ] **Step 3: Run to verify failure**
+- [x] **Step 3: Run to verify failure**
 
 Run: `npx jest __tests__/ReceiptReviewSheet.test.tsx`
 Expected: FAIL — `getByText('Edit')` not found (the component still renders `ReceiptLineDetail`, which has no view mode), quantity/remove tests fail.
 
-- [ ] **Step 4: Rewrite the component**
+- [x] **Step 4: Rewrite the component**
 
 Replace the full contents of `src/components/ReceiptReviewSheet.tsx` with:
 
@@ -517,7 +517,7 @@ export default function ReceiptReviewSheet({ visible, lines, days, onConfirm, on
 }
 ```
 
-- [ ] **Step 5: Pass `days` from App**
+- [x] **Step 5: Pass `days` from App**
 
 In `App.tsx` (~line 1120), add the `days` prop:
 
@@ -531,7 +531,7 @@ In `App.tsx` (~line 1120), add the `days` prop:
         />
 ```
 
-- [ ] **Step 6: Run to verify pass**
+- [x] **Step 6: Run to verify pass**
 
 Run: `npx jest __tests__/ReceiptReviewSheet.test.tsx __tests__/ItemDetail.test.tsx`
 Expected: PASS (all tests in both files).
@@ -539,7 +539,7 @@ Expected: PASS (all tests in both files).
 Run: `npx tsc --noEmit`
 Expected: no errors. (If `ReceiptLineDetail` import errors appear anywhere, that file is deleted in Task 3 — but nothing except `ReceiptReviewSheet` imported it, and that import is gone now.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/ReceiptReviewSheet.tsx src/components/ItemDetail.tsx App.tsx __tests__/ReceiptReviewSheet.test.tsx
@@ -554,23 +554,24 @@ git commit -m "refactor: reuse ItemDetail for receipt-line editing"
 - Delete: `src/components/ReceiptLineDetail.tsx`
 - Delete: `__tests__/ReceiptLineDetail.test.tsx`
 
-- [ ] **Step 1: Check nothing still references it**
+- [x] **Step 1: Check nothing still references it**
 
 Run: `grep -rn "ReceiptLineDetail" src App.tsx __tests__ docs/superpowers/plans/2026-07-14-receipt-line-edit-reuse-itemdetail.md --include='*.ts' --include='*.tsx'`
 Expected: matches only in `src/components/ReceiptLineDetail.tsx` and `__tests__/ReceiptLineDetail.test.tsx` themselves. (References in docs/plans are fine — leave them.)
 
-- [ ] **Step 2: Delete**
+- [x] **Step 2: Delete**
 
 ```bash
 git rm src/components/ReceiptLineDetail.tsx __tests__/ReceiptLineDetail.test.tsx
 ```
 
-- [ ] **Step 3: Full verification**
+- [x] **Step 3: Full verification**
 
 Run: `npx tsc --noEmit && npm test`
 Expected: tsc clean; all suites pass (69 suites — one fewer than baseline since `ReceiptLineDetail.test.tsx` is gone; test count ≥ 505).
+Actual: tsc clean; 69 suites / 501 tests passed. Test count came in at 501, not ≥505 — the deleted `ReceiptLineDetail.test.tsx` (6 tests) plus the old `ReceiptReviewSheet.test.tsx` (10 tests) together outnumbered their replacements (new `ReceiptReviewSheet.test.tsx` at 12 tests + 2 new `receipt.test.ts` tests): 503 - 6 - 10 + 12 + 2 = 501. All tests pass; this looks like an arithmetic estimate in the plan rather than a sign of a wrong implementation.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "refactor: delete ReceiptLineDetail, superseded by ItemDetail reuse"

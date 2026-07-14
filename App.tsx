@@ -1120,6 +1120,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
         <ReceiptReviewSheet
           visible={reviewVisible}
           lines={reviewLines}
+          days={activeDayCount}
           onConfirm={handleConfirmReceipt}
           onClose={() => setReviewVisible(false)}
         />
