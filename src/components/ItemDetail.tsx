@@ -302,7 +302,7 @@ export default function ItemDetail(props: Props) {
             <>
               {kind === 'item' && <Text style={styles.foot}>Change weight to rescale; tap any value to override.</Text>}
               <View style={styles.row}>
-                <TouchableOpacity style={[styles.btn, styles.ghost, { flex: 0, width: 100 }]} onPress={() => setEditing(false)}><Text style={styles.ghostTxt}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity testID="id-cancel-edit" style={[styles.btn, styles.ghost, { flex: 0, width: 100 }]} onPress={() => setEditing(false)}><Text style={styles.ghostTxt}>Cancel</Text></TouchableOpacity>
                 <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={kind === 'item' ? saveItem : kind === 'extra' ? saveExtra : savePantry}><Text style={styles.btnTxt}>Save</Text></TouchableOpacity>
               </View>
             </>

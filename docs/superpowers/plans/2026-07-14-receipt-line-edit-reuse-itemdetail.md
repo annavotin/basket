@@ -115,7 +115,7 @@ git commit -m "feat: lineToFoodItem forwards quantity multiplier"
 - Modify: `App.tsx` (~line 1120)
 - Test: `__tests__/ReceiptReviewSheet.test.tsx` (rewrite)
 
-- [ ] **Step 1: Add a testID to ItemDetail's edit-mode Cancel button**
+- [x] **Step 1: Add a testID to ItemDetail's edit-mode Cancel button**
 
 In `src/components/ItemDetail.tsx` (~line 305), the edit footer currently reads:
 
@@ -129,7 +129,7 @@ Change only by adding a testID (no other changes to this file):
 <TouchableOpacity testID="id-cancel-edit" style={[styles.btn, styles.ghost, { flex: 0, width: 100 }]} onPress={() => setEditing(false)}><Text style={styles.ghostTxt}>Cancel</Text></TouchableOpacity>
 ```
 
-- [ ] **Step 2: Rewrite the test file**
+- [x] **Step 2: Rewrite the test file**
 
 Replace the full contents of `__tests__/ReceiptReviewSheet.test.tsx` with:
 
@@ -285,12 +285,12 @@ describe('ReceiptReviewSheet', () => {
 })
 ```
 
-- [ ] **Step 3: Run to verify failure**
+- [x] **Step 3: Run to verify failure**
 
 Run: `npx jest __tests__/ReceiptReviewSheet.test.tsx`
 Expected: FAIL — `getByText('Edit')` not found (the component still renders `ReceiptLineDetail`, which has no view mode), quantity/remove tests fail.
 
-- [ ] **Step 4: Rewrite the component**
+- [x] **Step 4: Rewrite the component**
 
 Replace the full contents of `src/components/ReceiptReviewSheet.tsx` with:
 
@@ -517,7 +517,7 @@ export default function ReceiptReviewSheet({ visible, lines, days, onConfirm, on
 }
 ```
 
-- [ ] **Step 5: Pass `days` from App**
+- [x] **Step 5: Pass `days` from App**
 
 In `App.tsx` (~line 1120), add the `days` prop:
 
@@ -531,7 +531,7 @@ In `App.tsx` (~line 1120), add the `days` prop:
         />
 ```
 
-- [ ] **Step 6: Run to verify pass**
+- [x] **Step 6: Run to verify pass**
 
 Run: `npx jest __tests__/ReceiptReviewSheet.test.tsx __tests__/ItemDetail.test.tsx`
 Expected: PASS (all tests in both files).
@@ -539,7 +539,7 @@ Expected: PASS (all tests in both files).
 Run: `npx tsc --noEmit`
 Expected: no errors. (If `ReceiptLineDetail` import errors appear anywhere, that file is deleted in Task 3 — but nothing except `ReceiptReviewSheet` imported it, and that import is gone now.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/ReceiptReviewSheet.tsx src/components/ItemDetail.tsx App.tsx __tests__/ReceiptReviewSheet.test.tsx
