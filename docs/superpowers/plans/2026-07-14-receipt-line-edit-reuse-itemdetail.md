@@ -45,7 +45,7 @@ Baseline before starting: `npx tsc --noEmit` clean and `npm test` green (70 suit
 - Modify: `src/utils/receipt.ts`
 - Test: `__tests__/receipt.test.ts`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Append inside the existing `describe('lineToFoodItem', ...)` block in `__tests__/receipt.test.ts`:
 
@@ -67,12 +67,12 @@ Append inside the existing `describe('lineToFoodItem', ...)` block in `__tests__
   })
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx jest __tests__/receipt.test.ts`
 Expected: FAIL — "Expected: 2, Received: undefined" (extra args are ignored by the current 2-param signature).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace the function in `src/utils/receipt.ts` with:
 
@@ -93,12 +93,12 @@ export function lineToFoodItem(line: ReceiptLine, macrosPer100g?: Macros, quanti
 }
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `npx jest __tests__/receipt.test.ts`
 Expected: PASS (all 5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/utils/receipt.ts __tests__/receipt.test.ts
