@@ -554,23 +554,24 @@ git commit -m "refactor: reuse ItemDetail for receipt-line editing"
 - Delete: `src/components/ReceiptLineDetail.tsx`
 - Delete: `__tests__/ReceiptLineDetail.test.tsx`
 
-- [ ] **Step 1: Check nothing still references it**
+- [x] **Step 1: Check nothing still references it**
 
 Run: `grep -rn "ReceiptLineDetail" src App.tsx __tests__ docs/superpowers/plans/2026-07-14-receipt-line-edit-reuse-itemdetail.md --include='*.ts' --include='*.tsx'`
 Expected: matches only in `src/components/ReceiptLineDetail.tsx` and `__tests__/ReceiptLineDetail.test.tsx` themselves. (References in docs/plans are fine — leave them.)
 
-- [ ] **Step 2: Delete**
+- [x] **Step 2: Delete**
 
 ```bash
 git rm src/components/ReceiptLineDetail.tsx __tests__/ReceiptLineDetail.test.tsx
 ```
 
-- [ ] **Step 3: Full verification**
+- [x] **Step 3: Full verification**
 
 Run: `npx tsc --noEmit && npm test`
 Expected: tsc clean; all suites pass (69 suites — one fewer than baseline since `ReceiptLineDetail.test.tsx` is gone; test count ≥ 505).
+Actual: tsc clean; 69 suites / 501 tests passed. Test count came in at 501, not ≥505 — the deleted `ReceiptLineDetail.test.tsx` (6 tests) plus the old `ReceiptReviewSheet.test.tsx` (10 tests) together outnumbered their replacements (new `ReceiptReviewSheet.test.tsx` at 12 tests + 2 new `receipt.test.ts` tests): 503 - 6 - 10 + 12 + 2 = 501. All tests pass; this looks like an arithmetic estimate in the plan rather than a sign of a wrong implementation.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "refactor: delete ReceiptLineDetail, superseded by ItemDetail reuse"
