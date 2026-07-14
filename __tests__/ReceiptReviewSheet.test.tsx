@@ -27,11 +27,40 @@ describe('ReceiptReviewSheet', () => {
     expect(getAllByTestId(/^receipt-row-/).length).toBe(getMockReceiptLines().length)
   })
 
-  it('renders rows as read-only (no inline text inputs)', () => {
-    const { queryByTestId } = setup()
+  // Receipts rarely print pack sizes, so weight is the one field editable right on the
+  // row; name/kcal edits go through the detail sheet.
+  it('rows expose an inline weight input but no name/kcal inputs', () => {
+    const { queryByTestId, getByTestId } = setup()
+    expect(getByTestId('weight-r1').props.value).toBe('1000')
     expect(queryByTestId('name-r1')).toBeNull()
-    expect(queryByTestId('weight-r1')).toBeNull()
     expect(queryByTestId('kcal-r1')).toBeNull()
+  })
+
+  it('editing the inline weight rescales kcal at the scanned density', () => {
+    const utils = setup()
+    fireEvent.changeText(utils.getByTestId('weight-r2'), '500') // rice scanned at 130 kcal/100g
+    expect(utils.getByText('650 kcal')).toBeTruthy()
+    fireEvent.press(utils.getByTestId('confirm-receipt'))
+    const items = utils.props.onConfirm.mock.calls[0][0]
+    const rice = items.find((i: any) => i.name === 'Basmati Rice')
+    expect(rice).toMatchObject({ weightG: 500, kcal: 650 })
+  })
+
+  it('keeps decimal inline weights without truncating', () => {
+    const utils = setup()
+    fireEvent.changeText(utils.getByTestId('weight-r2'), '127.5')
+    fireEvent.press(utils.getByTestId('confirm-receipt'))
+    const items = utils.props.onConfirm.mock.calls[0][0]
+    const rice = items.find((i: any) => i.name === 'Basmati Rice')
+    expect(rice).toMatchObject({ weightG: 127.5, kcal: 166 }) // round(130 * 1.275)
+  })
+
+  it('opens the detail sheet with an inline-edited weight', () => {
+    const utils = setup()
+    fireEvent.changeText(utils.getByTestId('weight-r2'), '500')
+    openAndEdit(utils, 'r2')
+    expect(utils.getByTestId('id-weight').props.value).toBe('500')
+    expect(utils.getByTestId('nf-kcal').props.value).toBe('650')
   })
 
   it('confirms only food lines by default (non-food excluded) as receipt-sourced items', () => {
@@ -117,7 +146,7 @@ describe('ReceiptReviewSheet', () => {
     openAndEdit(utils, 'r3') // Spinach, 200g, 46 kcal
     fireEvent.press(utils.getByTestId('id-qty-inc'))
     fireEvent.press(utils.getByText('Save'))
-    expect(utils.getByText('2 × 200 g · 92 kcal')).toBeTruthy()
+    expect(utils.getByText('2 × 46 kcal')).toBeTruthy() // per-unit kcal with the multiplier, like ItemDetail's "2 × 200 g"
     fireEvent.press(utils.getByTestId('confirm-receipt'))
     const items = utils.props.onConfirm.mock.calls[0][0]
     const spinach = items.find((i: any) => i.name === 'Spinach')
