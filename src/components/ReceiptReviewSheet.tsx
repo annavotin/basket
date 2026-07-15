@@ -118,7 +118,9 @@ export default function ReceiptReviewSheet({ visible, lines, days, onConfirm, on
       marginTop: 12,
     },
     addBtnText: { color: colors.selectedDayText, fontSize: 16, fontWeight: '600' },
-    cancelBtn: { paddingVertical: 12, alignItems: 'center', marginTop: 4 },
+    // alignSelf keeps the tap target hugging the label; a full-width touchable here eats
+    // taps meant to dismiss the keyboard next to it and closes the whole sheet.
+    cancelBtn: { paddingVertical: 12, paddingHorizontal: 24, alignSelf: 'center', marginTop: 4 },
     cancelText: { color: colors.monthText, fontSize: 15 },
   }), [colors])
 
