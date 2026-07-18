@@ -191,3 +191,26 @@ jest.mock('expo-apple-authentication', () => ({
 // Prevent native Supabase/SecureStore modules from loading in Jest.
 // createSupabaseAuth() takes the client as a param so tests bypass this.
 jest.mock('./src/services/supabase', () => ({ supabase: null, isSupabaseConfigured: false }))
+
+jest.mock('expo-constants', () => ({
+  default: { expoConfig: { extra: { posthogProjectToken: undefined, posthogHost: undefined } } },
+  expoConfig: { extra: { posthogProjectToken: undefined, posthogHost: undefined } },
+}))
+
+const mockPostHog = {
+  capture: jest.fn(),
+  identify: jest.fn(),
+  reset: jest.fn(),
+  screen: jest.fn(),
+  debug: jest.fn(),
+  captureException: jest.fn(),
+  getFeatureFlag: jest.fn(),
+  isFeatureEnabled: jest.fn(),
+}
+jest.mock('posthog-react-native', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => mockPostHog),
+  PostHogProvider: ({ children }) => children,
+  usePostHog: () => mockPostHog,
+}))
+jest.mock('./src/config/posthog', () => ({ posthog: mockPostHog }))
