@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
+import { PostHogProvider, usePostHog } from 'posthog-react-native'
+import { posthog } from './src/config/posthog'
 import { newId } from './src/utils/ids'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const appJson = require('./app.json')
@@ -86,6 +88,7 @@ function sameRecords<T>(a: T[], b: T[]): boolean {
 }
 
 function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dispatch<React.SetStateAction<Preferences>> }) {
+  const ph = usePostHog()
   const colors = useColors()
   const [today, setToday] = useState(todayISO)
   const windowStart = useMemo(() => addDays(today, -WINDOW_OFFSET), [today])
@@ -492,12 +495,15 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   useEffect(() => {
     let cancelled = false
     authService.getCurrentAccount().then((a) => {
-      if (!cancelled && a) setAccount(a)
+      if (!cancelled && a) {
+        setAccount(a)
+        ph.identify(a.email, { $set: { name: a.name, email: a.email } })
+      }
     })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [ph])
 
   // Email-confirmation deep link (batch://auth-callback?code=...): exchange the code
   // for a session and set the account once the user taps the link from their inbox.
@@ -622,6 +628,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
 
   function handleSaveExtra(draft: { name: string; kcal: number; macros?: Macros }) {
     if (!pendingExtraDate) return
+    ph.capture('extra_meal_logged', { kcal: draft.kcal, has_macros: !!draft.macros, date: pendingExtraDate })
     const id = newId()
     setExtraMeals((prev) => [
       ...prev,
@@ -633,6 +640,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function handleCreatePeriod(startDate: string) {
+    ph.capture('batch_created', { start_date: startDate, default_days: prefs.defaultDays })
     const id = newId()
     const newCycle = touch({ id, startDate, endDate: addDays(startDate, prefs.defaultDays - 1), items: [] })
     const prevCycle = liveCycles
@@ -687,6 +695,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   async function handleScanBarcode() {
     const barcode = await scanBarcodeWithCamera()
     if (!barcode) return
+    ph.capture('barcode_scanned', { barcode })
     setScanBarcode(barcode)
     // Check the user's own saved foods first — instant, and covers store-brand / produce
     // items the public databases never had.
@@ -722,6 +731,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
     const lines = await scanReceipt(() => setReceiptScanning(true))
     setReceiptScanning(false)
     if (lines && lines.length > 0) {
+      ph.capture('receipt_scanned', { item_count: lines.length })
       setReviewLines(lines)
       setReviewVisible(true)
     } else if (lines) {
@@ -741,6 +751,13 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
 
   function handleAddItem(item: FoodItem, { save, barcode }: { save: boolean; barcode?: string }) {
     const wasScanned = scanBarcode != null
+    ph.capture('item_added', {
+      method: wasScanned ? 'barcode' : 'manual',
+      saved_to_my_foods: save,
+      has_barcode: !!barcode,
+      kcal: item.kcal,
+      weight_g: item.weightG,
+    })
     handleAddItems([item])
     // Unified "Save to My Foods" toggle in the sheet drives whether we upsert, for both
     // manual and scanned adds. `barcode` carries either the real scan match or one linked
@@ -802,6 +819,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function handleAddPantry(draft: { name: string; kcalPer100g: number; dailyG: number }) {
+    ph.capture('pantry_item_added', { kcal_per_100g: draft.kcalPer100g, daily_g: draft.dailyG })
     const id = newId()
     setPantry((prev) => [...prev, touch({ id, emoji: '🥫', ...draft })])
     markDirty('pantry_items', id)
@@ -847,6 +865,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   function handleConfirmReceipt(items: FoodItem[]) {
+    ph.capture('receipt_confirmed', { item_count: items.length })
     handleAddItems(items)
     setReviewVisible(false)
   }
@@ -858,6 +877,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
   }
 
   async function handleExport() {
+    ph.capture('data_exported')
     const json = await exportAll()
     try {
       await Share.share({ message: json })
@@ -1141,7 +1161,11 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
           onExport={handleExport}
           onClearAll={handleClearAll}
           account={account}
-          onAuthed={(a) => setAccount(a)}
+          onAuthed={(a) => {
+            ph.identify(a.email, { $set: { name: a.name, email: a.email } })
+            ph.capture('user_signed_in', { method: 'email' })
+            setAccount(a)
+          }}
           onSignOut={() => { authService.signOut(); setAccount(null); void clearSyncMetadata(AsyncStorage) }}
           onDeleteAccount={handleDeleteAccount}
           authService={authService}
@@ -1206,6 +1230,7 @@ function AppInner({ prefs, setPrefs }: { prefs: Preferences; setPrefs: React.Dis
             prevCycle={carryOver.prevCycle}
             onConfirm={(carried) => {
               if (carried.length) {
+                ph.capture('carry_over_confirmed', { item_count: carried.length })
                 setCycles((prev) => prev.map((c) => (c.id === carryOver.newCycleId ? touch({ ...c, items: [...c.items, ...carried] }) : c)))
                 markDirty('cycles', carryOver.newCycleId)
               }
@@ -1252,6 +1277,12 @@ export default function App() {
   useEffect(() => { if (prefsHydrated) savePrefs(prefs) }, [prefs, prefsHydrated])
 
   function handleOnboardingComplete(result: OnboardingResult) {
+    posthog.capture('onboarding_completed', {
+      has_name: result.name != null,
+      daily_goal: result.dailyGoal ?? null,
+      default_days: result.defaultDays ?? null,
+      weight_unit: result.weightUnit ?? null,
+    })
     setPrefs((p) => ({
       ...p,
       ...(result.name != null ? { name: result.name } : {}),
@@ -1269,6 +1300,15 @@ export default function App() {
   if (!fontsLoaded || onboarded === null) return null
 
   return (
+    <PostHogProvider
+      client={posthog}
+      autocapture={{
+        captureScreens: false,
+        captureTouches: true,
+        propsToCapture: ['testID'],
+        maxElementsCaptured: 20,
+      }}
+    >
     <ThemeProvider theme={prefs.theme} accent={prefs.accent}>
       <UnitsProvider units={prefs.units}>
         {!onboarded ? (
@@ -1283,6 +1323,10 @@ export default function App() {
               onApple={async () => {
                 const result = await authService.signInWithApple()
                 if (!result.ok) return false
+                if ('account' in result) {
+                  posthog.identify(result.account.email, { $set: { name: result.account.name, email: result.account.email } })
+                  posthog.capture('user_signed_in', { method: 'apple' })
+                }
                 // Supabase persists the session; AppInner restores the account on mount.
                 await AsyncStorage.setItem(ONBOARDED_KEY, '1')
                 setOnboarded(true)
@@ -1295,10 +1339,12 @@ export default function App() {
               initialMode="signup"
               auth={authService}
               onClose={() => setOnboardEmailAuth(false)}
-              onAuthed={() => {
+              onAuthed={(a) => {
                 // Only fires when a session exists (confirmation disabled). With email
                 // confirmation on, signUp returns pending and the sheet shows "check your
                 // email" instead. Session-backed accounts drop straight into the app.
+                posthog.identify(a.email, { $set: { name: a.name, email: a.email } })
+                posthog.capture('user_signed_up', { method: 'email' })
                 setOnboardEmailAuth(false)
                 void AsyncStorage.setItem(ONBOARDED_KEY, '1')
                 setOnboarded(true)
@@ -1310,5 +1356,6 @@ export default function App() {
         )}
       </UnitsProvider>
     </ThemeProvider>
+    </PostHogProvider>
   )
 }
